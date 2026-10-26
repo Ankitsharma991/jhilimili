@@ -1,0 +1,21 @@
+{
+    "name": "UtsavNights.UI",
+    "rootNamespace": "UtsavNights.UI",
+    "references": [
+        "UtsavNights.Core",
+        "UtsavNights.Core.Runtime",
+        "UtsavNights.Content",
+        "UtsavNights.Gameplay",
+        "UnityEngine.UI",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

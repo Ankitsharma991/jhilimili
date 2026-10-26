@@ -36,9 +36,18 @@ namespace UtsavNights.EditorTools.Main
         [MenuItem("Utsav/Phase 2/Build Boot and Main Scenes", priority = 80)]
         public static void BuildAll()
         {
+            UiSetup.EnsureTmpEssentials();
             FlowerpotAssets.Result assets = FlowerpotAssets.BuildAll();
+            Content.CrackerDefinition rocket = RocketAssets.Build();
+            Content.CrackerDefinition chakri = ChakriAssets.Build();
+            Content.CrackerCatalog catalog = CatalogAssets.EnsureCore();
+            catalog.Upsert(chakri);
+            catalog.Upsert(rocket);
+            EditorUtility.SetDirty(catalog);
+            TrayIconRenderer.RenderAll(assets.Definition, chakri, rocket);
+            AssetDatabase.SaveAssets();
             BuildBoot();
-            BuildMain(assets);
+            BuildMain(assets, catalog);
             BakeMainLighting();
             EditorBuildSettings.scenes = new[]
             {
@@ -98,7 +107,7 @@ namespace UtsavNights.EditorTools.Main
             EditorSceneManager.SaveScene(scene, BootScenePath);
         }
 
-        private static void BuildMain(FlowerpotAssets.Result assets)
+        private static void BuildMain(FlowerpotAssets.Result assets, Content.CrackerCatalog catalog)
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             RenderSettings.skybox = null;
@@ -152,9 +161,11 @@ namespace UtsavNights.EditorTools.Main
             new GameObject("CrackerSpawner").AddComponent<CrackerSpawner>();
             CreatePlacement(camera);
 
-            var pot = new GameObject("Flowerpot").AddComponent<CrackerRuntime>();
-            pot.transform.position = new Vector3(0f, 0f, 0.6f);
-            pot.Configure(assets.Definition);
+            // PRD 6.1: one cracker already stands ready; everything else comes from the tray.
+            new GameObject("StartingCrackers").AddComponent<StartingCrackers>().Configure(
+                new StartingCrackers.Item { definition = assets.Definition, position = new Vector3(0f, 0f, 0.6f) });
+
+            CreateHud(catalog);
 
             new GameObject("FirstRunHint").AddComponent<FirstRunHint>().Configure(camera);
 
@@ -166,7 +177,6 @@ namespace UtsavNights.EditorTools.Main
             var eventSystem = new GameObject("EventSystem", typeof(EventSystem));
             eventSystem.AddComponent<InputSystemUIInputModule>().AssignDefaultActions();
 
-            EditorUtility.SetDirty(pot);
             EditorUtility.SetDirty(lighter);
             EditorSceneManager.SaveScene(scene, MainScenePath);
         }
@@ -238,6 +248,33 @@ namespace UtsavNights.EditorTools.Main
         }
 
         private static void Static(GameObject go) => SceneKit.MakeStatic(go);
+
+        private static void CreateHud(Content.CrackerCatalog catalog)
+        {
+            var canvasGo = new GameObject("HUD", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 10;
+            var scaler = canvasGo.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(UI.UiTheme.ReferenceWidth, UI.UiTheme.ReferenceHeight);
+            scaler.matchWidthOrHeight = 0f;
+            var safe = new GameObject("SafeArea", typeof(RectTransform), typeof(UI.SafeAreaFitter));
+            safe.transform.SetParent(canvasGo.transform, false);
+            var safeRect = (RectTransform)safe.transform;
+            safeRect.anchorMin = Vector2.zero;
+            safeRect.anchorMax = Vector2.one;
+            safeRect.offsetMin = Vector2.zero;
+            safeRect.offsetMax = Vector2.zero;
+            var trayGo = new GameObject("TrayView", typeof(RectTransform));
+            trayGo.transform.SetParent(safe.transform, false);
+            var trayRect = (RectTransform)trayGo.transform;
+            trayRect.anchorMin = Vector2.zero;
+            trayRect.anchorMax = Vector2.one;
+            trayRect.offsetMin = Vector2.zero;
+            trayRect.offsetMax = Vector2.zero;
+            trayGo.AddComponent<UI.TrayView>().Configure(catalog);
+        }
 
         private static void CreatePlacement(Camera camera)
         {

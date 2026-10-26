@@ -104,6 +104,31 @@ namespace UtsavNights.EditorTools.ContentLint
                     Warn("stage.stop_content", $"stage {i} is the stop stage but also starts an effect or sound; it will be cut immediately");
                 }
 
+                if (!stage.stop && stage.repeatCount > 1 && stage.repeatInterval <= 0f)
+                {
+                    Warn("stage.repeat_interval", $"stage {i} repeats {stage.repeatCount} times with no interval; they all fire at once");
+                }
+
+                if (stage.motion == StageMotion.Launch && stage.emitter == null)
+                {
+                    Warn("stage.launch_emitter", $"stage {i} launches but has no emitter to move");
+                }
+
+                if (stage.motion == StageMotion.Spin && Mathf.Approximately(stage.spinDegreesPerSecond, 0f))
+                {
+                    Warn("stage.spin_zero", $"stage {i} spins at 0 degrees per second");
+                }
+
+                if (stage.anchor == StageAnchor.Apex && stage.launchHeight <= 0f)
+                {
+                    Error("stage.apex_height", $"stage {i} starts at the apex but its launch height is 0");
+                }
+
+                if ((stage.motion == StageMotion.Launch || stage.anchor == StageAnchor.Apex) && def.EffectVolume.y < stage.launchHeight)
+                {
+                    Warn("placement.sky_corridor", $"stage {i} reaches {stage.launchHeight} m but the effect volume is only {def.EffectVolume.y} m tall; placement will not keep the sky corridor clear");
+                }
+
                 if (stage.emitter != null)
                 {
                     int prefabMax = stage.emitter.main.maxParticles;

@@ -1,0 +1,182 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 065b1a91ab9cda24b90c94ec13104b09, type: 3}
+  m_Name: Cracker_ChakriClassic
+  m_EditorClassIdentifier: UtsavNights.Content::UtsavNights.Content.CrackerDefinition
+  id: chakri_classic
+  schema: 1
+  displayName:
+    en: Ground spinner
+    ne: Chakri
+    hi: Chakri
+  category: 2
+  festivals:
+  - diwali
+  - tihar
+  intensity: 1
+  footprint: {x: 0.25, y: 0.25}
+  effectVolume: {x: 1.4, y: 0.8, z: 1.4}
+  surfaces: 1
+  ignitionMethods: 3
+  fuseSeconds: 2
+  fuseAnchor: {x: 0.095, y: 0.03, z: 0}
+  stages:
+  - time: 0
+    emitter: {fileID: 1085541027872040593, guid: 02c6846a0986598fd91d043ed81e0e96, type: 3}
+    anchor: 1
+    endWithNextEmitter: 1
+    volume: 0.45
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 8300000, guid: 0ca7e0b7a7023e447b08e279b8fbd612, type: 3}
+    loopSound: 1
+    haptic: 1
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+  - time: 2
+    emitter: {fileID: 2323844838592166972, guid: a3a7aea9b0ea8ec46b851ddaee7e0114, type: 3}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.7
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 8300000, guid: 9aca52e8b9d2583e6a73c7b28683c2a1, type: 3}
+    loopSound: 1
+    haptic: 3
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 1
+    payoff: 1
+    stop: 0
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 1
+    spinDegreesPerSecond: 1260
+    spinModel: 1
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+  - time: 2
+    emitter: {fileID: 103147962489941261, guid: 539b1deffc6adfa399c15c8783ba9f95, type: 3}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.8
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 0}
+    loopSound: 0
+    haptic: 0
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+  - time: 3.2
+    emitter: {fileID: 0}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.6
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 8300000, guid: 223fafe861d6289f4a951bdba9471fa9, type: 3}
+    loopSound: 0
+    haptic: 1
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+    repeatCount: 5
+    repeatInterval: 0.85
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+  - time: 8
+    emitter: {fileID: 0}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.8
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 0}
+    loopSound: 0
+    haptic: 0
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 1
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+  cooldownSeconds: 1.5
+  modelPrefab: {fileID: 4123305185790313175, guid: 7bfc294ea997301fa9a2375088d225b8, type: 3}
+  trayIcon: {fileID: -7366678760999492816, guid: 5c3868c83c52f788fa1609828c4bc3d2, type: 3}
+  low:
+    maxParticles: 220
+    light: 0
+    bloom: 0
+  mid:
+    maxParticles: 420
+    light: 1
+    bloom: 0
+  high:
+    maxParticles: 650
+    light: 1
+    bloom: 1
+  voices: 3
+  cost: 1
+  pack: core
+  creditsModel: own
+  creditsAudio: own-003

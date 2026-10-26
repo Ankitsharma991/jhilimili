@@ -24,6 +24,9 @@ namespace UtsavNights.Core.Crackers
         /// <summary>Raised with the stage index when a cue's time is reached, before any state change it causes.</summary>
         public event Action<int> CueReached;
 
+        /// <summary>Same moment as <see cref="CueReached"/>, with the full cue (repeat number included).</summary>
+        public event Action<TimelineCue> Cue;
+
         /// <summary>Raised once when a used cracker finishes its cooldown and returns to Idle.</summary>
         public event Action Finished;
 
@@ -151,6 +154,7 @@ namespace UtsavNights.Core.Crackers
                     TimelineCue cue = _timeline[_nextCue];
                     _nextCue++;
                     CueReached?.Invoke(cue.StageIndex);
+                    Cue?.Invoke(cue);
                     ApplyCue(cue);
                     continue;
                 }

@@ -25,7 +25,7 @@ namespace UtsavNights.Tests.PlayMode
             yield return null;
             Assert.IsTrue(Game.Services.TryGet(out _placement), "placement installed");
             Assert.IsTrue(Game.Services.TryGet(out _spawner), "spawner installed");
-            _scenePot = Object.FindFirstObjectByType<CrackerRuntime>();
+            _scenePot = SceneCrackers.Find("flowerpot_gold");
             _camera = Camera.main;
         }
 
@@ -49,7 +49,7 @@ namespace UtsavNights.Tests.PlayMode
             Assert.IsNotNull(placed);
             Assert.AreEqual(CrackerState.Placed, placed.StateMachine.State);
             Assert.IsFalse(_placement.IsPlacing, "placement ends after one item");
-            Assert.AreEqual(1, _spawner.ActiveCount);
+            Assert.AreEqual(2, _spawner.ActiveCount, "starting pot plus the new one");
             Assert.IsTrue(placed.CanIgnite, "placed crackers can be lit");
         }
 
@@ -60,19 +60,15 @@ namespace UtsavNights.Tests.PlayMode
             _placement.StayAfterPlacing = true;
             _placement.BeginPlacing(_scenePot.Definition);
             int limit = _spawner.ItemLimit;
-            int placed = 0;
-            for (float x = -2.6f; x <= 2.6f && placed < limit; x += 0.6f)
+            for (float x = -2.6f; x <= 2.6f && _spawner.ActiveCount < limit; x += 0.6f)
             {
-                for (float z = -0.6f; z <= 1.9f && placed < limit; z += 0.6f)
+                for (float z = -0.6f; z <= 1.9f && _spawner.ActiveCount < limit; z += 0.6f)
                 {
-                    if (_placement.PlaceAt(Screen(new Vector3(x, 0f, z))) != null)
-                    {
-                        placed++;
-                    }
+                    _placement.PlaceAt(Screen(new Vector3(x, 0f, z)));
                 }
             }
 
-            Assert.AreEqual(limit, placed, "enough open floor for the tier limit");
+            Assert.AreEqual(limit, _spawner.ActiveCount, "enough open floor for the tier limit (starting pot included)");
             Assert.AreEqual(PlacementBlock.TooManyItems, _placement.CheckAt(Screen(new Vector3(0f, 0f, -1.2f))).Block);
             _placement.Cancel();
             _spawner.ClearAll();
@@ -89,18 +85,18 @@ namespace UtsavNights.Tests.PlayMode
             first.Ignite();
 
             float end = Time.realtimeSinceStartup + 20f;
-            while (_spawner.ActiveCount > 0 && Time.realtimeSinceStartup < end)
+            while (first.gameObject.activeSelf && Time.realtimeSinceStartup < end)
             {
                 yield return null;
             }
 
-            Assert.AreEqual(0, _spawner.ActiveCount, "spent cracker cleared after its cooldown");
+            Assert.AreEqual(1, _spawner.ActiveCount, "spent cracker cleared after its cooldown; the starting pot remains");
             Assert.IsFalse(first.gameObject.activeSelf);
 
             _placement.BeginPlacing(_scenePot.Definition);
             CrackerRuntime second = _placement.PlaceAt(Screen(new Vector3(-1.2f, 0f, 0.5f)));
             Assert.AreSame(first, second, "the pooled instance is reused");
-            Assert.AreEqual(1, _spawner.InstancesCreated);
+            Assert.AreEqual(2, _spawner.InstancesCreated, "starting pot plus one pooled flowerpot");
             Assert.AreEqual(CrackerState.Placed, second.StateMachine.State);
         }
     }

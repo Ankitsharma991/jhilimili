@@ -38,6 +38,9 @@ namespace UtsavNights.Gameplay
         /// <summary>Raised after a cracker has been placed.</summary>
         public event Action<CrackerRuntime> Placed;
 
+        /// <summary>Raised when placement starts (the selected definition) or stops (null).</summary>
+        public event Action<CrackerDefinition> SelectionChanged;
+
         public bool IsPlacing => Selected != null;
 
         public bool StayAfterPlacing
@@ -96,14 +99,21 @@ namespace UtsavNights.Gameplay
             Selected = definition;
             _touchId = -1;
             ghost?.Hide();
+            SetReason(string.Empty);
+            SelectionChanged?.Invoke(definition);
         }
 
         public void Cancel()
         {
+            bool wasPlacing = Selected != null;
             Selected = null;
             _touchId = -1;
             ghost?.Hide();
             SetReason(string.Empty);
+            if (wasPlacing)
+            {
+                SelectionChanged?.Invoke(null);
+            }
         }
 
         /// <summary>Checks a screen point without placing (also used by tests and the tray).</summary>

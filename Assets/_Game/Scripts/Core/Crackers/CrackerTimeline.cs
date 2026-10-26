@@ -6,12 +6,16 @@ namespace UtsavNights.Core.Crackers
     /// <summary>One timed cue on a cracker timeline. <see cref="StageIndex"/> points back at the definition's stage.</summary>
     public readonly struct TimelineCue
     {
-        public TimelineCue(float time, CueKind kind, int stageIndex)
+        public TimelineCue(float time, CueKind kind, int stageIndex, int repeat = 0)
         {
             Time = time;
             Kind = kind;
             StageIndex = stageIndex;
+            Repeat = repeat;
         }
+
+        /// <summary>Which repetition of the stage this cue is (0 for stages that do not repeat).</summary>
+        public int Repeat { get; }
 
         /// <summary>Seconds after ignition.</summary>
         public float Time { get; }

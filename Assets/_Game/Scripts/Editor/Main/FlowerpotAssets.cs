@@ -18,10 +18,10 @@ namespace UtsavNights.EditorTools.Main
     {
         public const string DefinitionPath = "Assets/_Game/Definitions/Crackers/Cracker_FlowerpotGold.asset";
         private const string Root = "Assets/_Game/Prefabs/Crackers/Flowerpot";
-        private const string AudioFolder = "Assets/_Game/Audio/Placeholder";
+        internal const string AudioFolder = "Assets/_Game/Audio/Placeholder";
         private const string MaterialFolder = "Assets/_Game/Materials/Crackers";
-        private const string GlowTexturePath = "Assets/_Game/Art/Spike/glow_soft.png";
-        private const int SampleRate = 48000;
+        internal const string GlowTexturePath = "Assets/_Game/Art/Spike/glow_soft.png";
+        internal const int SampleRate = 48000;
 
         public sealed class Result
         {
@@ -150,7 +150,7 @@ namespace UtsavNights.EditorTools.Main
             return data;
         }
 
-        private static AudioClip WriteClip(string name, float[] samples, bool loop)
+        internal static AudioClip WriteClip(string name, float[] samples, bool loop)
         {
             string path = $"{AudioFolder}/{name}.wav";
             WavWriter.Write(path, samples, SampleRate);
@@ -168,7 +168,7 @@ namespace UtsavNights.EditorTools.Main
             return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
         }
 
-        private static Material ParticleMaterial(string name, Texture2D texture, bool additive)
+        internal static Material ParticleMaterial(string name, Texture2D texture, bool additive)
         {
             string path = $"{MaterialFolder}/{name}.mat";
             Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
@@ -196,7 +196,7 @@ namespace UtsavNights.EditorTools.Main
             return material;
         }
 
-        private static ParticleSystem NewSystem(string name, Material material, int maxParticles, bool stretch)
+        internal static ParticleSystem NewSystem(string name, Material material, int maxParticles, bool stretch)
         {
             var go = new GameObject(name);
             var ps = go.AddComponent<ParticleSystem>();
@@ -219,7 +219,7 @@ namespace UtsavNights.EditorTools.Main
             return ps;
         }
 
-        private static void Fade(ParticleSystem ps, Color start, Color end, float endSize)
+        internal static void Fade(ParticleSystem ps, Color start, Color end, float endSize)
         {
             var col = ps.colorOverLifetime;
             col.enabled = true;
@@ -343,15 +343,16 @@ namespace UtsavNights.EditorTools.Main
             return root;
         }
 
-        private static ParticleSystem SavePrefab(ParticleSystem ps, string name)
+        internal static ParticleSystem SavePrefab(ParticleSystem ps, string name, string folder = Root)
         {
-            GameObject saved = SaveGameObject(ps.gameObject, name);
+            GameObject saved = SaveGameObject(ps.gameObject, name, folder);
             return saved.GetComponent<ParticleSystem>();
         }
 
-        private static GameObject SaveGameObject(GameObject go, string name)
+        internal static GameObject SaveGameObject(GameObject go, string name, string folder = Root)
         {
-            string path = $"{Root}/{name}.prefab";
+            EditorAssetUtil.EnsureFolder(folder);
+            string path = $"{folder}/{name}.prefab";
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             UnityEngine.Object.DestroyImmediate(go);
             return prefab;

@@ -62,6 +62,21 @@ namespace UtsavNights.Content
     {
         Base = 0,
         Fuse = 1,
+
+        /// <summary>Top of a launch: base plus the stage's launch height (aerial bursts).</summary>
+        Apex = 2,
+    }
+
+    /// <summary>How a stage's emitter moves while it plays (PRD 7: spinner motion, aerial launches).</summary>
+    public enum StageMotion
+    {
+        None = 0,
+
+        /// <summary>Rotates around the up axis (chakri).</summary>
+        Spin = 1,
+
+        /// <summary>Rises to the launch height and stops emitting at the apex (rocket trail, cake shell).</summary>
+        Launch = 2,
     }
 
     /// <summary>Matches the Low / Mid / High quality levels created by project setup.</summary>

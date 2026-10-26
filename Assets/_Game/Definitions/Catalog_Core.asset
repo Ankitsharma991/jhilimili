@@ -16,3 +16,9 @@ MonoBehaviour:
   - definition: {fileID: 11400000, guid: 4b171e8c25d88b20884308d5bc7fc370, type: 2}
     locked: 0
     unlockHint: 
+  - definition: {fileID: 11400000, guid: 78e23af85c517b566a48218f08ada997, type: 2}
+    locked: 0
+    unlockHint: 
+  - definition: {fileID: 11400000, guid: 8a491f677c796984db6fa94e08c71294, type: 2}
+    locked: 0
+    unlockHint: 

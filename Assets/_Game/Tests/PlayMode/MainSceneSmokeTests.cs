@@ -14,7 +14,7 @@ namespace UtsavNights.Tests.PlayMode
 {
     /// <summary>
     /// Phase 2 smoke test: the real Main scene boots, the flowerpot is placed and pickable, ignition runs
-    /// the fuse into the payoff with effects playing, and after the cooldown a fresh pot is placed.
+    /// the fuse into the payoff with effects playing, and after the cooldown the spent pot is cleared and pooled.
     /// Any error logged during the run fails the test.
     /// </summary>
     public class MainSceneSmokeTests
@@ -22,7 +22,7 @@ namespace UtsavNights.Tests.PlayMode
         private const float Timeout = 20f;
 
         [UnityTest]
-        public IEnumerator Flowerpot_IgnitesToPayoff_AndRespawns()
+        public IEnumerator Flowerpot_IgnitesToPayoff_AndIsCleared()
         {
             SceneManager.LoadScene("Main");
             yield return null;
@@ -35,7 +35,7 @@ namespace UtsavNights.Tests.PlayMode
             Assert.IsTrue(Game.Services.IsRegistered<QualityManager>(), "quality manager installed");
             Assert.IsTrue(Game.Services.IsRegistered<CameraRig>(), "camera rig installed");
 
-            CrackerRuntime pot = Object.FindFirstObjectByType<CrackerRuntime>();
+            CrackerRuntime pot = SceneCrackers.Find("flowerpot_gold");
             Assert.IsNotNull(pot, "flowerpot in scene");
             Assert.AreEqual("flowerpot_gold", pot.Definition.Id);
             Assert.AreEqual(CrackerState.Placed, pot.StateMachine.State);
@@ -61,9 +61,12 @@ namespace UtsavNights.Tests.PlayMode
             yield return WaitFor(() => pot.StateMachine.State == CrackerState.Cooldown, Timeout);
             Assert.AreEqual(CrackerState.Cooldown, pot.StateMachine.State);
 
-            yield return WaitFor(() => pot.StateMachine.State == CrackerState.Placed, Timeout);
-            Assert.AreEqual(CrackerState.Placed, pot.StateMachine.State, "a fresh pot is placed after the cooldown");
-            Assert.IsTrue(pot.CanIgnite);
+            yield return WaitFor(() => !pot.gameObject.activeSelf, Timeout);
+            Assert.IsFalse(pot.gameObject.activeSelf, "the spent pot is cleared after the cooldown (PRD 6.3)");
+            Assert.IsTrue(Game.Services.TryGet(out CrackerSpawner spawner));
+            CrackerRuntime again = spawner.Spawn(pot.Definition, pot.transform.position, Quaternion.identity);
+            Assert.AreSame(pot, again, "the pooled pot is reused when the player places another");
+            Assert.IsTrue(again.CanIgnite);
         }
 
         private static IEnumerator WaitFor(System.Func<bool> condition, float seconds)

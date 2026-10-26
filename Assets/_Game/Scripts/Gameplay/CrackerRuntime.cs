@@ -98,7 +98,9 @@ namespace UtsavNights.Gameplay
 
         private void Awake()
         {
-            if (definition != null)
+            // Spawned crackers are initialised while inactive, so Awake runs later on first activation:
+            // build only once.
+            if (definition != null && _machine == null)
             {
                 Build();
             }
@@ -122,7 +124,7 @@ namespace UtsavNights.Gameplay
             }
 
             _machine = new CrackerStateMachine(definition.BuildTimeline());
-            _machine.CueReached += OnCue;
+            _machine.Cue += OnCue;
             _machine.Finished += OnFinished;
             _stageEffects = new EffectHandle[definition.Stages.Count];
             SpawnModel();
@@ -188,6 +190,7 @@ namespace UtsavNights.Gameplay
         /// <summary>Stops everything and returns to Idle so a pooled instance can be placed again.</summary>
         public void ResetForReuse()
         {
+            _motionCount = 0;
             StopStageEffects(clear: true);
             _audio?.Stop(_loopVoice);
             _loopVoice = VoiceHandle.None;
@@ -202,7 +205,7 @@ namespace UtsavNights.Gameplay
         {
             if (_machine != null)
             {
-                _machine.CueReached -= OnCue;
+                _machine.Cue -= OnCue;
                 _machine.Finished -= OnFinished;
             }
 
@@ -221,6 +224,7 @@ namespace UtsavNights.Gameplay
 
             if (_model != null)
             {
+                _model.transform.localRotation = Quaternion.identity;
                 _model.SetActive(true);
             }
 
@@ -245,21 +249,138 @@ namespace UtsavNights.Gameplay
             Game.Events.Publish(new CrackerIgnitedEvent(definition.Id, first, (float)Time.realtimeSinceStartupAsDouble));
         }
 
-        public void Tick(float deltaSeconds) => _machine?.Tick(deltaSeconds);
+        public void Tick(float deltaSeconds)
+        {
+            _machine?.Tick(deltaSeconds);
+            TickMotions(deltaSeconds);
+        }
 
-        private void OnCue(int stageIndex)
+        /// <summary>Where a stage (and a given repetition of it) starts in world space.</summary>
+        public Vector3 StagePosition(StageDefinition stage, int repeat)
+        {
+            Vector3 position;
+            switch (stage.anchor)
+            {
+                case StageAnchor.Fuse:
+                    position = FuseWorldPosition;
+                    break;
+                case StageAnchor.Apex:
+                    position = transform.position + Vector3.up * stage.launchHeight;
+                    break;
+                default:
+                    position = transform.position;
+                    break;
+            }
+
+            float multiplier = StageMath.OffsetMultiplier(repeat, stage.repeatPattern);
+            if (multiplier != 0f)
+            {
+                position += transform.TransformVector(stage.repeatOffset * multiplier);
+            }
+
+            return position;
+        }
+
+        private const int MaxMotions = 16;
+
+        private struct ActiveMotion
+        {
+            public EffectHandle Handle;
+            public StageMotion Kind;
+            public float Elapsed;
+            public Vector3 Origin;
+            public float Height;
+            public float Rise;
+            public float Spin;
+            public bool SpinModel;
+        }
+
+        private readonly ActiveMotion[] _motions = new ActiveMotion[MaxMotions];
+        private int _motionCount;
+
+        /// <summary>Number of stage motions currently running (tests and debugging).</summary>
+        public int ActiveMotions => _motionCount;
+
+        private void StartMotion(StageDefinition stage, EffectHandle handle, Vector3 origin)
+        {
+            if (stage.motion == StageMotion.None || !handle.IsValid || _motionCount >= MaxMotions)
+            {
+                return;
+            }
+
+            _motions[_motionCount++] = new ActiveMotion
+            {
+                Handle = handle,
+                Kind = stage.motion,
+                Origin = origin,
+                Height = stage.launchHeight,
+                Rise = stage.launchRiseSeconds,
+                Spin = stage.spinDegreesPerSecond,
+                SpinModel = stage.spinModel,
+            };
+        }
+
+        private void TickMotions(float deltaSeconds)
+        {
+            if (_motionCount == 0 || _effects == null || deltaSeconds <= 0f)
+            {
+                return;
+            }
+
+            for (int i = _motionCount - 1; i >= 0; i--)
+            {
+                ref ActiveMotion m = ref _motions[i];
+                Transform target = _effects.Particles.TransformOf(m.Handle);
+                if (target == null)
+                {
+                    RemoveMotion(i);
+                    continue;
+                }
+
+                m.Elapsed += deltaSeconds;
+                if (m.Kind == StageMotion.Spin)
+                {
+                    target.Rotate(0f, m.Spin * deltaSeconds, 0f, Space.World);
+                    if (m.SpinModel && _model != null)
+                    {
+                        _model.transform.Rotate(0f, m.Spin * deltaSeconds, 0f, Space.World);
+                    }
+                }
+                else if (m.Kind == StageMotion.Launch)
+                {
+                    target.position = m.Origin + Vector3.up * StageMath.LaunchHeight(m.Elapsed, m.Rise, m.Height);
+                    if (StageMath.LaunchFinished(m.Elapsed, m.Rise))
+                    {
+                        // The trail stops emitting at the apex; its particles fade on their own.
+                        _effects.Particles.Stop(m.Handle);
+                        RemoveMotion(i);
+                    }
+                }
+            }
+        }
+
+        private void RemoveMotion(int index)
+        {
+            _motionCount--;
+            _motions[index] = _motions[_motionCount];
+            _motions[_motionCount] = default;
+        }
+
+        private void OnCue(TimelineCue cue)
         {
             ResolveServices();
+            int stageIndex = cue.StageIndex;
             StageDefinition stage = definition.Stages[stageIndex];
             if (stage == null)
             {
                 return;
             }
 
-            Vector3 position = stage.anchor == StageAnchor.Fuse ? FuseWorldPosition : transform.position;
+            Vector3 position = StagePosition(stage, cue.Repeat);
 
             if (stage.stop)
             {
+                _motionCount = 0;
                 StopStageEffects(clear: false);
                 _audio?.Stop(_loopVoice, LoopFadeSeconds);
                 _loopVoice = VoiceHandle.None;
@@ -269,8 +390,25 @@ namespace UtsavNights.Gameplay
 
             if (stage.emitter != null && _effects != null)
             {
-                EndEarlierEmitters(stageIndex);
-                _stageEffects[stageIndex] = _effects.PlayStage(stage, definition, position, transform.rotation);
+                if (cue.Repeat == 0)
+                {
+                    EndEarlierEmitters(stageIndex);
+                }
+
+                EffectHandle handle = _effects.PlayStage(stage, definition, position, transform.rotation);
+                _stageEffects[stageIndex] = handle;
+                StartMotion(stage, handle, position);
+            }
+
+            if (stage.hideModel && _model != null)
+            {
+                _model.SetActive(false);
+            }
+
+            if (stage.endLoopSound && _audio != null && _audio.IsPlaying(_loopVoice))
+            {
+                _audio.Stop(_loopVoice, LoopFadeSeconds);
+                _loopVoice = VoiceHandle.None;
             }
 
             if (stage.sound != null && _audio != null)
@@ -290,11 +428,12 @@ namespace UtsavNights.Gameplay
 
             _haptics?.Play(stage.haptic);
             _effects?.FlashStage(stage, definition, position);
-            ApplyCameraCue(stage.camera, position);
+            ApplyCameraCue(stage, position);
         }
 
-        private void ApplyCameraCue(CameraCue cue, Vector3 position)
+        private void ApplyCameraCue(StageDefinition stage, Vector3 position)
         {
+            CameraCue cue = stage.camera;
             if (_cameraRig == null)
             {
                 return;
@@ -306,7 +445,10 @@ namespace UtsavNights.Gameplay
                     _cameraRig.PushInToward(position);
                     break;
                 case CameraCue.AerialFollow:
-                    _cameraRig.FollowAerial(transform.position + Vector3.up * definition.EffectVolume.y);
+                    // Look at the burst: the stage's launch height when it launches, else the top of the effect.
+                    bool launches = stage.motion == StageMotion.Launch || stage.anchor == StageAnchor.Apex;
+                    float height = launches && stage.launchHeight > 0f ? stage.launchHeight : definition.EffectVolume.y;
+                    _cameraRig.FollowAerial(transform.position + Vector3.up * height);
                     break;
                 case CameraCue.Shake:
                     _cameraRig.Shake(1f);

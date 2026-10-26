@@ -38,6 +38,12 @@ namespace UtsavNights.Content
 
         [Range(0f, 1f)] public float volume = 0.8f;
 
+        [Tooltip("Fade out the running loop sound (fuse hiss) even though this stage's sound is a one-shot.")]
+        public bool endLoopSound;
+
+        [Tooltip("Hide the cracker's model from this stage on (a rocket leaving its bottle).")]
+        public bool hideModel;
+
         [Tooltip("0..1: how much this sound lowers all other sounds (big bangs).")]
         [Range(0f, 1f)] public float duckOthers;
 
@@ -63,7 +69,36 @@ namespace UtsavNights.Content
         [Tooltip("Ends the effect. Exactly one stop stage, and it must be last.")]
         public bool stop;
 
+        [Header("Repeats (chain lar, cake shots)")]
+        [Tooltip("How many times this stage fires. The stop stage never repeats.")]
+        [Min(1)] public int repeatCount = 1;
+
+        [Min(0f)] public float repeatInterval = 0.5f;
+
+        [Tooltip("Per-repeat position offset in the cracker's local space.")]
+        public Vector3 repeatOffset;
+
+        public RepeatPattern repeatPattern;
+
+        [Header("Motion")]
+        public StageMotion motion;
+
+        [Tooltip("Spin speed for Spin motion.")]
+        public float spinDegreesPerSecond = 720f;
+
+        [Tooltip("Also spin the cracker's model (chakri).")]
+        public bool spinModel;
+
+        [Tooltip("Metres above the base for Launch motion and for the Apex anchor.")]
+        [Min(0f)] public float launchHeight = 10f;
+
+        [Tooltip("Seconds to reach the apex for Launch motion.")]
+        [Min(0.05f)] public float launchRiseSeconds = 1.2f;
+
         public CueKind Kind => stop ? CueKind.Stop : payoff ? CueKind.Payoff : CueKind.Normal;
+
+        /// <summary>Times this stage fires (1 for stop stages).</summary>
+        public int Repeats => stop ? 1 : Mathf.Max(1, repeatCount);
     }
 
     [Serializable]
@@ -228,9 +263,17 @@ namespace UtsavNights.Content
             for (int i = 0; i < stages.Count; i++)
             {
                 StageDefinition stage = stages[i];
-                if (stage != null)
+                if (stage == null)
                 {
-                    cues.Add(new TimelineCue(stage.time, stage.Kind, i));
+                    continue;
+                }
+
+                int repeats = stage.Repeats;
+                for (int k = 0; k < repeats; k++)
+                {
+                    // Only the first repetition of a payoff stage moves the state into Payoff.
+                    CueKind kind = k == 0 ? stage.Kind : CueKind.Normal;
+                    cues.Add(new TimelineCue(StageMath.RepeatTime(stage.time, k, stage.repeatInterval), kind, i, k));
                 }
             }
 

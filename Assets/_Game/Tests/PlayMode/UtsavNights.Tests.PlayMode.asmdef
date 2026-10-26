@@ -10,7 +10,9 @@
         "UtsavNights.Effects",
         "UtsavNights.Audio",
         "UtsavNights.Haptics",
-        "UtsavNights.Gameplay"
+        "UtsavNights.Gameplay",
+        "UtsavNights.UI",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

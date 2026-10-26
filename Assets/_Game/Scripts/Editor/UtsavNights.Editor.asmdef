@@ -12,7 +12,9 @@
         "Unity.InputSystem",
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.RenderPipelines.Universal.Runtime",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "UtsavNights.UI",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [
         "Editor"

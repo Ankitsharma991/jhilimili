@@ -124,6 +124,13 @@ namespace UtsavNights.Effects
 
         public bool IsPlaying(EffectHandle handle) => Resolve(handle) >= 0;
 
+        /// <summary>Transform of a playing effect (for stage motion), or null for stale handles.</summary>
+        public Transform TransformOf(EffectHandle handle)
+        {
+            int slot = Resolve(handle);
+            return slot >= 0 ? _active[slot].Instance.transform : null;
+        }
+
         /// <summary>Stops emitting; the effect returns to the pool once its particles die. Clear recycles now.</summary>
         public bool Stop(EffectHandle handle, bool clear = false)
         {
