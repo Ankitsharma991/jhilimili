@@ -140,6 +140,7 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<AudioInstaller>();
             systems.AddComponent<HapticsInstaller>();
             systems.AddComponent<QualityManager>().Configure(camera);
+            systems.AddComponent<SettingsInstaller>();
             systems.AddComponent<PlaytestRecorder>();
             systems.AddComponent<DevOverlay>();
 

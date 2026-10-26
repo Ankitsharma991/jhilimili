@@ -31,13 +31,24 @@ namespace UtsavNights.Effects
 
         public QualityTier Tier { get; private set; }
 
+        /// <summary>Quiet mode removes flash lights entirely (PRD 11).</summary>
+        public bool QuietMode { get; private set; }
+
         /// <summary>Applies a quality tier: scene particle cap, and flash lights only on Mid and High.</summary>
         public void SetTier(QualityTier tier)
         {
             Tier = tier;
             _budget.Cap = QualityBudgets.MaxSceneParticles(tier);
-            Flashes.Enabled = tier != QualityTier.Low;
+            UpdateFlashesEnabled();
         }
+
+        public void SetQuietMode(bool quiet)
+        {
+            QuietMode = quiet;
+            UpdateFlashesEnabled();
+        }
+
+        private void UpdateFlashesEnabled() => Flashes.Enabled = Tier != QualityTier.Low && !QuietMode;
 
         public void SetReduceFlash(bool reduce) => Flashes.ReduceFlash = reduce;
 

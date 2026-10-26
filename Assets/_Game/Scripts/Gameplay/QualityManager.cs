@@ -93,6 +93,15 @@ namespace UtsavNights.Gameplay
         private void OnApplicationQuit() => RestoreRenderScale();
 
         /// <summary>Settings sheet override (F08). Saved; the governor keeps protecting frame rate.</summary>
+        public bool IsManual => PlayerPrefs.GetInt(ManualPrefKey, 0) == 1;
+
+        /// <summary>Back to automatic: keeps the current tier as the detected one; the governor keeps working.</summary>
+        public void UseAutomaticTier()
+        {
+            PlayerPrefs.SetInt(ManualPrefKey, 0);
+            PlayerPrefs.Save();
+        }
+
         public void SetTierManually(int tier)
         {
             tier = TierDetection.Clamp(tier);

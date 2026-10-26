@@ -102,6 +102,9 @@ namespace UtsavNights.EditorTools.Main
             stages.Add(new StageDefinition { time = 10f, stop = true });
 
             EditorUtility.SetDirty(def);
+            CrackerCatalog catalog = CatalogAssets.EnsureCore();
+            catalog.Upsert(def);
+            EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
             return new Result { Definition = def, LighterPrefab = lighter, LighterClick = click, FlameOut = flameOut };
         }

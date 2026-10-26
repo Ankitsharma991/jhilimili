@@ -66,6 +66,11 @@ namespace UtsavNights.EditorTools.ContentLint
             List<CrackerDefinition> definitions = FindAllDefinitions();
             count = definitions.Count;
             List<LintIssue> issues = CrackerDefinitionLinter.LintAll(definitions);
+            foreach (string guid in AssetDatabase.FindAssets("t:" + nameof(CrackerCatalog)))
+            {
+                issues.AddRange(CatalogLinter.Lint(AssetDatabase.LoadAssetAtPath<CrackerCatalog>(AssetDatabase.GUIDToAssetPath(guid))));
+                count++;
+            }
             foreach (LintIssue issue in issues)
             {
                 CrackerDefinition context = definitions.Find(d => d != null && (d.Id == issue.AssetName || d.name == issue.AssetName));
@@ -81,7 +86,7 @@ namespace UtsavNights.EditorTools.ContentLint
             }
 
             int errors = CrackerDefinitionLinter.CountErrors(issues);
-            Debug.Log($"{LogTag} {count} definitions, {errors} errors, {issues.Count - errors} warnings");
+            Debug.Log($"{LogTag} {count} assets (definitions and catalogs), {errors} errors, {issues.Count - errors} warnings");
             return issues;
         }
     }
