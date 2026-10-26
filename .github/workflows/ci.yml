@@ -1,6 +1,6 @@
 # Phase 1 CI: EditMode tests on every push and PR, then an Android AAB build.
 # Requires repository secrets UNITY_LICENSE (contents of your Unity_lic.ulf), UNITY_EMAIL, UNITY_PASSWORD.
-# See Docs/Phase1/CI.md. GameCI image availability for the exact editor version is [Verify].
+# Jobs run only when repository variable UNITY_CI_ENABLED is 'true'. See Docs/Phase1/CI.md. GameCI image availability for the exact editor version is [Verify].
 name: CI
 
 on:
@@ -21,6 +21,8 @@ env:
 jobs:
   editmode-tests:
     name: EditMode tests
+    # Off until the Unity licence secrets exist: set repository variable UNITY_CI_ENABLED=true.
+    if: ${{ vars.UNITY_CI_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,6 +52,7 @@ jobs:
   android-build:
     name: Android AAB
     needs: editmode-tests
+    if: ${{ vars.UNITY_CI_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Free disk space (Android build needs it)
