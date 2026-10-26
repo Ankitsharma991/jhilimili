@@ -68,7 +68,7 @@ step "UtsavNights.Gameplay"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Gameplay.dll @engine.rsp -r:Unity.InputSystem.dll -r:UnityEngine.UI.dll -r:UrpStub.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:UtsavNights.Haptics.dll -define:"$RUNTIME" $(find "$A/Scripts/Gameplay" -name "*.cs")
 "${CSC[@]}" -warnaserror+ -target:library -out:Gameplay.editor-variant.dll @engine.rsp -r:Unity.InputSystem.dll -r:UnityEngine.UI.dll -r:UrpStub.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:Haptics.editor-variant.dll -define:"$EDITOR" $(find "$A/Scripts/Gameplay" -name "*.cs")
 step "UtsavNights.UI"
-"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.UI.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Gameplay.dll -define:"$RUNTIME" $(find "$A/Scripts/UI" -name "*.cs")
+"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.UI.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Gameplay.dll -r:UtsavNights.Haptics.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -define:"$RUNTIME" $(find "$A/Scripts/UI" -name "*.cs")
 step "UtsavNights.Editor"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Editor.dll @engine.rsp @editor.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:Haptics.editor-variant.dll -r:Gameplay.editor-variant.dll -r:UtsavNights.UI.dll -define:"$EDITOR" $(find "$A/Scripts/Editor" -name "*.cs")
 step "UtsavNights.Tests.EditMode"
@@ -87,6 +87,6 @@ MONO="$D/MonoBleedingEdge/bin/mono"; MCSC=("$MONO" "$D/MonoBleedingEdge/lib/mono
 mkdir -p mono && cp "$NUNIT" mono/
 "${MCSC[@]}" -target:library -out:mono/Core.dll $(find "$A/Scripts/Core" -name "*.cs" -not -path "*/Core/Runtime/*")
 "${MCSC[@]}" -out:mono/CoreTests.exe -r:mono/Core.dll -r:mono/nunit.framework.dll "$HERE/CoreTestRunner.cs" \
-  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests,CameraTimingTests,QualityGovernorTests,PlaytestSessionTests,GameSettingsTests,PlacementRulesTests,StageMathTests}.cs
+  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests,CameraTimingTests,QualityGovernorTests,PlaytestSessionTests,GameSettingsTests,PlacementRulesTests,StageMathTests,ScreenFitTests}.cs
 "$MONO" mono/CoreTests.exe
 echo "All project assemblies compiled."

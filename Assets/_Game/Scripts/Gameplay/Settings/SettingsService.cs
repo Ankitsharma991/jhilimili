@@ -27,8 +27,15 @@ namespace UtsavNights.Gameplay
         /// <summary>A copy of the current settings; edit through <see cref="Change"/>.</summary>
         public GameSettings Current => _current.Clone();
 
-        /// <summary>Applies an edit, saves and notifies. Returns false when nothing changed.</summary>
-        public bool Change(Action<GameSettings> edit)
+        /// <summary>True when changes have been applied but not yet written to disk.</summary>
+        public bool IsDirty { get; private set; }
+
+        /// <summary>
+        /// Applies an edit and notifies. Saves immediately unless <paramref name="saveNow"/> is false
+        /// (slider drags); call <see cref="SaveIfDirty"/> when the drag or the sheet ends.
+        /// Returns false when nothing changed.
+        /// </summary>
+        public bool Change(Action<GameSettings> edit, bool saveNow = true)
         {
             GameSettings next = _current.Clone();
             edit(next);
@@ -39,10 +46,28 @@ namespace UtsavNights.Gameplay
             }
 
             _current = next;
+            IsDirty = true;
             ApplyToRegisteredServices();
-            _store?.Save(_current);
+            if (saveNow)
+            {
+                SaveIfDirty();
+            }
+
             Game.Events.Publish(new SettingsChangedEvent(_current.Clone()));
             return true;
+        }
+
+        public void SaveIfDirty()
+        {
+            if (!IsDirty)
+            {
+                return;
+            }
+
+            if (_store == null || _store.Save(_current))
+            {
+                IsDirty = false;
+            }
         }
 
         public void ApplyToRegisteredServices()

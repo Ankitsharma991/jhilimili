@@ -22,11 +22,17 @@ namespace UtsavNights.UI
 
         public static Sprite Circle => _circle != null ? _circle : (_circle = CreateRounded(64, 32));
 
+        /// <summary>
+        /// New child RectTransform with a zero size offset, so stretching anchors fill the parent exactly
+        /// (Unity's default 100 x 100 would overflow a stretched parent and get clipped).
+        /// </summary>
         public static RectTransform Rect(string name, Transform parent)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
-            return (RectTransform)go.transform;
+            var rect = (RectTransform)go.transform;
+            rect.sizeDelta = Vector2.zero;
+            return rect;
         }
 
         public static void Stretch(RectTransform rect, float inset = 0f)

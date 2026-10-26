@@ -85,9 +85,7 @@ namespace UtsavNights.EditorTools.Main
             var canvasGo = new GameObject("Splash", typeof(Canvas), typeof(CanvasScaler));
             var canvas = canvasGo.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            var scaler = canvasGo.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080f, 1920f);
+            canvasGo.AddComponent<AdaptiveCanvasScaler>();
             var titleGo = new GameObject("Title", typeof(RectTransform), typeof(Text));
             titleGo.transform.SetParent(canvasGo.transform, false);
             var title = titleGo.GetComponent<Text>();
@@ -129,6 +127,7 @@ namespace UtsavNights.EditorTools.Main
             camera.nearClipPlane = 0.05f;
             camera.farClipPlane = 50f;
             cameraGo.AddComponent<AudioListener>();
+            cameraGo.AddComponent<AdaptiveCameraFov>().Configure(60f, 36f, 74f);
             UniversalAdditionalCameraData cameraData = camera.GetUniversalAdditionalCameraData();
             cameraData.renderPostProcessing = true;
             cameraData.antialiasing = AntialiasingMode.None;
@@ -255,10 +254,7 @@ namespace UtsavNights.EditorTools.Main
             var canvas = canvasGo.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 10;
-            var scaler = canvasGo.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(UI.UiTheme.ReferenceWidth, UI.UiTheme.ReferenceHeight);
-            scaler.matchWidthOrHeight = 0f;
+            canvasGo.AddComponent<AdaptiveCanvasScaler>();
             var safe = new GameObject("SafeArea", typeof(RectTransform), typeof(UI.SafeAreaFitter));
             safe.transform.SetParent(canvasGo.transform, false);
             var safeRect = (RectTransform)safe.transform;
@@ -274,6 +270,14 @@ namespace UtsavNights.EditorTools.Main
             trayRect.offsetMin = Vector2.zero;
             trayRect.offsetMax = Vector2.zero;
             trayGo.AddComponent<UI.TrayView>().Configure(catalog);
+            var settingsGo = new GameObject("SettingsSheet", typeof(RectTransform));
+            settingsGo.transform.SetParent(safe.transform, false);
+            var settingsRect = (RectTransform)settingsGo.transform;
+            settingsRect.anchorMin = Vector2.zero;
+            settingsRect.anchorMax = Vector2.one;
+            settingsRect.offsetMin = Vector2.zero;
+            settingsRect.offsetMax = Vector2.zero;
+            settingsGo.AddComponent<UI.SettingsSheet>();
         }
 
         private static void CreatePlacement(Camera camera)

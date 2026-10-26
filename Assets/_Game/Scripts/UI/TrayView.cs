@@ -25,6 +25,10 @@ namespace UtsavNights.UI
         private RectTransform _panel;
         private RectTransform _content;
         private TextMeshProUGUI _hint;
+        private RectTransform _hintPanel;
+        private RectTransform _viewport;
+        private ScrollRect _scroll;
+        private float _lastViewportWidth = -1f;
         private PlacementController _placement;
         private float _pulse = -1f;
 
@@ -101,6 +105,11 @@ namespace UtsavNights.UI
 
         private void Update()
         {
+            if (_viewport != null && !Mathf.Approximately(_viewport.rect.width, _lastViewportWidth))
+            {
+                RefreshCentering();
+            }
+
             if (_pulse < 0f)
             {
                 return;
@@ -147,7 +156,24 @@ namespace UtsavNights.UI
         private void SetHint(string text)
         {
             _hint.text = text;
-            _hint.gameObject.SetActive(!string.IsNullOrEmpty(text));
+            _hintPanel.gameObject.SetActive(!string.IsNullOrEmpty(text));
+        }
+
+        /// <summary>Centres the items when they all fit; otherwise they start at the left and scroll.</summary>
+        private void RefreshCentering()
+        {
+            if (_content == null || _viewport == null)
+            {
+                return;
+            }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_content);
+            float contentWidth = _content.rect.width;
+            float viewportWidth = _viewport.rect.width;
+            bool fits = contentWidth <= viewportWidth;
+            _scroll.horizontal = !fits;
+            _content.anchoredPosition = new Vector2(fits ? (viewportWidth - contentWidth) * 0.5f : 0f, 0f);
+            _lastViewportWidth = viewportWidth;
         }
 
         private void Build()
@@ -159,18 +185,22 @@ namespace UtsavNights.UI
             _panel.sizeDelta = new Vector2(-32f, TrayHeight);
             _panel.anchoredPosition = new Vector2(0f, 16f);
             UiKit.Panel(_panel, UiTheme.Indigo);
+            MaxWidth.Apply(_panel, 1500f);
 
             var scroll = _panel.gameObject.AddComponent<ScrollRect>();
+            _scroll = scroll;
             scroll.horizontal = true;
             scroll.vertical = false;
             scroll.movementType = ScrollRect.MovementType.Elastic;
             RectTransform viewport = UiKit.Rect("Viewport", _panel);
+            _viewport = viewport;
             UiKit.Stretch(viewport, 12f);
             viewport.gameObject.AddComponent<RectMask2D>();
             _content = UiKit.Rect("Content", viewport);
             _content.anchorMin = new Vector2(0f, 0f);
             _content.anchorMax = new Vector2(0f, 1f);
             _content.pivot = new Vector2(0f, 0.5f);
+            _content.sizeDelta = Vector2.zero; // exactly the viewport's height
             var layout = _content.gameObject.AddComponent<HorizontalLayoutGroup>();
             layout.spacing = 16f;
             layout.padding = new RectOffset(8, 8, 8, 8);
@@ -189,8 +219,10 @@ namespace UtsavNights.UI
             hintRect.sizeDelta = new Vector2(0f, 88f);
             hintRect.anchoredPosition = new Vector2(0f, TrayHeight + 36f);
             UiKit.Panel(hintRect, UiTheme.Indigo, raycast: false);
+            MaxWidth.Apply(hintRect, 900f);
+            _hintPanel = hintRect;
             _hint = UiKit.Text(hintRect, string.Empty, UiTheme.BodyText, TextAlignmentOptions.Center, UiTheme.OffWhite);
-            _hint.gameObject.SetActive(false);
+            hintRect.gameObject.SetActive(false);
 
             if (catalog == null)
             {

@@ -136,10 +136,7 @@ namespace UtsavNights.Gameplay
             _canvas = canvasGo.GetComponent<Canvas>();
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 50;
-            var scaler = canvasGo.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080f, 1920f);
-            scaler.matchWidthOrHeight = 0f;
+            canvasGo.AddComponent<AdaptiveCanvasScaler>();
             _group = canvasGo.GetComponent<CanvasGroup>();
             _group.blocksRaycasts = false;
             _group.interactable = false;

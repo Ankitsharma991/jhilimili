@@ -29,6 +29,25 @@ namespace UtsavNights.Gameplay
             }
         }
 
-        private void Start() => Service.ApplyToRegisteredServices();
+        private void Start()
+        {
+            Service.ApplyToRegisteredServices();
+            Game.Events.Subscribe<Core.Services.AppPausedEvent>(OnAppPaused);
+        }
+
+        private void OnDestroy()
+        {
+            Game.Events.Unsubscribe<Core.Services.AppPausedEvent>(OnAppPaused);
+            Service?.SaveIfDirty();
+        }
+
+        // Android may kill a backgrounded app; never lose a slider change.
+        private void OnAppPaused(Core.Services.AppPausedEvent e)
+        {
+            if (e.Paused)
+            {
+                Service.SaveIfDirty();
+            }
+        }
     }
 }

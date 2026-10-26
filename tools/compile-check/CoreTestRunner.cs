@@ -39,6 +39,15 @@ public static class CoreTestRunner
                     cases.Add(tc.Arguments);
                 }
 
+                foreach (TestCaseSourceAttribute src in m.GetCustomAttributes(typeof(TestCaseSourceAttribute), false))
+                {
+                    var values = (IEnumerable)type.GetField(src.SourceName, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).GetValue(null);
+                    foreach (object v in values)
+                    {
+                        cases.Add((object[])v);
+                    }
+                }
+
                 foreach (object[] args in cases)
                 {
                     string name = type.Name + "." + m.Name + (args.Length > 0 ? "(" + string.Join(",", args) + ")" : string.Empty);
