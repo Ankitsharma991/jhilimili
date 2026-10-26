@@ -3,6 +3,7 @@
     "rootNamespace": "UtsavNights.EditorTools",
     "references": [
         "UtsavNights.Core",
+        "UtsavNights.Content",
         "UtsavNights.Spikes",
         "Unity.InputSystem",
         "Unity.RenderPipelines.Core.Runtime",
