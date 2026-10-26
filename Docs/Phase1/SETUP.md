@@ -20,7 +20,11 @@ SRC
 sudo apt update && sudo apt install unityhub
 ```
 
-- [ ] Hub installed, signed in, Personal licence activated (Hub > Preferences > Licenses).
+- [ ] Hub installed and signed in. Signing in opens a browser; finish the login there and let the
+      browser hand control back to the Hub (allow the `unityhub://` link when the browser asks).
+- [ ] Personal licence added: Hub > Preferences (gear icon) > Licenses > Add > Get a free personal license.
+      Check with `ls ~/.local/share/unity3d/Unity/` or by rerunning the batch import; without a licence,
+      Unity prints `No valid Unity Editor license found`.
 
 ## 2. Unity editor 6000.3.26f1 with Android support
 
@@ -51,6 +55,12 @@ ones in `~/Android/Sdk`, because Unity expects a specific NDK version.
 5. Restart the editor once if the setup log says the input handler changed.
 6. Window > General > Test Runner > EditMode > Run All. All tests should pass.
 7. Commit the generated `.meta` files, `ProjectSettings/` and generated assets.
+
+## 4b. Compile check without the editor
+
+`tools/compile-check/check.sh` compiles every project assembly with the installed editor's compiler
+and runs the Core tests in about 20 seconds. It needs no licence, so use it before opening the editor
+and in quick loops. The editor import is still the final word.
 
 ## 5. Phone
 

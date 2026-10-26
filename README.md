@@ -7,7 +7,7 @@ Work proceeds one phase at a time; a phase starts only after the previous exit g
 | Phase | Status |
 |-------|--------|
 | 0 Research and validation | Not started (owner task) |
-| 1 Project setup and rendering spikes | **In progress**: code in place, device measurements pending |
+| 1 Project setup and rendering spikes | **In progress**: code compiles against Unity 6000.3.26f1; editor import waits on licence; device gates pending |
 
 ## Requirements
 
@@ -31,6 +31,8 @@ git lfs install && git lfs pull
    Low / Mid / High URP tiers, generates the spike scene and prefabs, and bakes lighting.
 4. Press Play to try it in the editor (mouse acts as touch), or build:
    **Utsav > Build > Android Release APK** and install with `adb install -r Builds/Android/UtsavNights-release.apk`.
+
+Compile check without a licence (about 20 s): `tools/compile-check/check.sh`.
 
 Batch mode equivalent:
 
