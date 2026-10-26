@@ -9,7 +9,6 @@
         "UtsavNights.Audio",
         "UtsavNights.Effects",
         "UtsavNights.Core.Runtime",
-        "UtsavNights.Spikes",
         "Unity.InputSystem",
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.RenderPipelines.Universal.Runtime",

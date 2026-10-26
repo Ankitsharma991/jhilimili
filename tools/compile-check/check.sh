@@ -66,15 +66,18 @@ step "UtsavNights.Haptics (player defines include the Android JNI backend)"
 step "UtsavNights.Gameplay"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Gameplay.dll @engine.rsp -r:Unity.InputSystem.dll -r:UnityEngine.UI.dll -r:UrpStub.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:UtsavNights.Haptics.dll -define:"$RUNTIME" $(find "$A/Scripts/Gameplay" -name "*.cs")
 "${CSC[@]}" -warnaserror+ -target:library -out:Gameplay.editor-variant.dll @engine.rsp -r:Unity.InputSystem.dll -r:UnityEngine.UI.dll -r:UrpStub.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:Haptics.editor-variant.dll -define:"$EDITOR" $(find "$A/Scripts/Gameplay" -name "*.cs")
-step "UtsavNights.Spikes (player and editor defines)"
-"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Spikes.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -define:"$RUNTIME" "$A"/Scripts/Spikes/*.cs
-"${CSC[@]}" -warnaserror+ -target:library -out:Spikes.editor-variant.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -define:"$EDITOR" "$A"/Scripts/Spikes/*.cs
 step "UtsavNights.Editor"
-"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Editor.dll @engine.rsp @editor.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:Haptics.editor-variant.dll -r:Gameplay.editor-variant.dll -r:UtsavNights.Spikes.dll -define:"$EDITOR" $(find "$A/Scripts/Editor" -name "*.cs")
+"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Editor.dll @engine.rsp @editor.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:Haptics.editor-variant.dll -r:Gameplay.editor-variant.dll -define:"$EDITOR" $(find "$A/Scripts/Editor" -name "*.cs")
 step "UtsavNights.Tests.EditMode"
 NUNIT="$PKG/BuiltInPackages/com.unity.ext.nunit/net40/unity-custom/nunit.framework.dll"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Tests.EditMode.dll @engine.rsp @editor.rsp -r:"$D/NetStandard/compat/2.1.0/shims/netfx/mscorlib.dll" \
-  -r:"$NUNIT" "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:UtsavNights.Haptics.dll -r:UtsavNights.Gameplay.dll -r:UtsavNights.Spikes.dll -r:UtsavNights.Editor.dll -define:"$EDITOR" "$A"/Tests/EditMode/*.cs
+  -r:"$NUNIT" "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:UtsavNights.Haptics.dll -r:UtsavNights.Gameplay.dll -r:UtsavNights.Editor.dll -define:"$EDITOR" "$A"/Tests/EditMode/*.cs
+
+step "Archived spikes (only with UTSAV_SPIKES; player and editor defines)"
+"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Spikes.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -define:"$RUNTIME;UTSAV_SPIKES" "$A"/Spikes/Scripts/*.cs
+"${CSC[@]}" -warnaserror+ -target:library -out:Spikes.editor-variant.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -define:"$EDITOR;UTSAV_SPIKES" "$A"/Spikes/Scripts/*.cs
+"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Spikes.Editor.dll @engine.rsp @editor.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Spikes.dll -r:UtsavNights.Editor.dll -define:"$EDITOR;UTSAV_SPIKES" "$A"/Spikes/Editor/*.cs
+"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Spikes.Tests.dll @engine.rsp @editor.rsp -r:"$D/NetStandard/compat/2.1.0/shims/netfx/mscorlib.dll" -r:"$NUNIT" -r:UtsavNights.Spikes.dll -define:"$EDITOR;UTSAV_SPIKES" "$A"/Spikes/Tests/*.cs
 
 step "Core tests under Mono (Unity-free subset)"
 MONO="$D/MonoBleedingEdge/bin/mono"; MCSC=("$MONO" "$D/MonoBleedingEdge/lib/mono/4.5/csc.exe" -nologo -langversion:9)

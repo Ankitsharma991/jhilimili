@@ -64,10 +64,9 @@ namespace UtsavNights.EditorTools
         {
             ApplyPlayerSettings();
             CreateQualityTiers();
-            SpikeSceneBuilder.Build();
-            SpikeSceneBuilder.BakeLighting();
 
-            // Phase 2: Boot and Main replace the spike scene as the build scenes.
+            // Boot and Main are the build scenes. The Phase 1 spike scene builder lives in
+            // Assets/_Game/Spikes and compiles only with the UTSAV_SPIKES scripting define.
             Main.MainSceneBuilder.BuildAll();
             AssetDatabase.SaveAssets();
             Debug.Log("[Utsav setup] Phase 1 setup complete. If asked, restart the editor to enable the Input System backend.");

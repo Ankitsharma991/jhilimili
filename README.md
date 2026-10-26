@@ -8,7 +8,7 @@ Work proceeds one phase at a time; a phase starts only after the previous exit g
 |-------|--------|
 | 0 Research and validation | Not started (owner task) |
 | 1 Project setup and rendering spikes | **Done** 2026-10-26: gates B and C pass; A passes on mid tier, budget phone open |
-| 2 Core engine and first cracker | **Next** |
+| 2 Core engine and first cracker | **Built** 2026-10-26: playable flowerpot; playtests and exit gate pending (Docs/Phase2/PLAYTEST.md) |
 
 ## Requirements
 
@@ -48,15 +48,26 @@ $UNITY -batchmode -projectPath . -buildTarget Android -executeMethod UtsavNights
 
 ```
 Assets/_Game/
-  Scripts/Core/      pure C# (no UnityEngine): stats, ignition hold, maths, procedural sounds
-  Scripts/Spikes/    Phase 1 throwaway spike runtime (perf monitor, particles, audio, lighter, HUD)
-  Scripts/Editor/    project setup as code, scene builder, effect factory, build script
-  Scripts/{Gameplay,Content,Effects,Audio,Haptics,UI,Services}/   Phase 2+ (empty)
-  Definitions/ Prefabs/ Scenes/ Art/ Audio/ Materials/ Shaders/ Addressables/ Settings/
+  Scripts/Core/          engine-free C# (no UnityEngine): crackers, services, effects, audio, haptics,
+                         camera timing, quality, ignition, diagnostics; unit-tested under Mono too
+  Scripts/Core/Runtime/  Game, GameLoop, Bootstrap (thin Unity layer)
+  Scripts/Content/       CrackerDefinition and content enums
+  Scripts/Effects|Audio|Haptics/   services and installers
+  Scripts/Gameplay/      CrackerRuntime, LighterController, CameraRig, QualityManager, hint, diagnostics
+  Scripts/Editor/        project setup, content linter, build script, Main scene and flowerpot builders
+  Spikes/                archived Phase 1 spikes; compile only with the UTSAV_SPIKES define
+  Definitions/ Prefabs/ Scenes/ Audio/ Materials/ Settings/
   Tests/EditMode  Tests/PlayMode
-Docs/   PRD, ADRs, Phase 1 setup and spike report, licence log
-tools/  adb scripts for cold start, results pull and thermal soak
+Docs/   PRD, ADRs, phase plans, spike report, playtest protocol, licence log
+tools/  adb scripts (cold start, spike results, playtest log, thermal soak) and the compile check
 ```
+
+## Phase 2 quick start
+
+1. `Utsav > Phase 2 > Build Boot and Main Scenes` (regenerates the flowerpot assets and scenes).
+2. Press Play on `Assets/_Game/Scenes/Boot.unity`, or build `Utsav > Build > Android Release APK`.
+3. In the app, triple-tap the top-left corner for the performance overlay.
+4. After a session, `tools/pull_playtest.sh` prints time to first ignition, ignitions and fps.
 
 ## Rules for contributors and AI agents
 
