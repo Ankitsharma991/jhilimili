@@ -68,15 +68,49 @@ namespace UtsavNights.Gameplay
             }
         }
 
+        /// <summary>Raised when a used cracker finishes its cooldown (the spawner returns it to its pool).</summary>
+        public event System.Action<CrackerRuntime> Spent;
+
+        public bool RespawnWhenFinished
+        {
+            get => respawnWhenFinished;
+            set => respawnWhenFinished = value;
+        }
+
+        /// <summary>Scene setup in the editor; at runtime use <see cref="Initialize"/>.</summary>
         public void Configure(CrackerDefinition crackerDefinition) => definition = crackerDefinition;
 
+        /// <summary>
+        /// Runtime setup for spawned crackers (AddComponent, then Initialize). Builds the state machine
+        /// and model once; returns false for a missing or invalid definition.
+        /// </summary>
+        public bool Initialize(CrackerDefinition crackerDefinition, bool placeImmediately)
+        {
+            if (_machine != null)
+            {
+                return definition == crackerDefinition;
+            }
+
+            definition = crackerDefinition;
+            placeOnStart = placeImmediately;
+            return Build();
+        }
+
         private void Awake()
+        {
+            if (definition != null)
+            {
+                Build();
+            }
+        }
+
+        private bool Build()
         {
             if (definition == null)
             {
                 Debug.LogError("[Cracker] No definition assigned.", this);
                 enabled = false;
-                return;
+                return false;
             }
 
             List<string> errors = definition.ValidateTimeline();
@@ -84,7 +118,7 @@ namespace UtsavNights.Gameplay
             {
                 Debug.LogError($"[Cracker] '{definition.Id}' has an invalid timeline: {string.Join("; ", errors)}", this);
                 enabled = false;
-                return;
+                return false;
             }
 
             _machine = new CrackerStateMachine(definition.BuildTimeline());
@@ -92,6 +126,7 @@ namespace UtsavNights.Gameplay
             _machine.Finished += OnFinished;
             _stageEffects = new EffectHandle[definition.Stages.Count];
             SpawnModel();
+            return true;
         }
 
         private void Start()
@@ -101,15 +136,65 @@ namespace UtsavNights.Gameplay
                 return;
             }
 
+            Register();
+            if (placeOnStart)
+            {
+                Place();
+            }
+        }
+
+        private void Register()
+        {
+            if (_registered)
+            {
+                return;
+            }
+
             IgnitionTargets targets = IgnitionTargets.Shared;
-            TargetId = targets.NewId();
+            if (TargetId == 0)
+            {
+                TargetId = targets.NewId();
+            }
+
             targets.Register(this);
             Game.Loop.Add(this);
             Game.Events.Subscribe<AppPausedEvent>(OnAppPaused);
             _registered = true;
-            if (placeOnStart)
+        }
+
+        private void Unregister()
+        {
+            if (!_registered)
             {
-                Place();
+                return;
+            }
+
+            IgnitionTargets.Shared.Unregister(this);
+            Game.Loop.Remove(this);
+            Game.Events.Unsubscribe<AppPausedEvent>(OnAppPaused);
+            _registered = false;
+        }
+
+        private void OnEnable()
+        {
+            if (_machine != null && _registered == false && TargetId != 0)
+            {
+                Register();
+            }
+        }
+
+        private void OnDisable() => Unregister();
+
+        /// <summary>Stops everything and returns to Idle so a pooled instance can be placed again.</summary>
+        public void ResetForReuse()
+        {
+            StopStageEffects(clear: true);
+            _audio?.Stop(_loopVoice);
+            _loopVoice = VoiceHandle.None;
+            _machine?.ResetToIdle();
+            if (_model != null)
+            {
+                _model.SetActive(false);
             }
         }
 
@@ -121,20 +206,14 @@ namespace UtsavNights.Gameplay
                 _machine.Finished -= OnFinished;
             }
 
-            if (!_registered)
-            {
-                return;
-            }
-
-            IgnitionTargets.Shared.Unregister(this);
-            Game.Loop.Remove(this);
-            Game.Events.Unsubscribe<AppPausedEvent>(OnAppPaused);
+            Unregister();
             StopStageEffects(clear: true);
             _audio?.Stop(_loopVoice);
         }
 
         public bool Place()
         {
+            Register();
             if (_machine == null || !_machine.Place())
             {
                 return false;
@@ -288,7 +367,10 @@ namespace UtsavNights.Gameplay
             if (respawnWhenFinished)
             {
                 Place();
+                return;
             }
+
+            Spent?.Invoke(this);
         }
 
         private void OnAppPaused(AppPausedEvent e)

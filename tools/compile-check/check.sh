@@ -84,6 +84,6 @@ MONO="$D/MonoBleedingEdge/bin/mono"; MCSC=("$MONO" "$D/MonoBleedingEdge/lib/mono
 mkdir -p mono && cp "$NUNIT" mono/
 "${MCSC[@]}" -target:library -out:mono/Core.dll $(find "$A/Scripts/Core" -name "*.cs" -not -path "*/Core/Runtime/*")
 "${MCSC[@]}" -out:mono/CoreTests.exe -r:mono/Core.dll -r:mono/nunit.framework.dll "$HERE/CoreTestRunner.cs" \
-  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests,CameraTimingTests,QualityGovernorTests,PlaytestSessionTests,GameSettingsTests}.cs
+  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests,CameraTimingTests,QualityGovernorTests,PlaytestSessionTests,GameSettingsTests,PlacementRulesTests}.cs
 "$MONO" mono/CoreTests.exe
 echo "All project assemblies compiled."

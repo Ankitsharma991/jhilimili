@@ -39,6 +39,7 @@ namespace UtsavNights.Gameplay
         private IgnitionTargets _targets;
         private AudioService _audio;
         private HapticsService _haptics;
+        private PlacementController _placement;
         private int _touchId = -1;
         private float _depth;
 
@@ -97,6 +98,16 @@ namespace UtsavNights.Gameplay
             }
 
             ResolveOptionalServices();
+
+            // While a tray item is being placed, touches belong to placement.
+            if (_placement != null && _placement.IsPlacing)
+            {
+                _touchId = -1;
+                _model.Update(false, -1, deltaSeconds);
+                UpdateVisual(Vector3.zero);
+                return;
+            }
+
             bool touching = TryGetTouch(out Vector2 touch);
             int targetId = -1;
             Vector3 world = Vector3.zero;
@@ -192,6 +203,11 @@ namespace UtsavNights.Gameplay
             if (_haptics == null)
             {
                 Game.Services.TryGet(out _haptics);
+            }
+
+            if (_placement == null)
+            {
+                Game.Services.TryGet(out _placement);
             }
         }
 

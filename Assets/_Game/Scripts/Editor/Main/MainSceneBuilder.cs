@@ -149,6 +149,9 @@ namespace UtsavNights.EditorTools.Main
             var lighter = new GameObject("LighterController").AddComponent<LighterController>();
             lighter.Configure(camera, lighterVisual.transform, flame != null ? flame.gameObject : null, assets.LighterClick, assets.FlameOut);
 
+            new GameObject("CrackerSpawner").AddComponent<CrackerSpawner>();
+            CreatePlacement(camera);
+
             var pot = new GameObject("Flowerpot").AddComponent<CrackerRuntime>();
             pot.transform.position = new Vector3(0f, 0f, 0.6f);
             pot.Configure(assets.Definition);
@@ -201,14 +204,19 @@ namespace UtsavNights.EditorTools.Main
             Material stringB = SceneKit.EmissiveMaterial("String_Light_Magenta_Main", Magenta, 3f);
 
             Transform env = new GameObject("Environment").transform;
-            Static(SceneKit.Primitive(PrimitiveType.Plane, "Floor", env, Vector3.zero, new Vector3(2f, 1f, 2f), stone, keepCollider: true));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "BackWall", env, new Vector3(0f, 1.4f, 3.6f), new Vector3(9f, 2.8f, 0.35f), plaster, false));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "LeftWall", env, new Vector3(-3.6f, 1.4f, 0.8f), new Vector3(0.35f, 2.8f, 5.6f), plaster, false));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "RightWall", env, new Vector3(3.6f, 1.4f, 0.8f), new Vector3(0.35f, 2.8f, 5.6f), plaster, false));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "Doorway", env, new Vector3(1.4f, 1.0f, 3.42f), new Vector3(1.0f, 2.0f, 0.05f), wood, false));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "Step", env, new Vector3(0f, 0.04f, 2.8f), new Vector3(6f, 0.08f, 1.1f), border, false));
+            // Floor and step are ground for placement; walls, doorway, lamp post and diyas block it.
+            GameObject floor = SceneKit.Primitive(PrimitiveType.Plane, "Floor", env, Vector3.zero, new Vector3(2f, 1f, 2f), stone, keepCollider: true);
+            floor.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);
+            Static(floor);
+            Static(SceneKit.Primitive(PrimitiveType.Cube, "BackWall", env, new Vector3(0f, 1.4f, 3.6f), new Vector3(9f, 2.8f, 0.35f), plaster, true));
+            Static(SceneKit.Primitive(PrimitiveType.Cube, "LeftWall", env, new Vector3(-3.6f, 1.4f, 0.8f), new Vector3(0.35f, 2.8f, 5.6f), plaster, true));
+            Static(SceneKit.Primitive(PrimitiveType.Cube, "RightWall", env, new Vector3(3.6f, 1.4f, 0.8f), new Vector3(0.35f, 2.8f, 5.6f), plaster, true));
+            Static(SceneKit.Primitive(PrimitiveType.Cube, "Doorway", env, new Vector3(1.4f, 1.0f, 3.42f), new Vector3(1.0f, 2.0f, 0.05f), wood, true));
+            GameObject step = SceneKit.Primitive(PrimitiveType.Cube, "Step", env, new Vector3(0f, 0.04f, 2.8f), new Vector3(6f, 0.08f, 1.1f), border, true);
+            step.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);
+            Static(step);
 
-            Static(SceneKit.Primitive(PrimitiveType.Cylinder, "LampPost", env, new Vector3(-1.9f, 1.05f, 3.2f), new Vector3(0.1f, 1.05f, 0.1f), wood, false));
+            Static(SceneKit.Primitive(PrimitiveType.Cylinder, "LampPost", env, new Vector3(-1.9f, 1.05f, 3.2f), new Vector3(0.1f, 1.05f, 0.1f), wood, true));
             Static(SceneKit.Primitive(PrimitiveType.Sphere, "LampBulb", env, new Vector3(-1.9f, 2.25f, 3.2f), Vector3.one * 0.22f, bulb, false));
 
             // Diyas in a shallow arc in front of the step.
@@ -216,7 +224,7 @@ namespace UtsavNights.EditorTools.Main
             {
                 float a = Mathf.Lerp(-0.9f, 0.9f, i / 6f);
                 var pos = new Vector3(Mathf.Sin(a) * 1.9f, 0f, 2.1f - Mathf.Cos(a) * 0.5f);
-                Static(SceneKit.Primitive(PrimitiveType.Sphere, "Diya", env, pos + new Vector3(0f, 0.03f, 0f), new Vector3(0.11f, 0.05f, 0.11f), diyaClay, false));
+                Static(SceneKit.Primitive(PrimitiveType.Sphere, "Diya", env, pos + new Vector3(0f, 0.03f, 0f), new Vector3(0.11f, 0.05f, 0.11f), diyaClay, true));
                 Static(SceneKit.Primitive(PrimitiveType.Sphere, "DiyaFlame", env, pos + new Vector3(0f, 0.08f, 0f), new Vector3(0.025f, 0.045f, 0.025f), diyaFlame, false));
             }
 
@@ -230,6 +238,17 @@ namespace UtsavNights.EditorTools.Main
         }
 
         private static void Static(GameObject go) => SceneKit.MakeStatic(go);
+
+        private static void CreatePlacement(Camera camera)
+        {
+            Material valid = SceneKit.EmissiveMaterial("Ghost_Valid", new Color(0.35f, 1f, 0.45f), 1.6f);
+            Material invalid = SceneKit.EmissiveMaterial("Ghost_Invalid", new Color(1f, 0.28f, 0.22f), 1.6f);
+            var ghostGo = new GameObject("PlacementGhost");
+            GameObject ring = SceneKit.Primitive(PrimitiveType.Cylinder, "Ring", ghostGo.transform, new Vector3(0f, 0.01f, 0f), new Vector3(0.5f, 0.004f, 0.5f), valid, keepCollider: false);
+            var ghost = ghostGo.AddComponent<GhostPreview>();
+            ghost.Configure(ring.GetComponent<Renderer>(), valid, invalid);
+            new GameObject("PlacementController").AddComponent<PlacementController>().Configure(camera, ghost);
+        }
 
         /// <summary>
         /// Baked light probes so moving objects (crackers, lighter) pick up the lamp, diya and string
