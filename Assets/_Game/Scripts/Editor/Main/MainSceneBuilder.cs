@@ -140,6 +140,8 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<AudioInstaller>();
             systems.AddComponent<HapticsInstaller>();
             systems.AddComponent<QualityManager>().Configure(camera);
+            systems.AddComponent<PlaytestRecorder>();
+            systems.AddComponent<DevOverlay>();
 
             GameObject lighterVisual = (GameObject)PrefabUtility.InstantiatePrefab(assets.LighterPrefab);
             Transform flame = lighterVisual.transform.Find("Flame");

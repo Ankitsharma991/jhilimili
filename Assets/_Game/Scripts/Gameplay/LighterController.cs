@@ -203,6 +203,7 @@ namespace UtsavNights.Gameplay
         private void OnFlameWentOut()
         {
             _audio?.Play(flameOutClip, 0.5f, SoundPriority.Interface);
+            Game.Events.Publish(new FlameOutEvent());
         }
 
         private void OnIgnited(int targetId)

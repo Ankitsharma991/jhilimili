@@ -32,4 +32,9 @@ namespace UtsavNights.Gameplay
 
         public string CrackerId { get; }
     }
+
+    /// <summary>The lighter flame went out after too long away from a fuse.</summary>
+    public readonly struct FlameOutEvent
+    {
+    }
 }
