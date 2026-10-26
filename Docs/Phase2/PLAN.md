@@ -30,7 +30,7 @@ Goal: a reusable, data-driven engine, and one cracker (the flowerpot) that feels
 | 6 | Audio manager v1 | Voice pool with priority and stealing, ducking through AudioMixer snapshots, 48 kHz request, pause on focus loss and resume | Priority and stealing logic |
 | 7 | Haptics v1 | Tick, thud, rumble through Android `VibrationEffect` via AndroidJNI (no third-party plugin), master toggle and intensity | Pattern mapping; device check |
 | 8 | Lighter input | Finger offset, proximity to fuse anchors, 0.5 s hold, flame out after 3 s away from a fuse, relight; ignores touches on UI | Hold, flame-out and relight logic |
-| 9 | Camera rig | Cinemachine 3 ground and aerial presets with easing, touch-cancelable aerial follow, shake 100 to 150 ms (off in Quiet and reduce-motion) | Preset selection logic |
+| 9 | Camera rig | Small custom rig (see decisions): ground shot, eased aerial follow (touch cancels), push-in, shake 100 to 150 ms (off in Quiet and reduce-motion) | Aerial, push-in and shake timing |
 | 10 | Quality governor v1 | First-run tier from RAM and GPU plus a short benchmark; rolling frame time; step down particles, then bloom, then resolution after 2 s over budget; at most one step up per session | Step-down policy |
 | 11 | Main scene | Courtyard blockout (ground, wall, diyas, emissive string lights), flowerpot definition and fountain, first-run hand hint, background pause and resume, loading behind a short splash | Play Mode smoke test: boot, ignite, payoff |
 | 12 | Measure and playtest | Perf capture on 3 devices, time-to-first-ignition, 5-tester unaided test, competitor side-by-side | Reports in Docs/Phase2 |
@@ -43,7 +43,7 @@ then move to a `Spikes` folder excluded from release builds.
 | Topic | Recommendation | Why |
 |-------|----------------|-----|
 | Haptics | Own small AndroidJNI wrapper | No dependency or licence; three patterns are simple |
-| Camera | Cinemachine 3 (already installed) | Easing, presets and shake for free |
+| Camera | Small custom rig (changed from Cinemachine 3 on 2026-10-26) | The needs are two poses, an eased aerial move, a push-in and a short shake. About 200 lines, fully unit-tested and covered by the licence-free compile check. PRD 13.1 allows either. Cinemachine stays installed in case Phase 8 needs it |
 | Flowerpot sound for the feel test | Real licensed recordings | The exit gate is about feel; synthesised placeholders will not win a side-by-side. Sourcing and licences are the owner's task (log them in Docs/LICENCE_LOG.md); code works with placeholders until then |
 | Ignition target size | At least 48 dp touch target around each fuse, kept above the tray | Fixes the Phase 1 narrow-strip issue |
 

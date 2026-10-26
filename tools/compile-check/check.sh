@@ -64,8 +64,8 @@ step "UtsavNights.Haptics (player defines include the Android JNI backend)"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Haptics.dll @engine.rsp -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -define:"$RUNTIME" "$A"/Scripts/Haptics/*.cs
 "${CSC[@]}" -warnaserror+ -target:library -out:Haptics.editor-variant.dll @engine.rsp -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -define:"$EDITOR" "$A"/Scripts/Haptics/*.cs
 step "UtsavNights.Gameplay"
-"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Gameplay.dll @engine.rsp -r:Unity.InputSystem.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:UtsavNights.Haptics.dll -define:"$RUNTIME" "$A"/Scripts/Gameplay/*.cs
-"${CSC[@]}" -warnaserror+ -target:library -out:Gameplay.editor-variant.dll @engine.rsp -r:Unity.InputSystem.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:Haptics.editor-variant.dll -define:"$EDITOR" "$A"/Scripts/Gameplay/*.cs
+"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Gameplay.dll @engine.rsp -r:Unity.InputSystem.dll -r:UrpStub.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:UtsavNights.Haptics.dll -define:"$RUNTIME" "$A"/Scripts/Gameplay/*.cs
+"${CSC[@]}" -warnaserror+ -target:library -out:Gameplay.editor-variant.dll @engine.rsp -r:Unity.InputSystem.dll -r:UrpStub.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:Haptics.editor-variant.dll -define:"$EDITOR" "$A"/Scripts/Gameplay/*.cs
 step "UtsavNights.Spikes (player and editor defines)"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Spikes.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -define:"$RUNTIME" "$A"/Scripts/Spikes/*.cs
 "${CSC[@]}" -warnaserror+ -target:library -out:Spikes.editor-variant.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -define:"$EDITOR" "$A"/Scripts/Spikes/*.cs
@@ -81,6 +81,6 @@ MONO="$D/MonoBleedingEdge/bin/mono"; MCSC=("$MONO" "$D/MonoBleedingEdge/lib/mono
 mkdir -p mono && cp "$NUNIT" mono/
 "${MCSC[@]}" -target:library -out:mono/Core.dll $(find "$A/Scripts/Core" -name "*.cs" -not -path "*/Core/Runtime/*")
 "${MCSC[@]}" -out:mono/CoreTests.exe -r:mono/Core.dll -r:mono/nunit.framework.dll "$HERE/CoreTestRunner.cs" \
-  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests}.cs
+  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests,CameraTimingTests,QualityGovernorTests}.cs
 "$MONO" mono/CoreTests.exe
 echo "All project assemblies compiled."
