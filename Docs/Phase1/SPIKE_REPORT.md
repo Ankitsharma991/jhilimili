@@ -70,13 +70,13 @@ Cold start: install the release APK, then run `tools/measure_cold_start.sh 5`.
 
 | Metric | Value |
 |---|---|
-| Release AAB size (MB) | |
-| Max device download size from bundletool (MB) | |
+| Release AAB size (MB) | 32.1 (2026-10-26, Unity 6000.3.26f1, IL2CPP ARM64, spike scene + URP + all Phase 1 packages) |
+| Max device download size from bundletool (MB) | 31.4 (arm64-v8a; bundletool 1.17.2 `get-size total`) |
 | Release APK size (MB) | |
 | Cold start Phone 1, 5-run average (ms) | |
 | Cold start Phone 2 (ms) | |
 
-**Gate C pass?** ☐ yes ☐ no
+**Gate C pass?** Size: ✅ pass (32.1 MB vs 60 MB target). Cold start: pending device.
 
 ## Spike D: touch
 
@@ -93,3 +93,7 @@ Cold start: install the release APK, then run `tools/measure_cold_start.sh 5`.
 ☐ A gate failed after two optimisation attempts: evaluate Godot 4 and write ADR 0003.
 
 Notes:
+
+- First clean IL2CPP build took about 27 min on the dev laptop (shader variants plus IL2CPP);
+  incremental builds reuse Library/Bee and the shader cache.
+- The build needs roughly 4 GB of free disk for intermediates; keep 10 GB or more free.
