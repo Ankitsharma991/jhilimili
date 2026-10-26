@@ -66,6 +66,9 @@ namespace UtsavNights.EditorTools
             CreateQualityTiers();
             SpikeSceneBuilder.Build();
             SpikeSceneBuilder.BakeLighting();
+
+            // Phase 2: Boot and Main replace the spike scene as the build scenes.
+            Main.MainSceneBuilder.BuildAll();
             AssetDatabase.SaveAssets();
             Debug.Log("[Utsav setup] Phase 1 setup complete. If asked, restart the editor to enable the Input System backend.");
         }

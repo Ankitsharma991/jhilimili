@@ -1,0 +1,127 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 065b1a91ab9cda24b90c94ec13104b09, type: 3}
+  m_Name: Cracker_FlowerpotGold
+  m_EditorClassIdentifier: UtsavNights.Content::UtsavNights.Content.CrackerDefinition
+  id: flowerpot_gold
+  schema: 1
+  displayName:
+    en: Flowerpot
+    ne: Anar
+    hi: Anar
+  category: 1
+  festivals:
+  - diwali
+  - tihar
+  intensity: 1
+  footprint: {x: 0.3, y: 0.3}
+  effectVolume: {x: 1.2, y: 3, z: 1.2}
+  surfaces: 3
+  ignitionMethods: 3
+  fuseSeconds: 2.5
+  fuseAnchor: {x: 0, y: 0.33, z: 0}
+  stages:
+  - time: 0
+    emitter: {fileID: 1085541027872040593, guid: 02c6846a0986598fd91d043ed81e0e96, type: 3}
+    anchor: 1
+    endWithNextEmitter: 1
+    volume: 0.5
+    duckOthers: 0
+    sound: {fileID: 8300000, guid: 0ca7e0b7a7023e447b08e279b8fbd612, type: 3}
+    loopSound: 1
+    haptic: 1
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+  - time: 2.5
+    emitter: {fileID: 485462649928167863, guid: a950662692cc9853aa169b5d219031e2, type: 3}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.75
+    duckOthers: 0
+    sound: {fileID: 8300000, guid: ae342800749c9a0ada2c0307d2cb455c, type: 3}
+    loopSound: 1
+    haptic: 3
+    light: 1
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2.5
+    camera: 1
+    payoff: 1
+    stop: 0
+  - time: 2.5
+    emitter: {fileID: 0}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.7
+    duckOthers: 0
+    sound: {fileID: 8300000, guid: 9b38144d57b7d00ffbce397d6d58d83e, type: 3}
+    loopSound: 0
+    haptic: 0
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+  - time: 2.7
+    emitter: {fileID: 6746304439893633742, guid: 7877476b4f217fd90bb93885ca248fc8, type: 3}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.8
+    duckOthers: 0
+    sound: {fileID: 0}
+    loopSound: 0
+    haptic: 0
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+  - time: 10
+    emitter: {fileID: 0}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.8
+    duckOthers: 0
+    sound: {fileID: 0}
+    loopSound: 0
+    haptic: 0
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 1
+  cooldownSeconds: 2
+  modelPrefab: {fileID: 850621236703628911, guid: 6b8ef4d679066f371a89db3361b8b27c, type: 3}
+  trayIcon: {fileID: 0}
+  low:
+    maxParticles: 250
+    light: 0
+    bloom: 0
+  mid:
+    maxParticles: 500
+    light: 1
+    bloom: 0
+  high:
+    maxParticles: 900
+    light: 1
+    bloom: 1
+  voices: 3
+  cost: 2
+  pack: core
+  creditsModel: own
+  creditsAudio: own-003

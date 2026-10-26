@@ -4,6 +4,11 @@
     "references": [
         "UtsavNights.Core",
         "UtsavNights.Content",
+        "UtsavNights.Gameplay",
+        "UtsavNights.Haptics",
+        "UtsavNights.Audio",
+        "UtsavNights.Effects",
+        "UtsavNights.Core.Runtime",
         "UtsavNights.Spikes",
         "Unity.InputSystem",
         "Unity.RenderPipelines.Core.Runtime",

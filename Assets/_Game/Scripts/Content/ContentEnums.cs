@@ -57,6 +57,13 @@ namespace UtsavNights.Content
         Shake = 3,
     }
 
+    /// <summary>Where a stage's emitter starts: the cracker's base (pivot) or its fuse anchor.</summary>
+    public enum StageAnchor
+    {
+        Base = 0,
+        Fuse = 1,
+    }
+
     /// <summary>Matches the Low / Mid / High quality levels created by project setup.</summary>
     public enum QualityTier
     {

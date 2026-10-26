@@ -149,6 +149,10 @@ namespace UtsavNights.Gameplay
         {
             RestoreRenderScale();
             Tier = TierDetection.Clamp(tier);
+
+            // PRD 14 targets: 30 fps on Low saves heat and battery; Mid and High aim for 60.
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = Tier == TierDetection.Low ? 30 : 60;
             if (Tier < QualitySettings.names.Length)
             {
                 QualitySettings.SetQualityLevel(Tier, true);

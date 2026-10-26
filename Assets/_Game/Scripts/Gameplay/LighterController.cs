@@ -37,7 +37,6 @@ namespace UtsavNights.Gameplay
 
         private LighterModel _model;
         private IgnitionTargets _targets;
-        private bool _ownsTargets;
         private AudioService _audio;
         private HapticsService _haptics;
         private int _touchId = -1;
@@ -68,12 +67,7 @@ namespace UtsavNights.Gameplay
             _model.Ignited += OnIgnited;
             _depth = idleDepth;
 
-            if (!Game.Services.TryGet(out _targets))
-            {
-                _targets = new IgnitionTargets();
-                Game.Services.Register(_targets);
-                _ownsTargets = true;
-            }
+            _targets = IgnitionTargets.Shared;
 
             if (lighter != null)
             {
@@ -92,11 +86,6 @@ namespace UtsavNights.Gameplay
                 _model.FlameLit -= OnFlameLit;
                 _model.FlameWentOut -= OnFlameWentOut;
                 _model.Ignited -= OnIgnited;
-            }
-
-            if (_ownsTargets)
-            {
-                Game.Services.Unregister<IgnitionTargets>();
             }
         }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UtsavNights.Core.Runtime;
 
 namespace UtsavNights.Gameplay
 {
@@ -23,6 +24,21 @@ namespace UtsavNights.Gameplay
     {
         private readonly List<IIgnitionTarget> _targets = new List<IIgnitionTarget>();
         private int _nextId = 1;
+
+        /// <summary>The scene-wide registry, created on first use and kept for the session.</summary>
+        public static IgnitionTargets Shared
+        {
+            get
+            {
+                if (!Game.Services.TryGet(out IgnitionTargets targets))
+                {
+                    targets = new IgnitionTargets();
+                    Game.Services.Register(targets);
+                }
+
+                return targets;
+            }
+        }
 
         public int Count => _targets.Count;
 

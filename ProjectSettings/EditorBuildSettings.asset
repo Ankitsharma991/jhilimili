@@ -6,7 +6,10 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/_Game/Scenes/Spike_Phase1.unity
-    guid: aff568f8eb8dc1b20a1821dc5ff45e20
+    path: Assets/_Game/Scenes/Boot.unity
+    guid: 39cd1ed90f2cf36e28594441b31c2ea7
+  - enabled: 1
+    path: Assets/_Game/Scenes/Main.unity
+    guid: fbabb3ed45c11335a9391db4c822e3eb
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

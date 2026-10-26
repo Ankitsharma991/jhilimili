@@ -30,6 +30,17 @@ namespace UtsavNights.Content
         [Tooltip("Particle effect started at this time (pooled).")]
         public ParticleSystem emitter;
 
+        [Tooltip("Start the emitter at the cracker's base or at its fuse (fuse sparks).")]
+        public StageAnchor anchor;
+
+        [Tooltip("Stop this stage's emitter when the next stage that has an emitter starts (fuse sparks into the fountain).")]
+        public bool endWithNextEmitter;
+
+        [Range(0f, 1f)] public float volume = 0.8f;
+
+        [Tooltip("0..1: how much this sound lowers all other sounds (big bangs).")]
+        [Range(0f, 1f)] public float duckOthers;
+
         public AudioClip sound;
 
         [Tooltip("Loop the sound until the next stage that has a sound, or the stop stage.")]

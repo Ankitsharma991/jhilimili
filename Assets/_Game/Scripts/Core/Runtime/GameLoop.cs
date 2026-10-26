@@ -39,6 +39,13 @@ namespace UtsavNights.Core.Runtime
 
         private void OnApplicationFocus(bool hasFocus)
         {
+            // In the editor (and batch tests) focus moves to other windows all the time; only devices
+            // treat focus loss (notification shade, incoming call UI) as a pause.
+            if (Application.isEditor || Application.isBatchMode)
+            {
+                return;
+            }
+
             _hasFocus = hasFocus;
             PublishIfChanged();
         }
