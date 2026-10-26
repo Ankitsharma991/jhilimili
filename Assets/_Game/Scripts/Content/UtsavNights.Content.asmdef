@@ -1,0 +1,16 @@
+{
+    "name": "UtsavNights.Content",
+    "rootNamespace": "UtsavNights.Content",
+    "references": [
+        "UtsavNights.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

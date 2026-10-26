@@ -51,7 +51,9 @@ step "URP stub"
 A="$ROOT/Assets/_Game"
 DEPS=(-r:UnityEngine.UI.dll -r:Unity.InputSystem.dll -r:UrpStub.dll)
 step "UtsavNights.Core"
-"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Core.dll -r:"$D/NetStandard/ref/2.1.0/netstandard.dll" "$A"/Scripts/Core/*.cs
+"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Core.dll -r:"$D/NetStandard/ref/2.1.0/netstandard.dll" "$A"/Scripts/Core/*.cs "$A"/Scripts/Core/Crackers/*.cs
+step "UtsavNights.Content"
+"${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Content.dll @engine.rsp -r:UtsavNights.Core.dll -define:"$RUNTIME" "$A"/Scripts/Content/*.cs
 step "UtsavNights.Spikes (player and editor defines)"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Spikes.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -define:"$RUNTIME" "$A"/Scripts/Spikes/*.cs
 "${CSC[@]}" -warnaserror+ -target:library -out:Spikes.editor-variant.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -define:"$EDITOR" "$A"/Scripts/Spikes/*.cs
@@ -60,13 +62,13 @@ step "UtsavNights.Editor"
 step "UtsavNights.Tests.EditMode"
 NUNIT="$PKG/BuiltInPackages/com.unity.ext.nunit/net40/unity-custom/nunit.framework.dll"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Tests.EditMode.dll @engine.rsp @editor.rsp -r:"$D/NetStandard/compat/2.1.0/shims/netfx/mscorlib.dll" \
-  -r:"$NUNIT" "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Spikes.dll -r:UtsavNights.Editor.dll -define:"$EDITOR" "$A"/Tests/EditMode/*.cs
+  -r:"$NUNIT" "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Content.dll -r:UtsavNights.Spikes.dll -r:UtsavNights.Editor.dll -define:"$EDITOR" "$A"/Tests/EditMode/*.cs
 
 step "Core tests under Mono (Unity-free subset)"
 MONO="$D/MonoBleedingEdge/bin/mono"; MCSC=("$MONO" "$D/MonoBleedingEdge/lib/mono/4.5/csc.exe" -nologo -langversion:9)
 mkdir -p mono && cp "$NUNIT" mono/
-"${MCSC[@]}" -target:library -out:mono/Core.dll "$A"/Scripts/Core/*.cs
+"${MCSC[@]}" -target:library -out:mono/Core.dll "$A"/Scripts/Core/*.cs "$A"/Scripts/Core/Crackers/*.cs
 "${MCSC[@]}" -out:mono/CoreTests.exe -r:mono/Core.dll -r:mono/nunit.framework.dll "$HERE/CoreTestRunner.cs" \
-  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests}.cs
+  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests}.cs
 "$MONO" mono/CoreTests.exe
 echo "All project assemblies compiled."

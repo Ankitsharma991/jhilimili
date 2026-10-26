@@ -5,6 +5,7 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "UtsavNights.Core",
+        "UtsavNights.Content",
         "UtsavNights.Spikes",
         "UtsavNights.Editor"
     ],
