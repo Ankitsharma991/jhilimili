@@ -9,6 +9,8 @@
         "UtsavNights.Core.Runtime",
         "UtsavNights.Effects",
         "UtsavNights.Audio",
+        "UtsavNights.Haptics",
+        "UtsavNights.Gameplay",
         "UtsavNights.Spikes",
         "UtsavNights.Editor"
     ],

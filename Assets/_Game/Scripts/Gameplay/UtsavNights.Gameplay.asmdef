@@ -1,0 +1,22 @@
+{
+    "name": "UtsavNights.Gameplay",
+    "rootNamespace": "UtsavNights.Gameplay",
+    "references": [
+        "UtsavNights.Core",
+        "UtsavNights.Core.Runtime",
+        "UtsavNights.Content",
+        "UtsavNights.Effects",
+        "UtsavNights.Audio",
+        "UtsavNights.Haptics",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
