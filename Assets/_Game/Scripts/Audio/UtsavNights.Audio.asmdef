@@ -1,0 +1,18 @@
+{
+    "name": "UtsavNights.Audio",
+    "rootNamespace": "UtsavNights.Audio",
+    "references": [
+        "UtsavNights.Core",
+        "UtsavNights.Core.Runtime",
+        "UtsavNights.Content"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

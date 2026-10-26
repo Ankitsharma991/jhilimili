@@ -6,6 +6,9 @@
         "UnityEditor.TestRunner",
         "UtsavNights.Core",
         "UtsavNights.Content",
+        "UtsavNights.Core.Runtime",
+        "UtsavNights.Effects",
+        "UtsavNights.Audio",
         "UtsavNights.Spikes",
         "UtsavNights.Editor"
     ],
