@@ -9,10 +9,10 @@ Build used: `UtsavNights-release.apk` (release, IL2CPP, ARM64), unless a row say
 
 | | Phone 1 (budget, 3 to 4 GB) | Phone 2 (mid) | Phone 3 (mid or flagship) |
 |---|---|---|---|
-| Model | | | |
-| Android version | | | |
-| RAM | | | |
-| GPU (from report) | | | |
+| Model | | Xiaomi Redmi Pad Pro (2405CRPFDI), tablet | |
+| Android version | | 16 (API 36) | |
+| RAM | | 6 GB (5.6 GB usable) | |
+| GPU (from report) | | Snapdragon 7s Gen 2 (SM7435), 1600x2560 | |
 
 ## Gate A: particles (target 30 fps or better on the budget phone)
 
@@ -22,15 +22,15 @@ Repeat with effects stopped for a baseline. Then run **Soak 15 min** with effect
 
 | Metric | Phone 1 Low | Phone 1 Mid | Phone 2 Mid | Phone 3 High |
 |---|---|---|---|---|
-| Peak particles | | | | |
-| avg_fps | | | | |
-| p99 frame ms | | | | |
-| % frames over 66.7 ms (2x budget) | | | | |
-| Peak system memory MB | | | | |
-| Soak: fps at minute 1 / 15 | | | | |
-| Soak: battery temp start / end, thermal status | | | | |
+| Peak particles | | | | Pad Pro High: 2,943 |
+| avg_fps | | | | Pad Pro High: 59.8 |
+| p99 frame ms | | | | Pad Pro High: 16.7 |
+| % frames over 66.7 ms (2x budget) | | | | Pad Pro High: 0.06 |
+| Peak system memory MB | | | | Pad Pro High: 360 |
+| Soak: fps at minute 1 / 15 | | | | Pad Pro: 59.5 / 59.9 (Low and High mixed) |
+| Soak: battery temp start / end, thermal status | | | | Pad Pro: 31 / 31 °C, status 0 |
 
-**Gate A pass?** ☐ yes ☐ no
+**Gate A pass?** Mid tier ✅ (Redmi Pad Pro holds 60 fps at about 2,900 particles, no throttling in 15 min). Budget 3 to 4 GB phone: ☐ pending, which is what the gate is judged on.
 
 ## Gate B: audio (target under about 100 ms perceived, 16 voices clean)
 
@@ -47,7 +47,7 @@ Overlap: tap **16 voices**, listen on the phone speaker and on headphones for cr
 
 | Metric | Phone 1 | Phone 2 | Phone 3 |
 |---|---|---|---|
-| Buffer latency at DSP 256 / 512 / 1024 (ms) | | | |
+| Buffer latency at DSP 256 / 512 / 1024 (ms) | | Pad Pro at 48 kHz: 21.3 / 42.7 / 85.3 (before the fix, Unity chose 24 kHz: 42.7 / 85.3 / 170.7) | |
 | Tap-to-play software time (ms) | | | |
 | Perceived tap-to-sound, 10-tap average (ms) | | | |
 | overlap_peak_voices | | | |
@@ -73,10 +73,10 @@ Cold start: install the release APK, then run `tools/measure_cold_start.sh 5`.
 | Release AAB size (MB) | 32.1 (2026-10-26, Unity 6000.3.26f1, IL2CPP ARM64, spike scene + URP + all Phase 1 packages) |
 | Max device download size from bundletool (MB) | 31.4 (arm64-v8a; bundletool 1.17.2 `get-size total`) |
 | Release APK size (MB) | |
-| Cold start Phone 1, 5-run average (ms) | |
+| Cold start Phone 1, 5-run average (ms) | Redmi Pad Pro: activity 365 + scene ready about 500 = about 0.9 s |
 | Cold start Phone 2 (ms) | |
 
-**Gate C pass?** Size: ✅ pass (32.1 MB vs 60 MB target). Cold start: pending device.
+**Gate C pass?** Size: ✅ pass (32.1 MB vs 60 MB target). Cold start: ✅ pass on the Redmi Pad Pro (about 0.9 s vs 5 s). Re-check on the budget phone.
 
 ## Spike D: touch
 
@@ -96,4 +96,8 @@ Notes:
 
 - First clean IL2CPP build took about 27 min on the dev laptop (shader variants plus IL2CPP);
   incremental builds reuse Library/Bee and the shader cache.
+- Unity started the mixer at 24 kHz on the Redmi Pad Pro although the hardware runs at 48 kHz,
+  doubling buffer latency. AudioLatencySpike now requests 48 kHz; Phase 2's audio manager must keep this.
+- The 16-voice test first peaked at 15 because a 0.15 s sound ended before the 16th voice started;
+  the test now uses only sounds of 0.9 s or longer.
 - The build needs roughly 4 GB of free disk for intermediates; keep 10 GB or more free.

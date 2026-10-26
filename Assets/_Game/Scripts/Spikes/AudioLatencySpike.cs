@@ -18,7 +18,20 @@ namespace UtsavNights.Spikes
     {
         public const int VoiceCount = 32;
         public const int OverlapTestVoices = 16;
+        public const int PreferredSampleRate = 48000;
         private static readonly int[] DspSizes = { 256, 512, 1024 };
+
+        // Sounds of at least 0.9 s, so all 16 staggered voices genuinely overlap.
+        private static readonly ProceduralSounds.Kind[] OverlapKinds =
+        {
+            ProceduralSounds.Kind.Bang,
+            ProceduralSounds.Kind.Whistle,
+            ProceduralSounds.Kind.FuseHiss,
+            ProceduralSounds.Kind.Crackle,
+            ProceduralSounds.Kind.Whoosh,
+        };
+
+        private bool _loggedStartupConfig;
 
         private readonly RollingStats _tapLatencyMs = new RollingStats(64);
         private AudioSource[] _voices;
@@ -99,6 +112,20 @@ namespace UtsavNights.Spikes
         public void ApplyDspBuffer(int requestedSize)
         {
             AudioConfiguration config = AudioSettings.GetConfiguration();
+            if (!_loggedStartupConfig)
+            {
+                _loggedStartupConfig = true;
+                Debug.Log($"{SpikeReport.LogTag} startup audio config: rate={config.sampleRate} dsp={config.dspBufferSize} " +
+                          $"real_voices={config.numRealVoices} speaker={config.speakerMode}");
+            }
+
+            // Some Android devices start the mixer below the 48 kHz hardware rate, which doubles buffer
+            // latency for the same buffer length. Ask for the common native rate explicitly.
+            if (config.sampleRate < PreferredSampleRate)
+            {
+                config.sampleRate = PreferredSampleRate;
+            }
+
             config.dspBufferSize = requestedSize;
             bool ok = AudioSettings.Reset(config);
             if (!ok)
@@ -118,7 +145,7 @@ namespace UtsavNights.Spikes
             DspNumBuffers = count;
             SampleRate = AudioSettings.outputSampleRate;
             _tapLatencyMs.Clear();
-            SpikeReport.Record("gateB_audio", $"dsp_{length}x{count}_buffer_latency", BufferLatencyMs, "ms");
+            SpikeReport.Record("gateB_audio", $"dsp_{length}x{count}_at_{SampleRate}hz_buffer_latency", BufferLatencyMs, "ms");
         }
 
         public int CycleDspBuffer()
@@ -180,8 +207,7 @@ namespace UtsavNights.Spikes
             PeakVoices = 0;
             for (int i = 0; i < OverlapTestVoices; i++)
             {
-                // Skip the very short Click (index 0) so all 16 voices really overlap.
-                Play(1 + (i % (_clips.Length - 1)), 0.45f);
+                Play(OverlapKinds[i % OverlapKinds.Length], 0.45f);
                 yield return _stagger;
             }
 

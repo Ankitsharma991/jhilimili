@@ -152,6 +152,8 @@ namespace UtsavNights.EditorTools
 
             var so = new SerializedObject(assets[0]);
             // 0 default, 256 best latency, 512 good latency, 1024 best performance.
+            // Unity 6 reads m_RequestedDSPBufferSize; m_DSPBufferSize is the legacy field.
+            EditorAssetUtil.SetInt(so, "m_RequestedDSPBufferSize", 256);
             EditorAssetUtil.SetInt(so, "m_DSPBufferSize", 256);
             so.ApplyModifiedPropertiesWithoutUndo();
         }
