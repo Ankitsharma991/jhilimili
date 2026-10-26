@@ -48,13 +48,13 @@ Overlap: tap **16 voices**, listen on the phone speaker and on headphones for cr
 | Metric | Phone 1 | Phone 2 | Phone 3 |
 |---|---|---|---|
 | Buffer latency at DSP 256 / 512 / 1024 (ms) | | Pad Pro at 48 kHz: 21.3 / 42.7 / 85.3 (before the fix, Unity chose 24 kHz: 42.7 / 85.3 / 170.7) | |
-| Tap-to-play software time (ms) | | | |
+| Tap-to-play software time (ms) | | Pad Pro: 28 (64 taps); plus 21.3 buffer = about 49 software latency | |
 | Perceived tap-to-sound, 10-tap average (ms) | | | |
-| overlap_peak_voices | | | |
-| Glitches heard with 16 voices? | | | |
-| Chosen DSP buffer | | | |
+| overlap_peak_voices | | Pad Pro: 16 | |
+| Glitches heard with 16 voices? | | Pad Pro: none (owner, speaker) | |
+| Chosen DSP buffer | | 256 at 48 kHz | |
 
-**Gate B pass?** ☐ yes ☐ no. If not, try DSP 512, then evaluate a native low-latency plugin [Verify].
+**Gate B pass?** Provisional ✅ on the Pad Pro: about 49 ms software latency and 16 clean voices. The acoustic fingernail measurement is still open. If not, try DSP 512, then evaluate a native low-latency plugin [Verify].
 
 ## Gate C: build size and cold start (targets under about 60 MB, under 5 s)
 
@@ -82,14 +82,14 @@ Cold start: install the release APK, then run `tools/measure_cold_start.sh 5`.
 
 | Check | Result |
 |---|---|
-| Lighter follows the finger with an offset, fuse stays visible | |
-| Ignition after holding about 0.5 s near the fuse | |
-| first_ignition_after_scene_ready (s) | |
-| Any input lag felt? | |
+| Lighter follows the finger with an offset, fuse stays visible | Yes (owner test and injected touch on the Pad Pro) |
+| Ignition after holding about 0.5 s near the fuse | Yes |
+| first_ignition_after_scene_ready (s) | Not meaningful in this session (logged 343 s, after other tests) |
+| Any input lag felt? | No (owner). Issue: the spike pot sits at the control panel's edge, leaving a narrow touch strip; fix with the Phase 2 camera and layout |
 
 ## Decision
 
-☐ All gates pass: confirm Unity in ADR 0001 and start Phase 2.
+☑ Owner decision 2026-10-26: proceed to Phase 2 on Unity. Gates B and C pass, and Gate A passes on the mid-tier tablet with large headroom. The budget-phone Gate A run and the acoustic latency check carry into Phase 2 as open items.
 ☐ A gate failed after two optimisation attempts: evaluate Godot 4 and write ADR 0003.
 
 Notes:

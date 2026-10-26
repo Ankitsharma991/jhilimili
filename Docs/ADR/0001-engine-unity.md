@@ -1,6 +1,6 @@
 # ADR 0001: Engine is Unity 6.3 LTS with URP
 
-- Status: Accepted, provisional until the Phase 1 gates pass
+- Status: Accepted (2026-10-26, after the Phase 1 spikes; see Docs/Phase1/SPIKE_REPORT.md)
 - Date: 2026-10-19
 
 ## Context
@@ -30,3 +30,14 @@ outcome in a new ADR that supersedes this one.
 
 - C# and the Unity editor are new skills; the ramp-up is budgeted inside Phase 1.
 - Unity licence terms must be checked against expected revenue [Verify].
+
+## Outcome of the Phase 1 gates (2026-10-26)
+
+| Gate | Result |
+|------|--------|
+| A | Redmi Pad Pro (Snapdragon 7s Gen 2, 6 GB): 59.8 fps at about 2,900 particles on High; 15-min soak at 60 fps, 31 °C, no throttling. **Budget 3 to 4 GB phone still to test.** |
+| B | 48 kHz, 256-sample buffer: 21.3 ms buffer latency, about 49 ms software tap-to-sound; 16 voices clean. Acoustic measurement still to do. |
+| C | Release AAB 32.1 MB (device download 31.4 MB); cold start about 0.9 s. |
+
+Decision: the owner chose to continue with Unity into Phase 2. If the budget phone misses Gate A,
+the per-tier particle caps and the Phase 2 quality governor are the first lever before any engine change.

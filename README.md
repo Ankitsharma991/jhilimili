@@ -7,7 +7,8 @@ Work proceeds one phase at a time; a phase starts only after the previous exit g
 | Phase | Status |
 |-------|--------|
 | 0 Research and validation | Not started (owner task) |
-| 1 Project setup and rendering spikes | **In progress**: code compiles against Unity 6000.3.26f1; editor import waits on licence; device gates pending |
+| 1 Project setup and rendering spikes | **Done** 2026-10-26: gates B and C pass; A passes on mid tier, budget phone open |
+| 2 Core engine and first cracker | **Next** |
 
 ## Requirements
 
