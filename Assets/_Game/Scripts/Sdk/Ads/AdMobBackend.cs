@@ -132,6 +132,7 @@ namespace UtsavNights.Ads
             MobileAds.Initialize(status => MobileAdsEventExecutor.ExecuteInUpdate(() =>
             {
                 _initialized = status != null;
+                StartupProbe.Mark(_initialized ? "ads_sdk" : "ads_sdk_failed");
                 if (!_initialized)
                 {
                     Debug.LogWarning("[Ads] Google Mobile Ads failed to initialise; the game continues without ads");

@@ -91,6 +91,7 @@ namespace UtsavNights.Purchasing
         private void OnProductsFetched(List<Product> products)
         {
             IsReady = true;
+            StartupProbe.Mark("store");
             FinishInit(null);
         }
 

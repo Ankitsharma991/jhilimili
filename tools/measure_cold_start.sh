@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# Gate C: cold start to first frame on a USB-connected phone.
+# PRD 14 cold start to interactive on a USB-connected phone (Phase 5 step 3).
 # Usage: tools/measure_cold_start.sh [runs] [package]
+# Each run force-stops the app, starts it, and reads the [UTSAV_STARTUP] line the game logs once the
+# scene takes taps. interactive_ms counts from the real process start (android.os.Process), so it is
+# what a player waits. Later marks (consent, ads_sdk, store) show the SDKs finishing in the background.
+# Targets: 6000 ms low tier, 4000 ms mid, 3000 ms high.
 set -euo pipefail
 RUNS="${1:-5}"
 PKG="${2:-com.ankitsharma.utsavnights}"
@@ -15,16 +19,19 @@ fi
 
 echo "Device: $(adb shell getprop ro.product.model | tr -d '\r'), Android $(adb shell getprop ro.build.version.release | tr -d '\r')"
 echo "Activity: $COMPONENT"
-total=0
+total=0; n=0
 for i in $(seq 1 "$RUNS"); do
   adb shell am force-stop "$PKG"
   sleep 2
   adb logcat -c
-  ms="$(adb shell am start -W -n "$COMPONENT" | awk -F': ' '/TotalTime/ {print $2}' | tr -d '\r')"
-  sleep 8
-  ready="$(adb logcat -d -s Unity | grep -m1 'scene_ready_since_engine_start' | sed -E 's/.*=([0-9.]+) ms.*/\1/' || true)"
-  echo "run $i: activity TotalTime=${ms} ms, Unity scene_ready=${ready:-?} ms after engine start"
-  total=$((total + ms))
+  first="$(adb shell am start -W -n "$COMPONENT" | awk -F': ' '/TotalTime/ {print $2}' | tr -d '\r')"
+  sleep 10
+  line="$(adb logcat -d -s Unity | grep 'UTSAV_STARTUP' | tail -1 | sed -E 's/.*\[UTSAV_STARTUP\] //' | tr -d '\r' || true)"
+  ms="$(echo "$line" | grep -oE 'interactive_ms=[0-9]+' | cut -d= -f2 || true)"
+  echo "run $i: first frame ${first} ms (Android); ${line:-no [UTSAV_STARTUP] line}"
+  if [ -n "$ms" ]; then total=$((total + ms)); n=$((n + 1)); fi
 done
-echo "average activity TotalTime: $((total / RUNS)) ms"
-echo "Cold start to interactive is roughly TotalTime + scene_ready. Gate C target: under 5000 ms."
+if [ "$n" -gt 0 ]; then
+  echo "average cold start to interactive: $((total / n)) ms over $n runs (targets: low 6000, mid 4000, high 3000)"
+fi
+adb shell am force-stop "$PKG"

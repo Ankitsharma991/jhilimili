@@ -10,8 +10,14 @@ mkdir -p "$OUT"
 DIR="/sdcard/Android/data/${PKG}/files"
 adb pull "$DIR/analytics_events.jsonl" "$OUT/" >/dev/null 2>&1 || echo "No analytics events on the phone yet."
 adb pull "$DIR/crash_reports.jsonl" "$OUT/" >/dev/null 2>&1 || true
+# Past 4 MB the app moves a log to .old (LocalLog); put those lines first.
+for f in analytics_events crash_reports; do
+  if adb pull "$DIR/$f.jsonl.old" "$OUT/$f.old" >/dev/null 2>&1; then
+    cat "$OUT/$f.old" "$OUT/$f.jsonl" 2>/dev/null > "$OUT/$f.tmp"; mv "$OUT/$f.tmp" "$OUT/$f.jsonl"; rm -f "$OUT/$f.old"
+  fi
+done
 if [ "${1:-}" = "--clear" ]; then
-  adb shell rm -f "$DIR/analytics_events.jsonl" "$DIR/crash_reports.jsonl"
+  adb shell rm -f "$DIR/analytics_events.jsonl" "$DIR/crash_reports.jsonl" "$DIR/analytics_events.jsonl.old" "$DIR/crash_reports.jsonl.old"
 fi
 echo "Saved to $OUT"
 python3 - "$OUT" <<'PY'

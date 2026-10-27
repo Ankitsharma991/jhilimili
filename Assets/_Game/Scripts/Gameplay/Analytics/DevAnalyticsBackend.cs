@@ -40,7 +40,7 @@ namespace UtsavNights.Gameplay
             Debug.Log($"{LogTag} {line}");
             try
             {
-                File.AppendAllText(FilePath, line + "\n");
+                LocalLog.Append(FilePath, line);
             }
             catch (Exception e)
             {

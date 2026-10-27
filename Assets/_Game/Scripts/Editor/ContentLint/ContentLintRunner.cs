@@ -71,6 +71,9 @@ namespace UtsavNights.EditorTools.ContentLint
                 issues.AddRange(CatalogLinter.Lint(AssetDatabase.LoadAssetAtPath<CrackerCatalog>(AssetDatabase.GUIDToAssetPath(guid))));
                 count++;
             }
+
+            // Phase 5 step 2: every game sound and texture against its import rule.
+            issues.AddRange(AssetImportLinter.Lint());
             foreach (LintIssue issue in issues)
             {
                 CrackerDefinition context = definitions.Find(d => d != null && (d.Id == issue.AssetName || d.name == issue.AssetName));

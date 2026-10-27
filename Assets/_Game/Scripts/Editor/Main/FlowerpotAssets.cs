@@ -156,14 +156,7 @@ namespace UtsavNights.EditorTools.Main
             WavWriter.Write(path, samples, SampleRate);
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
             var importer = (AudioImporter)AssetImporter.GetAtPath(path);
-            AudioImporterSampleSettings settings = importer.defaultSampleSettings;
-            settings.loadType = AudioClipLoadType.DecompressOnLoad;
-            settings.compressionFormat = AudioCompressionFormat.Vorbis;
-            settings.quality = 0.6f;
-            settings.preloadAudioData = true;
-            importer.defaultSampleSettings = settings;
-            importer.forceToMono = true;
-            importer.loadInBackground = false;
+            ContentLint.AssetImportLinter.Apply(importer);
             importer.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
         }

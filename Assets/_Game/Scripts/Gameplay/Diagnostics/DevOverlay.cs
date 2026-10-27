@@ -16,6 +16,7 @@ namespace UtsavNights.Gameplay
     /// to show or hide fps, frame time, tier, governor steps, particles and voices. The corner never
     /// lights the lighter. Refreshes 4 times a second; spike-style string building is fine here.
     /// Measurement tools (Phase 3 step 13) add buttons below the stats with <see cref="AddTool"/>.
+    /// Store builds (<see cref="BuildFlavor.IsStore"/>) have no overlay: no corner, no stats, no tools.
     /// </summary>
     public sealed class DevOverlay : MonoBehaviour
     {
@@ -37,6 +38,12 @@ namespace UtsavNights.Gameplay
 
         private void Awake()
         {
+            if (BuildFlavor.IsStore)
+            {
+                enabled = false;
+                return;
+            }
+
             TouchInput.EnsureEnabled();
             BuildUi();
         }
@@ -51,6 +58,11 @@ namespace UtsavNights.Gameplay
 
         public void Toggle()
         {
+            if (_panel == null)
+            {
+                return;
+            }
+
             _panel.SetActive(!_panel.activeSelf);
             _tools.gameObject.SetActive(_panel.activeSelf);
         }
@@ -58,6 +70,11 @@ namespace UtsavNights.Gameplay
         /// <summary>Adds a button under the stats, shown only while the overlay is visible.</summary>
         public void AddTool(string label, Action action)
         {
+            if (BuildFlavor.IsStore)
+            {
+                return;
+            }
+
             if (_tools == null)
             {
                 BuildUi();

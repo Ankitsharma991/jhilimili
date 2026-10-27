@@ -18,7 +18,9 @@ PKGWARN="-nowarn:0618,0649,0169,0414,0067"
 { echo "-r:$D/NetStandard/ref/2.1.0/netstandard.dll"
   for f in "$D"/NetStandard/compat/2.1.0/shims/netstandard/*.dll; do echo "-r:$f"; done
   for f in "$D"/Managed/UnityEngine/UnityEngine*.dll; do echo "-r:$f"; done; } > engine.rsp
-for f in "$D"/Managed/UnityEngine/UnityEditor*.dll; do echo "-r:$f"; done > editor.rsp
+{ for f in "$D"/Managed/UnityEngine/UnityEditor*.dll; do echo "-r:$f"; done
+  echo "-r:$D/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll"
+  echo "-r:$D/PlaybackEngines/AndroidPlayer/Unity.Android.Types.dll"; } > editor.rsp
 
 V="UNITY_6000_3_OR_NEWER;UNITY_6000_2_OR_NEWER;UNITY_6000_1_OR_NEWER;UNITY_6000_0_OR_NEWER"
 for y in 2023_3 2023_2 2023_1 2022_3 2022_2 2022_1 2021_3 2021_2 2021_1 2020_3 2020_2 2020_1 2019_4 2019_3 2019_2 2019_1 2018_4 2018_3 2018_2 2018_1 2017_4 2017_3 2017_2 2017_1 5_6 5_5 5_4 5_3; do V="$V;UNITY_${y}_OR_NEWER"; done
@@ -66,6 +68,7 @@ step "UtsavNights.Haptics (player defines include the Android JNI backend)"
 "${CSC[@]}" -warnaserror+ -target:library -out:Haptics.editor-variant.dll @engine.rsp -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -define:"$EDITOR" "$A"/Scripts/Haptics/*.cs
 step "UtsavNights.Gameplay"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Gameplay.dll @engine.rsp -r:Unity.InputSystem.dll -r:UnityEngine.UI.dll -r:UrpStub.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:UtsavNights.Haptics.dll -define:"$RUNTIME" $(find "$A/Scripts/Gameplay" -name "*.cs")
+"${CSC[@]}" -warnaserror+ -target:library -out:Gameplay.store-variant.dll @engine.rsp -r:Unity.InputSystem.dll -r:UnityEngine.UI.dll -r:UrpStub.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:UtsavNights.Haptics.dll -define:"$RUNTIME;UTSAV_STORE" $(find "$A/Scripts/Gameplay" -name "*.cs")
 "${CSC[@]}" -warnaserror+ -target:library -out:Gameplay.editor-variant.dll @engine.rsp -r:Unity.InputSystem.dll -r:UnityEngine.UI.dll -r:UrpStub.dll -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:Haptics.editor-variant.dll -define:"$EDITOR" $(find "$A/Scripts/Gameplay" -name "*.cs")
 step "UtsavNights.UI"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.UI.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Gameplay.dll -r:UtsavNights.Haptics.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -define:"$RUNTIME" $(find "$A/Scripts/UI" -name "*.cs")
@@ -87,6 +90,6 @@ MONO="$D/MonoBleedingEdge/bin/mono"; MCSC=("$MONO" "$D/MonoBleedingEdge/lib/mono
 mkdir -p mono && cp "$NUNIT" mono/
 "${MCSC[@]}" -target:library -out:mono/Core.dll $(find "$A/Scripts/Core" -name "*.cs" -not -path "*/Core/Runtime/*")
 "${MCSC[@]}" -out:mono/CoreTests.exe -r:mono/Core.dll -r:mono/nunit.framework.dll "$HERE/CoreTestRunner.cs" \
-  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests,CameraTimingTests,QualityGovernorTests,PlaytestSessionTests,GameSettingsTests,PlacementRulesTests,StageMathTests,ScreenFitTests,FinaleScheduleTests,BlindSoundTestTests,AdPolicyTests,PlayerProgressTests,ConsentRulesTests,EntitlementsTests,AnalyticsSchemaTests,AdAuditTests}.cs
+  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests,CameraTimingTests,QualityGovernorTests,PlaytestSessionTests,GameSettingsTests,PlacementRulesTests,StageMathTests,ScreenFitTests,FinaleScheduleTests,BlindSoundTestTests,AdPolicyTests,PlayerProgressTests,ConsentRulesTests,EntitlementsTests,AnalyticsSchemaTests,AdAuditTests,ReleaseChecksTests,ImportRulesTests,StartupTimelineTests}.cs
 "$MONO" mono/CoreTests.exe
 echo "All project assemblies compiled."

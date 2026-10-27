@@ -151,6 +151,13 @@ namespace UtsavNights.Core.Diagnostics
 
         public int WindowFrames => _frames.Count;
 
+        /// <summary>
+        /// Share of this window's frames that took more than twice the frame budget (PRD 14: under 5 percent).
+        /// The budget is 1000 / target fps, so 33.3 ms on the low tier and 16.7 ms at 60 fps.
+        /// </summary>
+        public float WindowSpikeShare(float budgetMs) =>
+            _frames.Count == 0 || budgetMs <= 0f ? 0f : (float)_frames.CountAbove(2f * budgetMs) / _frames.Count;
+
         public void ClearWindow() => _frames.Clear();
     }
 }

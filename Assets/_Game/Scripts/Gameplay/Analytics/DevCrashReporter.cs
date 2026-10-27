@@ -67,7 +67,7 @@ namespace UtsavNights.Gameplay
                           "\",\"type\":\"" + Escape(exceptionType) + "\",\"frame\":\"" + Escape(frame) + "\"}";
             try
             {
-                File.AppendAllText(FilePath, line + "\n");
+                LocalLog.Append(FilePath, line);
             }
             catch (IOException)
             {

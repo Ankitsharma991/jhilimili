@@ -30,6 +30,9 @@ namespace UtsavNights.Gameplay
         private PlaytestSession _session;
         private string _sessionId;
         private ProfilerRecorder _memory;
+
+        // Managed allocations per frame over the last 64 frames: steady play should allocate next to nothing (GC spikes).
+        private ProfilerRecorder _gcPerFrame;
         private PlacementController _placement;
         private FinaleController _finale;
 
@@ -80,12 +83,25 @@ namespace UtsavNights.Gameplay
         {
             Game.Loop.Add(this);
             _memory = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "System Used Memory");
+            _gcPerFrame = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame", 64);
         }
 
         private void OnDisable()
         {
             Game.Loop.Remove(this);
             _memory.Dispose();
+            _gcPerFrame.Dispose();
+        }
+
+        private static double AverageKb(ProfilerRecorder recorder)
+        {
+            long sum = 0;
+            for (int i = 0; i < recorder.Count; i++)
+            {
+                sum += recorder.GetSample(i).Value;
+            }
+
+            return sum / (double)recorder.Count / 1024d;
         }
 
         private void OnDestroy()
@@ -267,6 +283,15 @@ namespace UtsavNights.Gameplay
             Field("avg_fps", _session.WindowAverageFps);
             Field("p95_ms", _session.WindowP95Ms);
             Field("frames", _session.WindowFrames);
+            if (Application.targetFrameRate > 0)
+            {
+                Field("spike_pct", 100f * _session.WindowSpikeShare(1000f / Application.targetFrameRate));
+            }
+
+            if (_gcPerFrame.Valid)
+            {
+                Field("gc_kb_per_frame", (float)(_gcPerFrame.Count > 0 ? AverageKb(_gcPerFrame) : 0d));
+            }
             if (Game.Services.TryGet(out QualityManager quality))
             {
                 Field("tier", quality.Tier);
@@ -352,11 +377,17 @@ namespace UtsavNights.Gameplay
         private void Emit()
         {
             _sb.Append('}');
+            if (BuildFlavor.IsStore)
+            {
+                // Players' phones keep no playtest log; the session numbers still feed Session.
+                return;
+            }
+
             string line = _sb.ToString();
             Debug.Log($"{LogTag} {line}");
             try
             {
-                File.AppendAllText(FilePath, line + "\n");
+                LocalLog.Append(FilePath, line);
             }
             catch (Exception e)
             {
