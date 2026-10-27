@@ -77,6 +77,9 @@ namespace UtsavNights.Content
 
         /// <summary>Rises to the launch height and stops emitting at the apex (rocket trail, cake shell).</summary>
         Launch = 2,
+
+        /// <summary>Stays on the stage's anchor while the cracker moves (a waved sparkler's tip).</summary>
+        Follow = 3,
     }
 
     /// <summary>Matches the Low / Mid / High quality levels created by project setup.</summary>

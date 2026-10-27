@@ -1,0 +1,188 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 065b1a91ab9cda24b90c94ec13104b09, type: 3}
+  m_Name: Cracker_SingleBang
+  m_EditorClassIdentifier: UtsavNights.Content::UtsavNights.Content.CrackerDefinition
+  id: bomb_single
+  schema: 1
+  displayName:
+    en: Single bang
+    ne: Bam
+    hi: Bomb
+  category: 4
+  festivals:
+  - diwali
+  - tihar
+  intensity: 2
+  footprint: {x: 0.2, y: 0.2}
+  effectVolume: {x: 1.6, y: 1.6, z: 1.6}
+  surfaces: 1
+  ignitionMethods: 3
+  fuseSeconds: 3
+  fuseAnchor: {x: 0, y: 0.16, z: 0}
+  stages:
+  - time: 0
+    emitter: {fileID: 1085541027872040593, guid: 02c6846a0986598fd91d043ed81e0e96, type: 3}
+    anchor: 1
+    endWithNextEmitter: 1
+    volume: 0.5
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 8300000, guid: 0ca7e0b7a7023e447b08e279b8fbd612, type: 3}
+    loopSound: 1
+    haptic: 1
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
+  - time: 3
+    emitter: {fileID: 6642429593222630369, guid: 3d54600de0a2c8093bfcae3b2297e2fb, type: 3}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 1
+    endLoopSound: 1
+    hideModel: 1
+    duckOthers: 0.6
+    sound: {fileID: 8300000, guid: 6ea6fd9e6d5c7005ca1a745c9915de7c, type: 3}
+    loopSound: 0
+    haptic: 2
+    light: 1
+    lightColor: {r: 1, g: 0.75, b: 0.45, a: 1}
+    lightPeak: 6
+    camera: 3
+    payoff: 1
+    stop: 0
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
+  - time: 3
+    emitter: {fileID: 8373802125465971966, guid: 432cfd14e51de3078aa27adfaf9607bd, type: 3}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.8
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 0}
+    loopSound: 0
+    haptic: 0
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
+  - time: 3.05
+    emitter: {fileID: 8077465357101176638, guid: ccc4b919c6e1bb961a8c419fc9bda7e8, type: 3}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.8
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 0}
+    loopSound: 0
+    haptic: 0
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
+  - time: 6.5
+    emitter: {fileID: 0}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.8
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 0}
+    loopSound: 0
+    haptic: 0
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 1
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
+  cooldownSeconds: 2
+  wavable: 0
+  modelPrefab: {fileID: 4870986451524121844, guid: ec70da7339dfbe829980d7aba1b8a2a0, type: 3}
+  trayIcon: {fileID: -6317917968774276008, guid: fa9076fa1a7ef257495205b22f69696d, type: 3}
+  low:
+    maxParticles: 160
+    light: 0
+    bloom: 0
+  mid:
+    maxParticles: 160
+    light: 1
+    bloom: 0
+  high:
+    maxParticles: 160
+    light: 1
+    bloom: 1
+  voices: 3
+  cost: 2
+  pack: core
+  creditsModel: own
+  creditsAudio: own-003

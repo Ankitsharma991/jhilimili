@@ -21,7 +21,7 @@ namespace UtsavNights.Tests.PlayMode
             TrayView tray = Object.FindFirstObjectByType<TrayView>();
             Assert.IsNotNull(tray, "tray in the HUD");
             Assert.IsTrue(Game.Services.TryGet(out PlacementController placement));
-            Assert.GreaterOrEqual(tray.ItemCount, 3, "flowerpot, chakri, rocket");
+            Assert.AreEqual(8, tray.ItemCount, "all eight R0 crackers");
 
             // PRD 12: tray 20 % of the screen or less. Designed for portrait phones (width-scaled canvas);
             // the batch test window is landscape, so check the design ratio and, when portrait, the real one.
@@ -48,7 +48,7 @@ namespace UtsavNights.Tests.PlayMode
             tray.Select(1);
             CrackerRuntime placed = placement.PlaceAt(Camera.main.WorldToScreenPoint(new Vector3(1.1f, 0f, 0.4f)));
             Assert.IsNotNull(placed, "placed from the tray");
-            Assert.AreEqual("chakri_classic", placed.Definition.Id);
+            Assert.AreEqual("sparkler_classic", placed.Definition.Id, "slot 1 in tray order: flowerpot, sparkler, chakri...");
             Assert.AreEqual(-1, tray.SelectedIndex, "selection clears after placing");
         }
     }

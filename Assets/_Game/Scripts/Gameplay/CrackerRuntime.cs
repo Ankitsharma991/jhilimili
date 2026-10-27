@@ -47,6 +47,9 @@ namespace UtsavNights.Gameplay
 
         public bool CanIgnite => _machine != null && _machine.State == CrackerState.Placed && isActiveAndEnabled;
 
+        /// <summary>Lit and still producing its effect (fuse, burning or payoff), not yet spent.</summary>
+        public bool IsBurning => _machine != null && _machine.State >= CrackerState.Lit && _machine.State < CrackerState.Cooldown && isActiveAndEnabled;
+
         /// <summary>Number of stage effects currently playing (for tests and debugging).</summary>
         public int ActiveStageEffects
         {
@@ -266,6 +269,7 @@ namespace UtsavNights.Gameplay
                     break;
                 case StageAnchor.Apex:
                     position = transform.position + Vector3.up * stage.launchHeight;
+                    position += transform.TransformVector(stage.launchDrift * StageMath.OffsetMultiplier(repeat, stage.repeatPattern));
                     break;
                 default:
                     position = transform.position;
@@ -293,6 +297,8 @@ namespace UtsavNights.Gameplay
             public float Rise;
             public float Spin;
             public bool SpinModel;
+            public Vector3 Drift;
+            public StageAnchor Anchor;
         }
 
         private readonly ActiveMotion[] _motions = new ActiveMotion[MaxMotions];
@@ -301,7 +307,7 @@ namespace UtsavNights.Gameplay
         /// <summary>Number of stage motions currently running (tests and debugging).</summary>
         public int ActiveMotions => _motionCount;
 
-        private void StartMotion(StageDefinition stage, EffectHandle handle, Vector3 origin)
+        private void StartMotion(StageDefinition stage, EffectHandle handle, Vector3 origin, int repeat)
         {
             if (stage.motion == StageMotion.None || !handle.IsValid || _motionCount >= MaxMotions)
             {
@@ -317,6 +323,8 @@ namespace UtsavNights.Gameplay
                 Rise = stage.launchRiseSeconds,
                 Spin = stage.spinDegreesPerSecond,
                 SpinModel = stage.spinModel,
+                Drift = transform.TransformVector(stage.launchDrift * StageMath.OffsetMultiplier(repeat, stage.repeatPattern)),
+                Anchor = stage.anchor,
             };
         }
 
@@ -346,9 +354,14 @@ namespace UtsavNights.Gameplay
                         _model.transform.Rotate(0f, m.Spin * deltaSeconds, 0f, Space.World);
                     }
                 }
+                else if (m.Kind == StageMotion.Follow)
+                {
+                    target.position = m.Anchor == StageAnchor.Fuse ? FuseWorldPosition : transform.position;
+                }
                 else if (m.Kind == StageMotion.Launch)
                 {
-                    target.position = m.Origin + Vector3.up * StageMath.LaunchHeight(m.Elapsed, m.Rise, m.Height);
+                    float progress = m.Height > 0f ? StageMath.LaunchHeight(m.Elapsed, m.Rise, m.Height) / m.Height : 1f;
+                    target.position = m.Origin + Vector3.up * StageMath.LaunchHeight(m.Elapsed, m.Rise, m.Height) + m.Drift * progress;
                     if (StageMath.LaunchFinished(m.Elapsed, m.Rise))
                     {
                         // The trail stops emitting at the apex; its particles fade on their own.
@@ -397,7 +410,7 @@ namespace UtsavNights.Gameplay
 
                 EffectHandle handle = _effects.PlayStage(stage, definition, position, transform.rotation);
                 _stageEffects[stageIndex] = handle;
-                StartMotion(stage, handle, position);
+                StartMotion(stage, handle, position, cue.Repeat);
             }
 
             if (stage.hideModel && _model != null)

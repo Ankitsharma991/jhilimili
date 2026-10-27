@@ -1,0 +1,161 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 065b1a91ab9cda24b90c94ec13104b09, type: 3}
+  m_Name: Cracker_Sparkler
+  m_EditorClassIdentifier: UtsavNights.Content::UtsavNights.Content.CrackerDefinition
+  id: sparkler_classic
+  schema: 1
+  displayName:
+    en: Sparkler
+    ne: Phuljhadi
+    hi: Phuljhadi
+  category: 0
+  festivals:
+  - diwali
+  - tihar
+  intensity: 0
+  footprint: {x: 0.15, y: 0.15}
+  effectVolume: {x: 0.6, y: 1.2, z: 0.6}
+  surfaces: 5
+  ignitionMethods: 3
+  fuseSeconds: 1.2
+  fuseAnchor: {x: 0, y: 0.53, z: 0}
+  stages:
+  - time: 0
+    emitter: {fileID: 1085541027872040593, guid: 02c6846a0986598fd91d043ed81e0e96, type: 3}
+    anchor: 1
+    endWithNextEmitter: 1
+    volume: 0.35
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 8300000, guid: 0ca7e0b7a7023e447b08e279b8fbd612, type: 3}
+    loopSound: 1
+    haptic: 1
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
+  - time: 1.2
+    emitter: {fileID: 522498256488150431, guid: 4edabaf0ac2bb049c973cf08a4f0e998, type: 3}
+    anchor: 1
+    endWithNextEmitter: 0
+    volume: 0.6
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 8300000, guid: bfc475335cd1a11a889c66ecdf890175, type: 3}
+    loopSound: 1
+    haptic: 1
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 1
+    stop: 0
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 3
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
+  - time: 1.2
+    emitter: {fileID: 7691838821942332315, guid: a42e27f5e932595edba27ea15ab91b21, type: 3}
+    anchor: 1
+    endWithNextEmitter: 0
+    volume: 0.8
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 0}
+    loopSound: 0
+    haptic: 0
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 0
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 3
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
+  - time: 13
+    emitter: {fileID: 0}
+    anchor: 0
+    endWithNextEmitter: 0
+    volume: 0.8
+    endLoopSound: 0
+    hideModel: 0
+    duckOthers: 0
+    sound: {fileID: 0}
+    loopSound: 0
+    haptic: 0
+    light: 0
+    lightColor: {r: 1, g: 0.7, b: 0.28, a: 1}
+    lightPeak: 2
+    camera: 0
+    payoff: 0
+    stop: 1
+    repeatCount: 1
+    repeatInterval: 0.5
+    repeatOffset: {x: 0, y: 0, z: 0}
+    repeatPattern: 0
+    motion: 0
+    spinDegreesPerSecond: 720
+    spinModel: 0
+    launchHeight: 10
+    launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
+  cooldownSeconds: 1.5
+  wavable: 1
+  modelPrefab: {fileID: 8400097947162659785, guid: 7cc062046e0e6a8a4ba376a989dd4493, type: 3}
+  trayIcon: {fileID: -4443215877243201989, guid: d587aed36978d89b1bf0fade38fcdb9f, type: 3}
+  low:
+    maxParticles: 200
+    light: 0
+    bloom: 0
+  mid:
+    maxParticles: 350
+    light: 1
+    bloom: 0
+  high:
+    maxParticles: 500
+    light: 1
+    bloom: 1
+  voices: 3
+  cost: 1
+  pack: core
+  creditsModel: own
+  creditsAudio: own-003

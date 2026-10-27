@@ -95,6 +95,9 @@ namespace UtsavNights.Content
         [Tooltip("Seconds to reach the apex for Launch motion.")]
         [Min(0.05f)] public float launchRiseSeconds = 1.2f;
 
+        [Tooltip("Sideways lean of a launch at the apex, per repeat (scaled like the repeat offset). Fans cake shells.")]
+        public Vector3 launchDrift;
+
         public CueKind Kind => stop ? CueKind.Stop : payoff ? CueKind.Payoff : CueKind.Normal;
 
         /// <summary>Times this stage fires (1 for stop stages).</summary>
@@ -152,6 +155,10 @@ namespace UtsavNights.Content
 
         [Tooltip("How long the spent item stays before it is cleared (PRD 6.3: 2 s).")]
         [Min(0f)] [SerializeField] private float cooldownSeconds = 2f;
+
+        [Header("Interaction")]
+        [Tooltip("Once lit, the player can pick it up and wave it with a finger (sparkler).")]
+        [SerializeField] private bool wavable;
 
         [Header("Model")]
         [SerializeField] private GameObject modelPrefab;
@@ -218,6 +225,8 @@ namespace UtsavNights.Content
         public string CreditsAudio { get => creditsAudio; internal set => creditsAudio = value; }
 
         public bool IsAerial => category.IsAerial();
+
+        public bool Wavable { get => wavable; internal set => wavable = value; }
 
         internal void SetFestivals(params string[] values) => festivals = values;
 

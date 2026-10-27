@@ -56,6 +56,7 @@ MonoBehaviour:
     spinModel: 0
     launchHeight: 10
     launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
   - time: 2.5
     emitter: {fileID: 485462649928167863, guid: a950662692cc9853aa169b5d219031e2, type: 3}
     anchor: 0
@@ -82,6 +83,7 @@ MonoBehaviour:
     spinModel: 0
     launchHeight: 10
     launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
   - time: 2.5
     emitter: {fileID: 0}
     anchor: 0
@@ -108,6 +110,7 @@ MonoBehaviour:
     spinModel: 0
     launchHeight: 10
     launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
   - time: 2.7
     emitter: {fileID: 6746304439893633742, guid: 7877476b4f217fd90bb93885ca248fc8, type: 3}
     anchor: 0
@@ -134,6 +137,7 @@ MonoBehaviour:
     spinModel: 0
     launchHeight: 10
     launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
   - time: 10
     emitter: {fileID: 0}
     anchor: 0
@@ -160,7 +164,9 @@ MonoBehaviour:
     spinModel: 0
     launchHeight: 10
     launchRiseSeconds: 1.2
+    launchDrift: {x: 0, y: 0, z: 0}
   cooldownSeconds: 2
+  wavable: 0
   modelPrefab: {fileID: 850621236703628911, guid: 6b8ef4d679066f371a89db3361b8b27c, type: 3}
   trayIcon: {fileID: -7332921041524830602, guid: 1d20c8e1df718bbb2a1aa73a7d783971, type: 3}
   low:

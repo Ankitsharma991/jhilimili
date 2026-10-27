@@ -40,6 +40,7 @@ namespace UtsavNights.Gameplay
         private AudioService _audio;
         private HapticsService _haptics;
         private PlacementController _placement;
+        private WaveController _wave;
         private int _touchId = -1;
         private float _depth;
 
@@ -142,8 +143,19 @@ namespace UtsavNights.Gameplay
             for (int i = 0; i < touches.Count; i++)
             {
                 ETouch touch = touches[i];
+                if (_wave != null && touch.touchId == _wave.TouchId)
+                {
+                    continue;
+                }
+
                 if (_touchId == -1 && touch.phase == TouchPhase.Began && !InputBlockers.IsBlocked(touch.screenPosition))
                 {
+                    // A finger on a burning sparkler picks it up instead of lighting anything.
+                    if (_wave != null && _wave.TryClaim(touch.touchId, touch.screenPosition))
+                    {
+                        continue;
+                    }
+
                     _touchId = touch.touchId;
                 }
 
@@ -208,6 +220,11 @@ namespace UtsavNights.Gameplay
             if (_placement == null)
             {
                 Game.Services.TryGet(out _placement);
+            }
+
+            if (_wave == null)
+            {
+                Game.Services.TryGet(out _wave);
             }
         }
 

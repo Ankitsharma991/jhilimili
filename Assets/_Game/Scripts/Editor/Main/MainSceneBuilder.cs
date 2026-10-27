@@ -40,11 +40,19 @@ namespace UtsavNights.EditorTools.Main
             FlowerpotAssets.Result assets = FlowerpotAssets.BuildAll();
             Content.CrackerDefinition rocket = RocketAssets.Build();
             Content.CrackerDefinition chakri = ChakriAssets.Build();
+            MoreCrackers.Set more = MoreCrackers.BuildAll();
+            AssetDatabase.SaveAssets();
+
+            // Tray order (F04): gentle to loud, ground to sky, hero cake last.
             Content.CrackerCatalog catalog = CatalogAssets.EnsureCore();
-            catalog.Upsert(chakri);
-            catalog.Upsert(rocket);
+            catalog.MutableEntries.Clear();
+            foreach (Content.CrackerDefinition def in new[] { assets.Definition, more.Sparkler, chakri, more.Lar, more.Bomb, rocket, more.Skyshot, more.Cake })
+            {
+                catalog.Upsert(def);
+            }
+
             EditorUtility.SetDirty(catalog);
-            TrayIconRenderer.RenderAll(assets.Definition, chakri, rocket);
+            TrayIconRenderer.RenderAll(assets.Definition, more.Sparkler, chakri, more.Lar, more.Bomb, rocket, more.Skyshot, more.Cake);
             AssetDatabase.SaveAssets();
             BuildBoot();
             BuildMain(assets, catalog);
@@ -158,6 +166,7 @@ namespace UtsavNights.EditorTools.Main
             lighter.Configure(camera, lighterVisual.transform, flame != null ? flame.gameObject : null, assets.LighterClick, assets.FlameOut);
 
             new GameObject("CrackerSpawner").AddComponent<CrackerSpawner>();
+            new GameObject("WaveController").AddComponent<WaveController>().Configure(camera);
             CreatePlacement(camera);
 
             // PRD 6.1: one cracker already stands ready; everything else comes from the tray.
