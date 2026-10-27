@@ -6,8 +6,9 @@ namespace UtsavNights.Gameplay
 {
     /// <summary>
     /// Creates the <see cref="ProgressService"/> (progress.json), the <see cref="AdService"/> and the
-    /// <see cref="ConsentService"/> with the providers for this build: AdMob and UMP when UTSAV_ADMOB is
-    /// defined, otherwise the development card and form. Consent is gathered in Start, before any ad loads.
+    /// <see cref="ConsentService"/> and the <see cref="PurchaseService"/> with the providers for this build:
+    /// AdMob and UMP when UTSAV_ADMOB is defined, Unity IAP when UTSAV_IAP is defined, otherwise the
+    /// development card, form and store. Consent is gathered in Start, before any ad loads.
     /// </summary>
     [DefaultExecutionOrder(-140)]
     public sealed class MonetisationInstaller : MonoBehaviour
@@ -17,6 +18,7 @@ namespace UtsavNights.Gameplay
 
         private AdService _ads;
         private ConsentService _consent;
+        private PurchaseService _purchases;
         private bool _owner;
 
         private void Awake()
@@ -42,6 +44,9 @@ namespace UtsavNights.Gameplay
             _consent = new ConsentService(CreateConsentBackend(), _ads, () => settings == null || settings.Current.shareUsageStats);
             Game.Services.Register(_consent);
             Game.Events.Subscribe<SettingsChangedEvent>(OnSettingsChanged);
+
+            _purchases = new PurchaseService(CreatePurchaseBackend(), progress);
+            Game.Services.Register(_purchases);
             Debug.Log($"[Ads] backend={backend.Name} interstitials={interstitialsEnabled} adsRemoved={progress.AdsRemoved}");
         }
 
@@ -53,6 +58,17 @@ namespace UtsavNights.Gameplay
             }
 
             _consent.Gather();
+            _purchases.Initialize();
+#if !UTSAV_IAP
+            if (_purchases.Backend is DevPurchaseBackend store && FindFirstObjectByType<DevOverlay>() is DevOverlay tools)
+            {
+                tools.AddTool("Store: refund", () =>
+                {
+                    store.Refund();
+                    _purchases.Restore(message => Debug.Log($"[Store] refund simulated: {message}"));
+                });
+            }
+#endif
 #if !UTSAV_ADMOB
             DevOverlay overlay = FindFirstObjectByType<DevOverlay>();
             if (overlay != null && _consent.Backend is DevConsentBackend dev)
@@ -79,11 +95,21 @@ namespace UtsavNights.Gameplay
 
             Game.Events.Unsubscribe<SettingsChangedEvent>(OnSettingsChanged);
             Game.Services.Unregister<ConsentService>();
+            Game.Services.Unregister<PurchaseService>();
 
             Game.Loop.Remove(_ads);
             _ads.Dispose();
             Game.Services.Unregister<AdService>();
             Game.Services.Unregister<ProgressService>();
+        }
+
+        private IPurchaseBackend CreatePurchaseBackend()
+        {
+#if UTSAV_IAP
+            return new UnityIapBackend();
+#else
+            return gameObject.AddComponent<DevPurchaseBackend>();
+#endif
         }
 
         private IConsentBackend CreateConsentBackend()

@@ -38,6 +38,10 @@ namespace UtsavNights.UI
         private SwitchView _usageStats;
         private TextMeshProUGUI _privacyNote;
         private ConsentService _consent;
+        private PurchaseService _purchases;
+        private TextMeshProUGUI _removeAdsNote;
+        private TextMeshProUGUI _restoreNote;
+        private GameObject _buyButton;
         private bool _binding;
         private float _tipClock = -1f;
 
@@ -86,6 +90,55 @@ namespace UtsavNights.UI
         }
 
         public string PrivacyNote => _privacyNote != null ? _privacyNote.text : string.Empty;
+
+        public string RemoveAdsNote => _removeAdsNote != null ? _removeAdsNote.text : string.Empty;
+
+        public string RestoreNote => _restoreNote != null ? _restoreNote.text : string.Empty;
+
+        public bool BuyVisible => _buyButton != null && _buyButton.activeSelf;
+
+        /// <summary>Same as tapping "Buy" (F11).</summary>
+        public void BuyRemoveAds()
+        {
+            _purchases?.BuyRemoveAds((result, message) =>
+            {
+                RefreshPurchases();
+                if (!string.IsNullOrEmpty(message))
+                {
+                    _removeAdsNote.text = message;
+                }
+            });
+        }
+
+        /// <summary>Same as tapping "Restore".</summary>
+        public void RestorePurchases()
+        {
+            if (_purchases == null)
+            {
+                return;
+            }
+
+            _restoreNote.text = "Checking...";
+            _purchases.Restore(message =>
+            {
+                RefreshPurchases();
+                _restoreNote.text = message;
+            });
+        }
+
+        private void RefreshPurchases()
+        {
+            if (_removeAdsNote == null)
+            {
+                return;
+            }
+
+            bool owned = _purchases != null && _purchases.Owned;
+            _buyButton.SetActive(_purchases != null && !owned);
+            _removeAdsNote.text = _purchases == null ? "Purchases are not set up in this build"
+                : owned ? "Purchased. Thank you for supporting Utsav Nights!"
+                : string.IsNullOrEmpty(_purchases.Price) ? "No ads, every cracker unlocked, forever" : $"{_purchases.Price}, one time. No ads, every cracker unlocked";
+        }
 
         private void Start()
         {
@@ -195,6 +248,9 @@ namespace UtsavNights.UI
             _usageStats.Set(s.shareUsageStats, false);
             Game.Services.TryGet(out _consent);
             _privacyNote.text = _consent != null ? _consent.Description : "Ads are not set up in this build";
+            Game.Services.TryGet(out _purchases);
+            _restoreNote.text = "Bought on another phone? Get it back here";
+            RefreshPurchases();
             _binding = false;
         }
 
@@ -330,6 +386,14 @@ namespace UtsavNights.UI
             _tier = Row(rows, "Quality", "Auto picks the best level for this device", SegmentedView.Create(rows, TierLabels).gameObject).GetComponentInChildren<SegmentedView>();
             _tier.Changed += index => Edit(s => s.qualityTier = index - 1, true);
 
+            // F11: one-time Remove ads and unlock all, and Restore (PRD 15.1).
+            Section(rows, "Remove ads");
+            GameObject buyRow = Row(rows, "Remove ads and unlock all", "No ads, every cracker unlocked", RowButton(rows, "Buy", BuyRemoveAds));
+            _removeAdsNote = buyRow.transform.Find("Labels/Sub").GetComponentInChildren<TextMeshProUGUI>();
+            _buyButton = buyRow.GetComponentInChildren<Button>().gameObject;
+            GameObject restoreRow = Row(rows, "Restore purchases", "Bought on another phone? Get it back here", RowButton(rows, "Restore", RestorePurchases));
+            _restoreNote = restoreRow.transform.Find("Labels/Sub").GetComponentInChildren<TextMeshProUGUI>();
+
             // PRD 15.2 and 16: a Privacy options entry, and analytics the player can switch off.
             Section(rows, "Privacy");
             _usageStats = Row(rows, "Share usage statistics", "Anonymous; no personal data", SwitchView.Create(rows).gameObject).GetComponentInChildren<SwitchView>();
@@ -349,6 +413,10 @@ namespace UtsavNights.UI
                 _controls.Add(new AccessibleControl { Label = "Graphics " + TierLabels[i], Rect = _tier.SegmentRect(i), Segmented = _tier, Segment = i });
             }
 
+            Button buy = _buyButton.GetComponent<Button>();
+            _controls.Add(new AccessibleControl { Label = "Remove ads and unlock all, buy", Rect = (RectTransform)buy.transform, Button = buy });
+            Button restore = restoreRow.GetComponentInChildren<Button>();
+            _controls.Add(new AccessibleControl { Label = "Restore purchases", Rect = (RectTransform)restore.transform, Button = restore });
             Accessible("Share usage statistics", _usageStats);
             Button privacyButton = privacyRow.GetComponentInChildren<Button>();
             _controls.Add(new AccessibleControl { Label = "Privacy options", Rect = (RectTransform)privacyButton.transform, Button = privacyButton });

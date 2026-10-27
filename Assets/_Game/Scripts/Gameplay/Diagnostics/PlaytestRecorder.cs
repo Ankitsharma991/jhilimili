@@ -50,6 +50,7 @@ namespace UtsavNights.Gameplay
             Game.Events.Subscribe<QualityChangedEvent>(OnQualityChanged);
             Game.Events.Subscribe<AppPausedEvent>(OnAppPaused);
             Game.Events.Subscribe<AdEvent>(OnAd);
+            Game.Events.Subscribe<PurchaseEvent>(OnPurchase);
 
             Begin("session_start");
             Field("device", SystemInfo.deviceModel);
@@ -96,6 +97,7 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<QualityChangedEvent>(OnQualityChanged);
             Game.Events.Unsubscribe<AppPausedEvent>(OnAppPaused);
             Game.Events.Unsubscribe<AdEvent>(OnAd);
+            Game.Events.Unsubscribe<PurchaseEvent>(OnPurchase);
             if (_placement != null)
             {
                 _placement.SelectionChanged -= OnSelectionChanged;
@@ -222,6 +224,13 @@ namespace UtsavNights.Gameplay
                 Field("block", e.Block.ToString());
             }
 
+            Emit();
+        }
+
+        private void OnPurchase(PurchaseEvent e)
+        {
+            Begin(e.Type);
+            Field("sku", e.Sku);
             Emit();
         }
 

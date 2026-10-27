@@ -25,6 +25,9 @@ namespace UtsavNights.UI
         private TextMeshProUGUI _title;
         private TextMeshProUGUI _status;
         private Button _watch;
+        private Button _buy;
+        private TextMeshProUGUI _buyLabel;
+        private PurchaseService _purchases;
         private int _index = -1;
         private float _closeAt = -1f;
 
@@ -39,6 +42,7 @@ namespace UtsavNights.UI
             _tray = FindFirstObjectByType<TrayView>();
             Game.Services.TryGet(out _ads);
             Game.Services.TryGet(out _progress);
+            Game.Services.TryGet(out _purchases);
             Build(_tray != null ? _tray.transform.parent : transform);
             if (_tray != null)
             {
@@ -93,6 +97,10 @@ namespace UtsavNights.UI
             _title.text = _tray.ItemLabel(index);
             _status.text = string.Empty;
             _watch.interactable = _ads != null;
+            _buy.gameObject.SetActive(_purchases != null);
+            _buy.interactable = _purchases != null && !_purchases.Busy;
+            string price = _purchases != null ? _purchases.Price : string.Empty;
+            _buyLabel.text = string.IsNullOrEmpty(price) ? "Remove ads and unlock all" : $"Remove ads and unlock all ({price})";
             _overlay.gameObject.SetActive(true);
             _overlay.SetAsLastSibling();
             InputBlockers.Register(_overlay);
@@ -139,6 +147,25 @@ namespace UtsavNights.UI
             });
         }
 
+        /// <summary>Same as tapping "Remove ads and unlock all" (F11).</summary>
+        public void BuyRemoveAds()
+        {
+            if (!IsOpen || _purchases == null || _closeAt >= 0f)
+            {
+                return;
+            }
+
+            _status.text = string.Empty;
+            _purchases.BuyRemoveAds((result, message) =>
+            {
+                _status.text = message;
+                if (Core.Monetisation.Entitlements.Grants(result))
+                {
+                    _closeAt = Time.unscaledTime + CloseAfterRewardSeconds;
+                }
+            });
+        }
+
         private void Build(Transform parent)
         {
             _overlay = UiKit.Rect("UnlockOverlay", parent);
@@ -152,7 +179,7 @@ namespace UtsavNights.UI
             RectTransform card = UiKit.Rect("Card", _overlay);
             card.anchorMin = new Vector2(0f, 0.5f);
             card.anchorMax = new Vector2(1f, 0.5f);
-            card.sizeDelta = new Vector2(-64f, 640f);
+            card.sizeDelta = new Vector2(-64f, 780f);
             UiKit.Panel(card, new Color(0.09f, 0.06f, 0.2f, 0.98f));
             MaxWidth.Apply(card, 900f);
 
@@ -162,7 +189,12 @@ namespace UtsavNights.UI
             _status = Label(card, "Status", -300f, 70f, UiTheme.SmallText, UiTheme.Saffron);
 
             _watch = CardButton(card, "Watch a short ad", -390f, UiTheme.Saffron, UiTheme.Indigo, WatchAd);
-            CardButton(card, "Not now", -520f, UiTheme.IndigoLight, UiTheme.OffWhite, Close);
+            _buy = CardButton(card, "Remove ads and unlock all", -520f, UiTheme.IndigoLight, UiTheme.OffWhite, BuyRemoveAds);
+            _buyLabel = _buy.GetComponentInChildren<TextMeshProUGUI>();
+            _buyLabel.enableAutoSizing = true;
+            _buyLabel.fontSizeMin = 24f;
+            _buyLabel.fontSizeMax = UiTheme.BodyText * UiKit.TextScale;
+            CardButton(card, "Not now", -650f, UiTheme.Indigo, UiTheme.OffWhite, Close);
             _overlay.gameObject.SetActive(false);
         }
 
@@ -185,7 +217,7 @@ namespace UtsavNights.UI
         {
             RectTransform rect = UiKit.Rect(label, card);
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 1f);
-            rect.sizeDelta = new Vector2(560f, UiTheme.MinTouch);
+            rect.sizeDelta = new Vector2(640f, UiTheme.MinTouch);
             rect.anchoredPosition = new Vector2(0f, y);
             Image image = UiKit.Panel(rect, background);
             var button = rect.gameObject.AddComponent<Button>();
