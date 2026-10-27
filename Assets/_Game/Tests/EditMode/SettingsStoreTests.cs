@@ -53,6 +53,18 @@ namespace UtsavNights.Tests
         }
 
         [Test]
+        public void VersionOneFile_MigratesWithUsageStatsOn()
+        {
+            Directory.CreateDirectory(_dir);
+            File.WriteAllText(_path, "{\"version\":1,\"masterVolume\":0.5,\"quietMode\":true}");
+            GameSettings s = new SettingsStore(_path).Load();
+            Assert.AreEqual(GameSettings.CurrentVersion, s.version);
+            Assert.IsTrue(s.shareUsageStats, "new field takes its default");
+            Assert.IsTrue(s.quietMode, "old values kept");
+            Assert.AreEqual(0.5f, s.masterVolume);
+        }
+
+        [Test]
         public void CorruptFile_GivesDefaults()
         {
             Directory.CreateDirectory(_dir);

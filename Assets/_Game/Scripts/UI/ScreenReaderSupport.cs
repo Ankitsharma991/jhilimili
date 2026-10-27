@@ -188,6 +188,16 @@ namespace UtsavNights.UI
                     node.incremented += () => Nudge(slider, node, SliderStep);
                     node.decremented += () => Nudge(slider, node, -SliderStep);
                 }
+                else if (control.Button != null)
+                {
+                    Button button = control.Button;
+                    node.role = AccessibilityRole.Button;
+                    node.invoked += () =>
+                    {
+                        button.onClick.Invoke();
+                        return true;
+                    };
+                }
                 else if (control.Segmented != null)
                 {
                     SegmentedView segmented = control.Segmented;

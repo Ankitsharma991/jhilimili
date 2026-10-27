@@ -27,8 +27,6 @@ namespace UtsavNights.Gameplay
             Policy = new AdPolicy(clock());
             Game.Events.Subscribe<CrackerIgnitedEvent>(OnIgnited);
             Game.Events.Subscribe<PayoffCompleteEvent>(OnPayoff);
-            Backend.Load(AdKind.Rewarded);
-            Backend.Load(AdKind.Interstitial);
         }
 
         public IAdBackend Backend { get; }
@@ -43,6 +41,18 @@ namespace UtsavNights.Gameplay
         {
             Game.Events.Unsubscribe<CrackerIgnitedEvent>(OnIgnited);
             Game.Events.Unsubscribe<PayoffCompleteEvent>(OnPayoff);
+        }
+
+        /// <summary>Starts loading ads; called once consent allows it (never before, PRD 15.2).</summary>
+        public void Preload()
+        {
+            if (!Policy.ConsentAllowsAds)
+            {
+                return;
+            }
+
+            Backend.Load(AdKind.Rewarded);
+            Backend.Load(AdKind.Interstitial);
         }
 
         public AdBlock Check(AdKind kind) => IsShowing ? AdBlock.FeatureOff : Policy.Check(kind, Now, Scene());

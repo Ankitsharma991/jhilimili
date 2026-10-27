@@ -35,6 +35,9 @@ namespace UtsavNights.UI
         private Slider _vibrationStrength;
         private TextMeshProUGUI _vibrationNote;
         private SegmentedView _tier;
+        private SwitchView _usageStats;
+        private TextMeshProUGUI _privacyNote;
+        private ConsentService _consent;
         private bool _binding;
         private float _tipClock = -1f;
 
@@ -60,7 +63,29 @@ namespace UtsavNights.UI
             public Slider Slider;
             public SegmentedView Segmented;
             public int Segment = -1;
+            public Button Button;
         }
+
+        public void SetUsageStats(bool on) => _usageStats.Set(on, true);
+
+        /// <summary>Same as tapping "Privacy options".</summary>
+        public void OpenPrivacyOptions()
+        {
+            if (_consent == null)
+            {
+                return;
+            }
+
+            _consent.ShowPrivacyOptions(() =>
+            {
+                if (_privacyNote != null)
+                {
+                    _privacyNote.text = _consent.Description;
+                }
+            });
+        }
+
+        public string PrivacyNote => _privacyNote != null ? _privacyNote.text : string.Empty;
 
         private void Start()
         {
@@ -167,6 +192,9 @@ namespace UtsavNights.UI
             _vibrationStrength.interactable = hasVibrator && s.hapticsEnabled;
             _vibrationNote.text = hasVibrator ? "Taps and rumbles with each cracker" : "This device has no vibration motor";
             _tier.Set(s.qualityTier + 1, false);
+            _usageStats.Set(s.shareUsageStats, false);
+            Game.Services.TryGet(out _consent);
+            _privacyNote.text = _consent != null ? _consent.Description : "Ads are not set up in this build";
             _binding = false;
         }
 
@@ -302,6 +330,13 @@ namespace UtsavNights.UI
             _tier = Row(rows, "Quality", "Auto picks the best level for this device", SegmentedView.Create(rows, TierLabels).gameObject).GetComponentInChildren<SegmentedView>();
             _tier.Changed += index => Edit(s => s.qualityTier = index - 1, true);
 
+            // PRD 15.2 and 16: a Privacy options entry, and analytics the player can switch off.
+            Section(rows, "Privacy");
+            _usageStats = Row(rows, "Share usage statistics", "Anonymous; no personal data", SwitchView.Create(rows).gameObject).GetComponentInChildren<SwitchView>();
+            _usageStats.Changed += on => Edit(s => s.shareUsageStats = on, true);
+            GameObject privacyRow = Row(rows, "Privacy options", "Checking ad consent", RowButton(rows, "Open", OpenPrivacyOptions));
+            _privacyNote = privacyRow.transform.Find("Labels/Sub").GetComponentInChildren<TextMeshProUGUI>();
+
             Accessible("Volume", _master);
             Accessible("Fireworks volume", _effects);
             Accessible("Quiet mode", _quiet);
@@ -314,6 +349,10 @@ namespace UtsavNights.UI
                 _controls.Add(new AccessibleControl { Label = "Graphics " + TierLabels[i], Rect = _tier.SegmentRect(i), Segmented = _tier, Segment = i });
             }
 
+            Accessible("Share usage statistics", _usageStats);
+            Button privacyButton = privacyRow.GetComponentInChildren<Button>();
+            _controls.Add(new AccessibleControl { Label = "Privacy options", Rect = (RectTransform)privacyButton.transform, Button = privacyButton });
+
             _overlay.gameObject.SetActive(false);
         }
 
@@ -322,6 +361,18 @@ namespace UtsavNights.UI
 
         private void Accessible(string label, SwitchView view) =>
             _controls.Add(new AccessibleControl { Label = label, Rect = (RectTransform)view.transform, Switch = view });
+
+        private static GameObject RowButton(RectTransform rows, string label, System.Action onClick)
+        {
+            RectTransform rect = UiKit.Rect("Button_" + label, rows);
+            rect.sizeDelta = new Vector2(200f, UiTheme.MinTouch);
+            Image image = UiKit.Panel(rect, UiTheme.IndigoLight);
+            var button = rect.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            button.onClick.AddListener(() => onClick());
+            UiKit.Text(rect, label, UiTheme.BodyText, TextAlignmentOptions.Center, UiTheme.OffWhite);
+            return rect.gameObject;
+        }
 
         private static void Section(RectTransform rows, string label)
         {
