@@ -37,6 +37,7 @@ namespace UtsavNights.EditorTools.Main
         public static void BuildAll()
         {
             UiSetup.EnsureTmpEssentials();
+            AdsSetup.Apply();
             FlowerpotAssets.Result assets = FlowerpotAssets.BuildAll();
             Content.CrackerDefinition rocket = RocketAssets.Build();
             Content.CrackerDefinition chakri = ChakriAssets.Build();

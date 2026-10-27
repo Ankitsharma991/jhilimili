@@ -81,6 +81,7 @@ namespace UtsavNights.EditorTools
                     : BuildOptions.None,
             };
 
+            AdsSetup.Apply(release: kind != Kind.DevelopmentApk);
             BuildReport report = BuildPipeline.BuildPlayer(options);
             BuildSummary summary = report.summary;
             long bytes = File.Exists(path) ? new FileInfo(path).Length : (long)summary.totalSize;

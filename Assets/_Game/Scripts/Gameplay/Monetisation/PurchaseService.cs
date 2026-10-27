@@ -37,6 +37,12 @@ namespace UtsavNights.Gameplay
         {
             Backend = backend;
             _progress = progress;
+            Backend.PurchaseCompletedLater += sku =>
+            {
+                _progress?.SetPurchased(sku);
+                Game.Events.Publish(new PurchaseEvent("purchase_done", sku, PurchaseResult.Purchased));
+                StateChanged?.Invoke();
+            };
         }
 
         /// <summary>Raised when the price, readiness or a purchase in flight changes.</summary>

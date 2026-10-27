@@ -1,0 +1,25 @@
+{
+    "name": "UtsavNights.Ads",
+    "rootNamespace": "UtsavNights.Ads",
+    "references": [
+        "UtsavNights.Core",
+        "UtsavNights.Gameplay"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UTSAV_ADMOB"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.google.ads.mobile",
+            "expression": "11.0.0",
+            "define": "UTSAV_ADMOB"
+        }
+    ],
+    "noEngineReferences": false
+}

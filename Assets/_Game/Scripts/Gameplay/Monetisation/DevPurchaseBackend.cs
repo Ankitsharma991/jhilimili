@@ -24,6 +24,13 @@ namespace UtsavNights.Gameplay
 
         public bool IsReady { get; private set; }
 
+        // The development store completes every payment at once, so nothing ever arrives later.
+        public event Action<string> PurchaseCompletedLater
+        {
+            add { }
+            remove { }
+        }
+
         public bool DialogVisible => _dialog != null && _dialog.activeSelf;
 
         /// <summary>Test hook: the next query fails as if offline.</summary>

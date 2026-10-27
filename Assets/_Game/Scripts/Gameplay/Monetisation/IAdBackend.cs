@@ -4,7 +4,7 @@ using UtsavNights.Core.Monetisation;
 namespace UtsavNights.Gameplay
 {
     /// <summary>
-    /// One ad network (AdMob behind UTSAV_ADMOB, or the development card). Implementations must call
+    /// One ad network (AdMob from the UtsavNights.Ads assembly, or the development card). Implementations must call
     /// <c>done</c> exactly once, on the main thread, and never throw into gameplay.
     /// </summary>
     public interface IAdBackend

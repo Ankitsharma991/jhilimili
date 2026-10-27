@@ -3,7 +3,7 @@ using UtsavNights.Core.Analytics;
 
 namespace UtsavNights.Gameplay
 {
-    /// <summary>Analytics provider: Firebase Analytics behind UTSAV_FIREBASE, or the local development log.</summary>
+    /// <summary>Analytics provider: Firebase Analytics once added (see MonetisationProviders), or the local development log.</summary>
     public interface IAnalyticsBackend
     {
         string Name { get; }
@@ -14,7 +14,7 @@ namespace UtsavNights.Gameplay
         void Log(string eventName, EventParams parameters);
     }
 
-    /// <summary>Crash reporter: Firebase Crashlytics behind UTSAV_FIREBASE, or the local development log.</summary>
+    /// <summary>Crash reporter: Firebase Crashlytics once added, or the local development log.</summary>
     public interface ICrashReporter
     {
         string Name { get; }

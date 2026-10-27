@@ -5,7 +5,7 @@ using UtsavNights.Core.Monetisation;
 namespace UtsavNights.Gameplay
 {
     /// <summary>
-    /// One store (Google Play through Unity IAP behind UTSAV_IAP, or the development store). Callbacks run
+    /// One store (Google Play through Unity IAP from UtsavNights.Purchasing, or the development store). Callbacks run
     /// on the main thread exactly once and never throw into gameplay.
     /// </summary>
     public interface IPurchaseBackend
@@ -23,5 +23,8 @@ namespace UtsavNights.Gameplay
 
         /// <summary>Asks the store what the player owns. <c>ok</c> is false when offline or on error.</summary>
         void QueryOwned(Action<bool, IReadOnlyCollection<string>> done);
+
+        /// <summary>A purchase completed outside <see cref="Buy"/> (a pending payment that cleared later).</summary>
+        event Action<string> PurchaseCompletedLater;
     }
 }

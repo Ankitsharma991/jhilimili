@@ -1,0 +1,26 @@
+{
+    "name": "UtsavNights.Purchasing",
+    "rootNamespace": "UtsavNights.Purchasing",
+    "references": [
+        "UtsavNights.Core",
+        "UtsavNights.Gameplay",
+        "Unity.Purchasing"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UTSAV_IAP"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.purchasing",
+            "expression": "5.0.0",
+            "define": "UTSAV_IAP"
+        }
+    ],
+    "noEngineReferences": false
+}

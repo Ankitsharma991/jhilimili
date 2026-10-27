@@ -4,8 +4,8 @@ using UtsavNights.Core.Runtime;
 namespace UtsavNights.Gameplay
 {
     /// <summary>
-    /// Creates the <see cref="AnalyticsService"/> with the providers for this build: Firebase Analytics and
-    /// Crashlytics when UTSAV_FIREBASE is defined, otherwise local development logs. Runs after the
+    /// Creates the <see cref="AnalyticsService"/> with the providers registered in
+    /// <see cref="MonetisationProviders"/> (Firebase on a device, once added), otherwise local development logs. Runs after the
     /// consent service exists; nothing is sent until consent and the usage-statistics switch allow it.
     /// </summary>
     [DefaultExecutionOrder(-130)]
@@ -20,13 +20,8 @@ namespace UtsavNights.Gameplay
                 return;
             }
 
-#if UTSAV_FIREBASE
-            IAnalyticsBackend backend = new FirebaseAnalyticsBackend();
-            ICrashReporter crashes = new CrashlyticsReporter();
-#else
-            IAnalyticsBackend backend = new DevAnalyticsBackend();
-            ICrashReporter crashes = new DevCrashReporter();
-#endif
+            IAnalyticsBackend backend = MonetisationProviders.Analytics?.Invoke() ?? new DevAnalyticsBackend();
+            ICrashReporter crashes = MonetisationProviders.Crashes?.Invoke() ?? new DevCrashReporter();
             _analytics = new AnalyticsService(backend, crashes);
             Game.Services.Register(_analytics);
             Game.Loop.Add(_analytics);

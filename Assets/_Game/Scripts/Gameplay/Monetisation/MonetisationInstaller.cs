@@ -6,9 +6,9 @@ namespace UtsavNights.Gameplay
 {
     /// <summary>
     /// Creates the <see cref="ProgressService"/> (progress.json), the <see cref="AdService"/> and the
-    /// <see cref="ConsentService"/> and the <see cref="PurchaseService"/> with the providers for this build:
-    /// AdMob and UMP when UTSAV_ADMOB is defined, Unity IAP when UTSAV_IAP is defined, otherwise the
-    /// development card, form and store. Consent is gathered in Start, before any ad loads.
+    /// <see cref="ConsentService"/> and the <see cref="PurchaseService"/> with the providers registered in
+    /// <see cref="MonetisationProviders"/> (AdMob, UMP, Unity IAP on a device), otherwise the development
+    /// card, form and store. Consent is gathered in Start, before any ad loads.
     /// </summary>
     [DefaultExecutionOrder(-140)]
     public sealed class MonetisationInstaller : MonoBehaviour
@@ -59,7 +59,6 @@ namespace UtsavNights.Gameplay
 
             _consent.Gather();
             _purchases.Initialize();
-#if !UTSAV_IAP
             if (_purchases.Backend is DevPurchaseBackend store && FindFirstObjectByType<DevOverlay>() is DevOverlay tools)
             {
                 tools.AddTool("Store: refund", () =>
@@ -68,8 +67,7 @@ namespace UtsavNights.Gameplay
                     _purchases.Restore(message => Debug.Log($"[Store] refund simulated: {message}"));
                 });
             }
-#endif
-#if !UTSAV_ADMOB
+
             DevOverlay overlay = FindFirstObjectByType<DevOverlay>();
             if (overlay != null && _consent.Backend is DevConsentBackend dev)
             {
@@ -81,7 +79,6 @@ namespace UtsavNights.Gameplay
                     Debug.Log($"[Consent] debug geography EEA={dev.InEea}");
                 });
             }
-#endif
         }
 
         private void OnSettingsChanged(SettingsChangedEvent e) => _consent.Apply();
@@ -103,31 +100,13 @@ namespace UtsavNights.Gameplay
             Game.Services.Unregister<ProgressService>();
         }
 
-        private IPurchaseBackend CreatePurchaseBackend()
-        {
-#if UTSAV_IAP
-            return new UnityIapBackend();
-#else
-            return gameObject.AddComponent<DevPurchaseBackend>();
-#endif
-        }
+        private IPurchaseBackend CreatePurchaseBackend() =>
+            MonetisationProviders.Purchases?.Invoke() ?? gameObject.AddComponent<DevPurchaseBackend>();
 
-        private IConsentBackend CreateConsentBackend()
-        {
-#if UTSAV_ADMOB
-            return new UmpConsentBackend();
-#else
-            return gameObject.AddComponent<DevConsentBackend>();
-#endif
-        }
+        private IConsentBackend CreateConsentBackend() =>
+            MonetisationProviders.Consent?.Invoke() ?? gameObject.AddComponent<DevConsentBackend>();
 
-        private IAdBackend CreateBackend()
-        {
-#if UTSAV_ADMOB
-            return new AdMobBackend();
-#else
-            return gameObject.AddComponent<DevAdBackend>();
-#endif
-        }
+        private IAdBackend CreateBackend() =>
+            MonetisationProviders.Ads?.Invoke() ?? gameObject.AddComponent<DevAdBackend>();
     }
 }

@@ -4,7 +4,7 @@ using UtsavNights.Core.Monetisation;
 namespace UtsavNights.Gameplay
 {
     /// <summary>
-    /// Consent provider: Google UMP behind UTSAV_ADMOB, or the development form. Callbacks run on the main
+    /// Consent provider: Google UMP from the UtsavNights.Ads assembly, or the development form. Callbacks run on the main
     /// thread exactly once; a non-null string is an error, and the game carries on without ads.
     /// </summary>
     public interface IConsentBackend
