@@ -348,7 +348,7 @@ namespace UtsavNights.EditorTools.Main
             CrackerDefinition d = Load($"{Defs}/Cracker_Cake.asset");
             Common(d, "cake_twelve", new LocalizedName("Multi-shot cake", "Cake", "Cake"), CrackerCategory.MultiShotCake, Intensity.Loud, 3, modelPrefab);
             d.Footprint = new Vector2(0.32f, 0.26f);
-            d.EffectVolume = new Vector3(3.4f, height + 1f, 1.5f);
+            d.EffectVolume = new Vector3(3.6f, height + 1f, 1.5f);
             d.Surfaces = PlacementSurface.Ground | PlacementSurface.LaunchPad;
             d.FuseSeconds = 2.5f;
             d.FuseAnchor = new Vector3(0.16f, 0.06f, 0f);

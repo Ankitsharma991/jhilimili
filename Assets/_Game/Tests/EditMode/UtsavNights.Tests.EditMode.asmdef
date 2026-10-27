@@ -11,7 +11,8 @@
         "UtsavNights.Audio",
         "UtsavNights.Haptics",
         "UtsavNights.Gameplay",
-        "UtsavNights.Editor"
+        "UtsavNights.Editor",
+        "UtsavNights.UI"
     ],
     "includePlatforms": [
         "Editor"

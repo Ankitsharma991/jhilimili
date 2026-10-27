@@ -24,7 +24,7 @@ MonoBehaviour:
   - tihar
   intensity: 2
   footprint: {x: 0.32, y: 0.26}
-  effectVolume: {x: 3.4, y: 9, z: 1.5}
+  effectVolume: {x: 3.6, y: 9, z: 1.5}
   surfaces: 9
   ignitionMethods: 3
   fuseSeconds: 2.5

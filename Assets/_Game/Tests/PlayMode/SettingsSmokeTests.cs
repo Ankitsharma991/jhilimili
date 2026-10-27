@@ -29,6 +29,8 @@ namespace UtsavNights.Tests.PlayMode
             Assert.IsTrue(Game.Services.TryGet(out QualityManager quality));
             Assert.IsTrue(Game.Services.TryGet(out PlacementController placement));
             GameSettings original = settings.Current;
+            int originalTier = quality.Tier;
+            bool originalManual = quality.IsManual;
 
             try
             {
@@ -66,6 +68,13 @@ namespace UtsavNights.Tests.PlayMode
                     s.masterVolume = original.masterVolume;
                     s.qualityTier = original.qualityTier;
                 });
+
+                // Leave the editor's saved tier exactly as it was (other tests depend on the item limit).
+                quality.SetTierManually(originalTier);
+                if (!originalManual)
+                {
+                    quality.UseAutomaticTier();
+                }
             }
         }
     }

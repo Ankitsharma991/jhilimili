@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -40,6 +41,26 @@ namespace UtsavNights.UI
         public bool IsOpen => _overlay != null && _overlay.gameObject.activeSelf;
 
         public bool TipVisible => _tip != null && _tip.gameObject.activeSelf;
+
+        public RectTransform OpenButton => _openButton;
+
+        public RectTransform DoneButton { get; private set; }
+
+        /// <summary>Spoken items for the screen reader while the sheet is open, in reading order.</summary>
+        public IReadOnlyList<AccessibleControl> Controls => _controls;
+
+        private readonly List<AccessibleControl> _controls = new List<AccessibleControl>();
+
+        /// <summary>One settings control as the screen reader sees it.</summary>
+        public sealed class AccessibleControl
+        {
+            public string Label;
+            public RectTransform Rect;
+            public SwitchView Switch;
+            public Slider Slider;
+            public SegmentedView Segmented;
+            public int Segment = -1;
+        }
 
         private void Start()
         {
@@ -228,6 +249,7 @@ namespace UtsavNights.UI
             doneButton.targetGraphic = doneBg;
             doneButton.onClick.AddListener(Close);
             UiKit.Text(done, "Done", UiTheme.BodyText, TextAlignmentOptions.Center, UiTheme.Indigo);
+            DoneButton = done;
 
             RectTransform viewport = UiKit.Rect("Viewport", sheet);
             UiKit.Stretch(viewport);
@@ -280,8 +302,26 @@ namespace UtsavNights.UI
             _tier = Row(rows, "Quality", "Auto picks the best level for this device", SegmentedView.Create(rows, TierLabels).gameObject).GetComponentInChildren<SegmentedView>();
             _tier.Changed += index => Edit(s => s.qualityTier = index - 1, true);
 
+            Accessible("Volume", _master);
+            Accessible("Fireworks volume", _effects);
+            Accessible("Quiet mode", _quiet);
+            Accessible("Reduce flashes", _reduceFlash);
+            Accessible("Reduce motion", _reduceMotion);
+            Accessible("Vibration", _vibration);
+            Accessible("Vibration strength", _vibrationStrength);
+            for (int i = 0; i < _tier.Count; i++)
+            {
+                _controls.Add(new AccessibleControl { Label = "Graphics " + TierLabels[i], Rect = _tier.SegmentRect(i), Segmented = _tier, Segment = i });
+            }
+
             _overlay.gameObject.SetActive(false);
         }
+
+        private void Accessible(string label, Slider slider) =>
+            _controls.Add(new AccessibleControl { Label = label, Rect = (RectTransform)slider.transform, Slider = slider });
+
+        private void Accessible(string label, SwitchView view) =>
+            _controls.Add(new AccessibleControl { Label = label, Rect = (RectTransform)view.transform, Switch = view });
 
         private static void Section(RectTransform rows, string label)
         {
@@ -308,16 +348,16 @@ namespace UtsavNights.UI
             main.offsetMin = main.offsetMax = Vector2.zero;
             TextMeshProUGUI mainText = UiKit.Text(main, label, UiTheme.BodyText, TextAlignmentOptions.Left, UiTheme.OffWhite);
             mainText.enableAutoSizing = true;
-            mainText.fontSizeMin = 24f;
-            mainText.fontSizeMax = UiTheme.BodyText;
+            mainText.fontSizeMin = 28f;
+            mainText.fontSizeMax = mainText.fontSize;
             RectTransform subRect = UiKit.Rect("Sub", labels);
             subRect.anchorMin = new Vector2(0f, 0f);
             subRect.anchorMax = new Vector2(1f, 0.45f);
             subRect.offsetMin = subRect.offsetMax = Vector2.zero;
-            TextMeshProUGUI subText = UiKit.Text(subRect, sub ?? string.Empty, 24f, TextAlignmentOptions.TopLeft, UiTheme.Muted);
+            TextMeshProUGUI subText = UiKit.Text(subRect, sub ?? string.Empty, 26f, TextAlignmentOptions.TopLeft, UiTheme.Muted);
             subText.enableAutoSizing = true;
-            subText.fontSizeMin = 18f;
-            subText.fontSizeMax = 24f;
+            subText.fontSizeMin = 24f;
+            subText.fontSizeMax = subText.fontSize;
 
             var c = (RectTransform)control.transform;
             c.SetParent(row, false);

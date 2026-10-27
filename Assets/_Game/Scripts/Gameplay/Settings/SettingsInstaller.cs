@@ -21,7 +21,15 @@ namespace UtsavNights.Gameplay
             }
 
             var store = new SettingsStore();
-            Service = new SettingsService(store, store.Load());
+            Core.Settings.GameSettings initial = store.Load();
+            if (store.LastLoadIssue == "missing")
+            {
+                // First launch: respect Android "Remove animations" (PRD 14 reduced-motion preference).
+                initial.reduceShake = SystemAccessibility.AnimationsDisabled();
+                store.Save(initial);
+            }
+
+            Service = new SettingsService(store, initial);
             Game.Services.Register(Service);
             if (store.LastLoadIssue != null)
             {

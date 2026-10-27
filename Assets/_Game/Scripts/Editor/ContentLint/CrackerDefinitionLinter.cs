@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UtsavNights.Content;
+using UtsavNights.Core.Crackers;
 
 namespace UtsavNights.EditorTools.ContentLint
 {
@@ -122,6 +123,22 @@ namespace UtsavNights.EditorTools.ContentLint
                 if (stage.anchor == StageAnchor.Apex && stage.launchHeight <= 0f)
                 {
                     Error("stage.apex_height", $"stage {i} starts at the apex but its launch height is 0");
+                }
+
+                if (stage.motion == StageMotion.Launch || stage.anchor == StageAnchor.Apex)
+                {
+                    // PRD 10: aerials stay in a sky corridor above their pad. The widest repeat must stay inside the volume.
+                    float widest = 0f;
+                    for (int k = 0; k < stage.Repeats; k++)
+                    {
+                        float m = Mathf.Abs(StageMath.OffsetMultiplier(k, stage.repeatPattern));
+                        widest = Mathf.Max(widest, Mathf.Abs(stage.launchDrift.x + stage.repeatOffset.x) * m, Mathf.Abs(stage.launchDrift.z + stage.repeatOffset.z) * m);
+                    }
+
+                    if (widest > def.EffectVolume.x * 0.5f + 0.01f)
+                    {
+                        Warn("placement.corridor_width", $"stage {i} shells reach {widest:0.0} m sideways but the effect volume is only {def.EffectVolume.x:0.0} m wide; widen the volume so placement keeps the corridor clear");
+                    }
                 }
 
                 if ((stage.motion == StageMotion.Launch || stage.anchor == StageAnchor.Apex) && def.EffectVolume.y < stage.launchHeight)

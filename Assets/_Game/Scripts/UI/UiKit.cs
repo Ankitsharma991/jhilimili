@@ -53,8 +53,31 @@ namespace UtsavNights.UI
             return image;
         }
 
+        /// <summary>
+        /// The player's Android font size (Settings > Display > Font size), applied to all UI text built after
+        /// it is read, capped at 1.3x so layouts still fit (auto-sizing labels shrink if needed).
+        /// </summary>
+        public static float TextScale
+        {
+            get
+            {
+                float scale = 1f;
+                try
+                {
+                    scale = UnityEngine.Accessibility.AccessibilitySettings.fontScale;
+                }
+                catch (System.Exception)
+                {
+                    // Not supported on this platform.
+                }
+
+                return Mathf.Clamp(float.IsNaN(scale) || scale <= 0f ? 1f : scale, 1f, 1.3f);
+            }
+        }
+
         public static TextMeshProUGUI Text(Transform parent, string value, float size, TextAlignmentOptions alignment, Color color)
         {
+            size *= TextScale;
             RectTransform rect = Rect("Text", parent);
             Stretch(rect);
             var text = rect.gameObject.AddComponent<TextMeshProUGUI>();

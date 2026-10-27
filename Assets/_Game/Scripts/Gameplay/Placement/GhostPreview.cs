@@ -18,6 +18,11 @@ namespace UtsavNights.Gameplay
         [SerializeField] private Material validRing;
         [SerializeField] private Material invalidRing;
 
+        [Tooltip("Soft column showing an aerial cracker's sky corridor (PRD 10).")]
+        [SerializeField] private Renderer beam;
+        [SerializeField] private Material validBeam;
+        [SerializeField] private Material invalidBeam;
+
         private readonly Dictionary<CrackerDefinition, GameObject> _models = new Dictionary<CrackerDefinition, GameObject>();
         private readonly List<Renderer> _renderers = new List<Renderer>();
         private MaterialPropertyBlock _block;
@@ -32,6 +37,15 @@ namespace UtsavNights.Gameplay
             validRing = valid;
             invalidRing = invalid;
         }
+
+        public void ConfigureBeam(Renderer beamRenderer, Material valid, Material invalid)
+        {
+            beam = beamRenderer;
+            validBeam = valid;
+            invalidBeam = invalid;
+        }
+
+        public bool BeamVisible => beam != null && beam.gameObject.activeSelf;
 
         private void Awake()
         {
@@ -58,6 +72,20 @@ namespace UtsavNights.Gameplay
                 ring.transform.localScale = new Vector3(size, 0.004f, size);
             }
 
+            if (beam != null)
+            {
+                // Aerials show their corridor: as wide and as tall as the effect volume they need clear.
+                bool aerial = definition.IsAerial;
+                beam.gameObject.SetActive(aerial);
+                if (aerial)
+                {
+                    Vector3 v = definition.EffectVolume;
+                    float width = Mathf.Max(0.2f, Mathf.Min(v.x, v.z));
+                    beam.transform.localScale = new Vector3(width, v.y * 0.5f, width);
+                    beam.transform.localPosition = new Vector3(0f, v.y * 0.5f, 0f);
+                }
+            }
+
             _shownValid = null;
             gameObject.SetActive(true);
         }
@@ -79,6 +107,11 @@ namespace UtsavNights.Gameplay
             if (ring != null)
             {
                 ring.sharedMaterial = valid ? validRing : invalidRing;
+            }
+
+            if (beam != null && beam.gameObject.activeSelf)
+            {
+                beam.sharedMaterial = valid ? validBeam : invalidBeam;
             }
 
             if (_current != null)

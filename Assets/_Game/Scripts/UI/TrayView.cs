@@ -40,11 +40,22 @@ namespace UtsavNights.UI
 
         public string HintText => _hint != null ? _hint.text : string.Empty;
 
+        public RectTransform ItemRect(int index) => _items[index].Rect;
+
+        public string ItemLabel(int index)
+        {
+            CrackerDefinition d = _items[index].Entry.definition;
+            return string.IsNullOrEmpty(d.DisplayName.en) ? d.Id : d.DisplayName.en;
+        }
+
+        public bool ItemLocked(int index) => _items[index].Entry.locked;
+
         private sealed class ItemView
         {
             public CrackerCatalog.Entry Entry;
             public Image Background;
             public RectTransform Rect;
+            public TextMeshProUGUI Name;
         }
 
         public void Configure(CrackerCatalog crackerCatalog) => catalog = crackerCatalog;
@@ -105,6 +116,12 @@ namespace UtsavNights.UI
 
         private void Update()
         {
+            if (_hintUntil > 0f && Time.unscaledTime >= _hintUntil)
+            {
+                _hintUntil = -1f;
+                SetHint(_placement != null && _placement.IsPlacing ? "Tap the ground to place" : string.Empty);
+            }
+
             if (_viewport != null && !Mathf.Approximately(_viewport.rect.width, _lastViewportWidth))
             {
                 RefreshCentering();
@@ -137,6 +154,12 @@ namespace UtsavNights.UI
                 }
 
                 _items[i].Background.color = on ? UiTheme.Saffron : UiTheme.IndigoLight;
+
+                // Off-white on saffron is 2:1; indigo keeps the selected label at WCAG AA.
+                if (_items[i].Name != null)
+                {
+                    _items[i].Name.color = on ? UiTheme.Indigo : UiTheme.OffWhite;
+                }
                 _items[i].Rect.localScale = on ? Vector3.one * 1.06f : Vector3.one;
             }
 
@@ -152,6 +175,15 @@ namespace UtsavNights.UI
         }
 
         private void OnPayoff(PayoffCompleteEvent e) => _pulse = 0f;
+
+        private float _hintUntil = -1f;
+
+        /// <summary>Shows a short message above the tray for a few seconds (finale, locked items).</summary>
+        public void ShowHint(string text, float seconds)
+        {
+            SetHint(text);
+            _hintUntil = Time.unscaledTime + seconds;
+        }
 
         private void SetHint(string text)
         {
@@ -277,8 +309,8 @@ namespace UtsavNights.UI
             string label = string.IsNullOrEmpty(entry.definition.DisplayName.en) ? entry.definition.Id : entry.definition.DisplayName.en;
             TextMeshProUGUI name = UiKit.Text(nameRect, label, UiTheme.SmallText, TextAlignmentOptions.Center, UiTheme.OffWhite);
             name.enableAutoSizing = true;
-            name.fontSizeMin = 20f;
-            name.fontSizeMax = UiTheme.SmallText;
+            name.fontSizeMin = 24f;
+            name.fontSizeMax = name.fontSize;
             name.textWrappingMode = TextWrappingModes.NoWrap;
 
             // Cost dots (PRD 12): one marigold dot per cost point, max 3.
@@ -303,7 +335,7 @@ namespace UtsavNights.UI
                 UiKit.Text(lockRect, "Locked", UiTheme.SmallText, TextAlignmentOptions.Center, UiTheme.Muted);
             }
 
-            return new ItemView { Entry = entry, Background = background, Rect = rect };
+            return new ItemView { Entry = entry, Background = background, Rect = rect, Name = name };
         }
     }
 }

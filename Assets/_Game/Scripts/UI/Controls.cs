@@ -29,16 +29,21 @@ namespace UtsavNights.UI
 
         public static SwitchView Create(Transform parent)
         {
+            // Touch area is 48 dp tall (PRD 12); the visible track is smaller and centred in it.
             RectTransform rect = UiKit.Rect("Switch", parent);
-            rect.sizeDelta = new Vector2(150f, 84f);
+            rect.sizeDelta = new Vector2(170f, UiTheme.MinTouch);
             var view = rect.gameObject.AddComponent<SwitchView>();
-            view._track = UiKit.Panel(rect, UiTheme.IndigoLight);
+            var hit = rect.gameObject.AddComponent<Image>();
+            hit.color = new Color(0f, 0f, 0f, 0f);
+            RectTransform track = UiKit.Rect("Track", rect);
+            track.sizeDelta = new Vector2(150f, 84f);
+            view._track = UiKit.Panel(track, UiTheme.IndigoLight, raycast: false);
             view._track.sprite = UiKit.Circle;
             view._button = rect.gameObject.AddComponent<Button>();
-            view._button.targetGraphic = view._track;
+            view._button.targetGraphic = hit;
             view._button.transition = Selectable.Transition.None;
             view._button.onClick.AddListener(() => view.Set(!view.IsOn, true));
-            view._knob = UiKit.Rect("Knob", rect);
+            view._knob = UiKit.Rect("Knob", track);
             view._knob.anchorMin = view._knob.anchorMax = new Vector2(0f, 0.5f);
             view._knob.sizeDelta = new Vector2(68f, 68f);
             Image knob = view._knob.gameObject.AddComponent<Image>();
@@ -81,15 +86,22 @@ namespace UtsavNights.UI
     public sealed class SegmentedView : MonoBehaviour
     {
         private readonly List<Image> _segments = new List<Image>();
+        private readonly List<TextMeshProUGUI> _labels = new List<TextMeshProUGUI>();
 
         public event Action<int> Changed;
 
         public int Selected { get; private set; } = -1;
 
+        public int Count => _segments.Count;
+
+        public RectTransform SegmentRect(int index) => _segments[index].rectTransform;
+
+        public string SegmentLabel(int index) => _segments[index].name;
+
         public static SegmentedView Create(Transform parent, params string[] labels)
         {
             RectTransform rect = UiKit.Rect("Segmented", parent);
-            rect.sizeDelta = new Vector2(labels.Length * 150f, 96f);
+            rect.sizeDelta = new Vector2(labels.Length * 150f, UiTheme.MinTouch);
             var view = rect.gameObject.AddComponent<SegmentedView>();
             var layout = rect.gameObject.AddComponent<HorizontalLayoutGroup>();
             layout.spacing = 8f;
@@ -106,7 +118,7 @@ namespace UtsavNights.UI
                 button.targetGraphic = image;
                 button.transition = Selectable.Transition.None;
                 button.onClick.AddListener(() => view.Set(index, true));
-                UiKit.Text(segment, labels[i], UiTheme.SmallText, TextAlignmentOptions.Center, UiTheme.OffWhite);
+                view._labels.Add(UiKit.Text(segment, labels[i], UiTheme.SmallText, TextAlignmentOptions.Center, UiTheme.OffWhite));
                 view._segments.Add(image);
             }
 
@@ -124,6 +136,7 @@ namespace UtsavNights.UI
             for (int i = 0; i < _segments.Count; i++)
             {
                 _segments[i].color = i == index ? UiTheme.Saffron : UiTheme.IndigoLight;
+                _labels[i].color = i == index ? UiTheme.Indigo : UiTheme.OffWhite;
             }
 
             if (notify)
@@ -139,8 +152,10 @@ namespace UtsavNights.UI
         public static Slider Create(Transform parent)
         {
             RectTransform rect = UiKit.Rect("Slider", parent);
-            rect.sizeDelta = new Vector2(420f, 96f);
+            rect.sizeDelta = new Vector2(420f, UiTheme.MinTouch);
             var slider = rect.gameObject.AddComponent<Slider>();
+            var hit = rect.gameObject.AddComponent<Image>();
+            hit.color = new Color(0f, 0f, 0f, 0f); // the whole 48 dp row height takes touches, not just the handle
 
             RectTransform track = UiKit.Rect("Track", rect);
             track.anchorMin = new Vector2(0f, 0.5f);

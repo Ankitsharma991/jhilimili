@@ -563,6 +563,25 @@ namespace UtsavNights.Gameplay
             }
         }
 
+#if UNITY_EDITOR
+        // Authoring aid: the volume placement keeps clear (yellow) and the fuse (red).
+        private void OnDrawGizmosSelected()
+        {
+            if (definition == null)
+            {
+                return;
+            }
+
+            Vector3 v = definition.EffectVolume;
+            Gizmos.color = new Color(1f, 0.8f, 0.2f, 0.6f);
+            Gizmos.matrix = Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one);
+            Gizmos.DrawWireCube(new Vector3(0f, v.y * 0.5f, 0f), v);
+            Gizmos.matrix = Matrix4x4.identity;
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(FuseWorldPosition, 0.03f);
+        }
+#endif
+
         private void SpawnModel()
         {
             if (definition.ModelPrefab != null)

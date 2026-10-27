@@ -167,6 +167,7 @@ namespace UtsavNights.EditorTools.Main
 
             new GameObject("CrackerSpawner").AddComponent<CrackerSpawner>();
             new GameObject("WaveController").AddComponent<WaveController>().Configure(camera);
+            new GameObject("FinaleController").AddComponent<FinaleController>();
             CreatePlacement(camera);
 
             // PRD 6.1: one cracker already stands ready; everything else comes from the tray.
@@ -287,6 +288,16 @@ namespace UtsavNights.EditorTools.Main
             settingsRect.offsetMin = Vector2.zero;
             settingsRect.offsetMax = Vector2.zero;
             settingsGo.AddComponent<UI.SettingsSheet>();
+            var finaleGo = new GameObject("Finale", typeof(RectTransform));
+            finaleGo.transform.SetParent(safe.transform, false);
+            var finaleRect = (RectTransform)finaleGo.transform;
+            finaleRect.anchorMin = Vector2.zero;
+            finaleRect.anchorMax = Vector2.one;
+            finaleRect.offsetMin = Vector2.zero;
+            finaleRect.offsetMax = Vector2.zero;
+            finaleGo.AddComponent<UI.FinaleButton>();
+            finaleGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
+            canvasGo.AddComponent<UI.ScreenReaderSupport>();
         }
 
         private static void CreatePlacement(Camera camera)
@@ -297,6 +308,18 @@ namespace UtsavNights.EditorTools.Main
             GameObject ring = SceneKit.Primitive(PrimitiveType.Cylinder, "Ring", ghostGo.transform, new Vector3(0f, 0.01f, 0f), new Vector3(0.5f, 0.004f, 0.5f), valid, keepCollider: false);
             var ghost = ghostGo.AddComponent<GhostPreview>();
             ghost.Configure(ring.GetComponent<Renderer>(), valid, invalid);
+
+            // Soft additive column for aerial corridors (cylinder: 2 units tall at scale 1).
+            Texture2D glow = AssetDatabase.LoadAssetAtPath<Texture2D>(FlowerpotAssets.GlowTexturePath);
+            Material beamValid = FlowerpotAssets.ParticleMaterial("Ghost_Beam_Valid", glow, additive: true);
+            beamValid.SetColor("_BaseColor", new Color(0.35f, 1f, 0.45f, 0.18f));
+            Material beamInvalid = FlowerpotAssets.ParticleMaterial("Ghost_Beam_Invalid", glow, additive: true);
+            beamInvalid.SetColor("_BaseColor", new Color(1f, 0.3f, 0.25f, 0.18f));
+            EditorUtility.SetDirty(beamValid);
+            EditorUtility.SetDirty(beamInvalid);
+            GameObject beam = SceneKit.Primitive(PrimitiveType.Cylinder, "Beam", ghostGo.transform, Vector3.zero, Vector3.one, beamValid, keepCollider: false);
+            beam.SetActive(false);
+            ghost.ConfigureBeam(beam.GetComponent<Renderer>(), beamValid, beamInvalid);
             new GameObject("PlacementController").AddComponent<PlacementController>().Configure(camera, ghost);
         }
 

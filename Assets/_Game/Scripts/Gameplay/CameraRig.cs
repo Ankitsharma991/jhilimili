@@ -129,6 +129,12 @@ namespace UtsavNights.Gameplay
         /// <summary>Small move toward a ground cracker at ignition or payoff.</summary>
         public void PushInToward(Vector3 target)
         {
+            // Reduce motion also drops this small camera move (PRD 14 reduced-motion preference).
+            if (_reduceMotion)
+            {
+                return;
+            }
+
             _pushTarget = target;
             _push.Start(pushInSeconds);
         }
