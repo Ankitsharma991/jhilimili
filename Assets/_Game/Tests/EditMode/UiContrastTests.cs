@@ -21,6 +21,7 @@ namespace UtsavNights.Tests
             new object[] { "title", UiTheme.Marigold, UiTheme.Indigo },
             new object[] { "selected label", UiTheme.Indigo, UiTheme.Saffron },
             new object[] { "finale running", UiTheme.Indigo, UiTheme.Magenta },
+            new object[] { "premium badge", UiTheme.Indigo, UiTheme.Marigold },
         };
 
         [TestCaseSource(nameof(Pairs))]

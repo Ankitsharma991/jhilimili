@@ -21,7 +21,8 @@ namespace UtsavNights.Tests.PlayMode
             TrayView tray = Object.FindFirstObjectByType<TrayView>();
             Assert.IsNotNull(tray, "tray in the HUD");
             Assert.IsTrue(Game.Services.TryGet(out PlacementController placement));
-            Assert.AreEqual(8, tray.ItemCount, "all eight R0 crackers");
+            Assert.AreEqual(9, tray.ItemCount, "eight free R0 crackers and one premium");
+            Assert.AreEqual("peacock_fountain", tray.Catalog.Entries[8].definition.Id, "premium item last");
 
             // PRD 12: tray 20 % of the screen or less. Designed for portrait phones (width-scaled canvas);
             // the batch test window is landscape, so check the design ratio and, when portrait, the real one.

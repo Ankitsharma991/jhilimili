@@ -26,6 +26,7 @@ namespace UtsavNights.EditorTools.Main
             public CrackerDefinition Bomb;
             public CrackerDefinition Skyshot;
             public CrackerDefinition Cake;
+            public CrackerDefinition Peacock;
         }
 
         public static Set BuildAll()
@@ -43,6 +44,7 @@ namespace UtsavNights.EditorTools.Main
                 Bomb = Bomb(add, alpha, fuseSpark, fuseHiss),
                 Skyshot = Skyshot(add, fuseSpark, fuseHiss),
                 Cake = Cake(add, fuseSpark, fuseHiss),
+                Peacock = Peacock(add, alpha, fuseSpark, fuseHiss),
             };
         }
 
@@ -371,6 +373,84 @@ namespace UtsavNights.EditorTools.Main
             });
             s.Add(new StageDefinition { time = 2.5f + rise + (shots - 1) * interval + 2.5f, stop = true });
             return Save(d);
+        }
+
+        // ---------------------------------------------------------------- Peacock fountain (premium, Phase 4)
+
+        /// <summary>
+        /// The premium item (PRD 15.1 rewarded unlock): a wide fan fountain that shifts green, blue, then
+        /// magenta, over a crackling roar. Same engine as the flowerpot, only data.
+        /// </summary>
+        private static CrackerDefinition Peacock(Material add, Material alpha, ParticleSystem fuseSpark, AudioClip fuseHiss)
+        {
+            const string folder = Root + "/Peacock";
+            AudioClip roar = AssetDatabase.LoadAssetAtPath<AudioClip>($"{F.AudioFolder}/fountain_roar_loop.wav");
+            AudioClip whoosh = AssetDatabase.LoadAssetAtPath<AudioClip>($"{F.AudioFolder}/fountain_ignite.wav");
+            AudioClip crackle = F.WriteClip("peacock_crackle", ProceduralSounds.Generate(ProceduralSounds.Kind.Crackle, F.SampleRate, 8101), false);
+
+            ParticleSystem green = Fan("FX_Peacock_Green", add, new Color(0.3f, 1f, 0.45f), new Color(0.1f, 0.75f, 0.35f), folder);
+            ParticleSystem blue = Fan("FX_Peacock_Blue", add, new Color(0.35f, 0.75f, 1f), new Color(0.15f, 0.4f, 1f), folder);
+            ParticleSystem magenta = Fan("FX_Peacock_Magenta", add, new Color(1f, 0.4f, 0.85f), new Color(0.85f, 0.2f, 0.6f), folder);
+
+            ParticleSystem smoke = F.NewSystem("FX_Peacock_Smoke", alpha, 40, false);
+            Main(smoke, 2.5f, 3.5f, 0.2f, 0.5f, 0.4f, 0.8f, -0.05f, new Color(0.5f, 0.5f, 0.55f, 0.25f), new Color(0.4f, 0.4f, 0.45f, 0.2f));
+            Emit(smoke, 6f);
+            Sphere(smoke, 0.15f);
+            smoke = F.SavePrefab(smoke, "FX_Peacock_Smoke", folder);
+
+            var model = new GameObject("Model_Peacock");
+            Material body = SceneKit.LitMaterial("Peacock_Body", new Color(0.08f, 0.32f, 0.38f), 0.35f);
+            Material band = SceneKit.LitMaterial("Peacock_Band", new Color(0.85f, 0.65f, 0.18f), 0.5f);
+            Material eye = SceneKit.LitMaterial("Peacock_Eye", new Color(0.2f, 0.45f, 0.9f), 0.5f);
+            Material fuse = SceneKit.LitMaterial("Peacock_Fuse", new Color(0.75f, 0.12f, 0.08f), 0.2f);
+            SceneKit.Primitive(PrimitiveType.Cylinder, "Body", model.transform, new Vector3(0f, 0.13f, 0f), new Vector3(0.26f, 0.13f, 0.26f), body, false);
+            SceneKit.Primitive(PrimitiveType.Cylinder, "Band", model.transform, new Vector3(0f, 0.2f, 0f), new Vector3(0.265f, 0.015f, 0.265f), band, false);
+            SceneKit.Primitive(PrimitiveType.Sphere, "Eye", model.transform, new Vector3(0f, 0.13f, -0.12f), new Vector3(0.07f, 0.07f, 0.03f), eye, false);
+            SceneKit.Primitive(PrimitiveType.Sphere, "Top", model.transform, new Vector3(0f, 0.27f, 0f), new Vector3(0.18f, 0.08f, 0.18f), body, false);
+            SceneKit.Primitive(PrimitiveType.Cylinder, "Fuse", model.transform, new Vector3(0f, 0.315f, 0f), new Vector3(0.012f, 0.025f, 0.012f), fuse, false);
+            GameObject modelPrefab = F.SaveGameObject(model, "Model_Peacock", folder);
+
+            CrackerDefinition d = Load($"{Defs}/Cracker_Peacock.asset");
+            Common(d, "peacock_fountain", new LocalizedName("Peacock fountain", "Mor anar", "Mayur anar"), CrackerCategory.GroundFountain, Intensity.Medium, 3, modelPrefab);
+            d.Pack = "premium";
+            d.Footprint = new Vector2(0.3f, 0.3f);
+            d.EffectVolume = new Vector3(2.4f, 3.2f, 2.4f);
+            d.Surfaces = PlacementSurface.Ground | PlacementSurface.Rooftop;
+            d.FuseSeconds = 2.5f;
+            d.FuseAnchor = new Vector3(0f, 0.33f, 0f);
+            d.CooldownSeconds = 2f;
+            Quality(d, 260, 520, 900);
+            var s = d.MutableStages;
+            s.Clear();
+            s.Add(new StageDefinition { time = 0f, emitter = fuseSpark, anchor = StageAnchor.Fuse, endWithNextEmitter = true, sound = fuseHiss, loopSound = true, volume = 0.5f, haptic = HapticPattern.Tick });
+            s.Add(new StageDefinition
+            {
+                time = 2.5f, emitter = green, endWithNextEmitter = true, payoff = true, sound = roar, loopSound = true, volume = 0.75f,
+                haptic = HapticPattern.Rumble, light = true, lightColor = new Color(0.35f, 1f, 0.5f), lightPeak = 2.5f, camera = CameraCue.PushInSmall,
+            });
+            s.Add(new StageDefinition { time = 2.5f, sound = whoosh, volume = 0.7f });
+            s.Add(new StageDefinition { time = 5.2f, emitter = blue, endWithNextEmitter = true, sound = crackle, volume = 0.55f, light = true, lightColor = new Color(0.4f, 0.65f, 1f), lightPeak = 2f });
+            s.Add(new StageDefinition { time = 7.9f, emitter = magenta, sound = crackle, volume = 0.6f, light = true, lightColor = new Color(1f, 0.4f, 0.85f), lightPeak = 2f });
+            // Emitters with endWithNextEmitter stop when any later emitter starts, so smoke joins the last phase.
+            s.Add(new StageDefinition { time = 7.9f, emitter = smoke });
+            s.Add(new StageDefinition { time = 10.5f, stop = true });
+            return Save(d);
+        }
+
+        private static ParticleSystem Fan(string name, Material add, Color a, Color b, string folder)
+        {
+            ParticleSystem ps = F.NewSystem(name, add, 900, true);
+            Main(ps, 1.2f, 1.9f, 4f, 6f, 0.03f, 0.07f, 0.9f, a, b);
+            var emission = ps.emission;
+            emission.rateOverTime = 380f;
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Cone;
+            shape.angle = 28f;
+            shape.radius = 0.04f;
+            shape.position = new Vector3(0f, 0.3f, 0f);
+            shape.rotation = new Vector3(-90f, 0f, 0f);
+            F.Fade(ps, Color.white, b, 0.25f);
+            return F.SavePrefab(ps, name, folder);
         }
 
         // ---------------------------------------------------------------- helpers

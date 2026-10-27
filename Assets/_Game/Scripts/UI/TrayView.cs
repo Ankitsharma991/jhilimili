@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -50,7 +51,15 @@ namespace UtsavNights.UI
             return string.IsNullOrEmpty(d.DisplayName.en) ? d.Id : d.DisplayName.en;
         }
 
-        public bool ItemLocked(int index) => _items[index].Entry.locked;
+        /// <summary>Locked in the catalog and not unlocked by a purchase or a running rewarded unlock.</summary>
+        public bool ItemLocked(int index)
+        {
+            CrackerCatalog.Entry entry = _items[index].Entry;
+            return entry.locked && (_progress == null || !_progress.IsUnlocked(entry.definition.Id, true));
+        }
+
+        /// <summary>A locked item was tapped; the unlock sheet listens (Phase 4, PRD 15.1).</summary>
+        public event Action<int> LockedItemTapped;
 
         private sealed class ItemView
         {
@@ -58,6 +67,8 @@ namespace UtsavNights.UI
             public Image Background;
             public RectTransform Rect;
             public TextMeshProUGUI Name;
+            public Image Icon;
+            public GameObject LockBadge;
         }
 
         public void Configure(CrackerCatalog crackerCatalog) => catalog = crackerCatalog;
@@ -70,6 +81,12 @@ namespace UtsavNights.UI
         private void Start()
         {
             Game.Services.TryGet(out _placement);
+            if (Game.Services.TryGet(out _progress))
+            {
+                _progress.Changed += RefreshLocks;
+            }
+
+            RefreshLocks();
             if (_placement != null)
             {
                 _placement.SelectionChanged += OnSelectionChanged;
@@ -90,6 +107,10 @@ namespace UtsavNights.UI
 
             Game.Events.Unsubscribe<PayoffCompleteEvent>(OnPayoff);
             InputBlockers.Unregister(_panel);
+            if (_progress != null)
+            {
+                _progress.Changed -= RefreshLocks;
+            }
         }
 
         /// <summary>Same as tapping item <paramref name="index"/>.</summary>
@@ -101,9 +122,18 @@ namespace UtsavNights.UI
             }
 
             CrackerCatalog.Entry entry = _items[index].Entry;
-            if (entry.locked)
+            if (ItemLocked(index))
             {
-                SetHint(string.IsNullOrEmpty(entry.unlockHint) ? "Locked" : entry.unlockHint);
+                _placement.Cancel();
+                if (LockedItemTapped != null)
+                {
+                    LockedItemTapped(index);
+                }
+                else
+                {
+                    SetHint(string.IsNullOrEmpty(entry.unlockHint) ? "Locked" : entry.unlockHint);
+                }
+
                 return;
             }
 
@@ -118,6 +148,13 @@ namespace UtsavNights.UI
 
         private void Update()
         {
+            // Rewarded unlocks expire while the app is open.
+            if (_progress != null && Time.unscaledTime >= _nextLockRefresh)
+            {
+                _nextLockRefresh = Time.unscaledTime + 30f;
+                RefreshLocks();
+            }
+
             if (_hintUntil > 0f && Time.unscaledTime >= _hintUntil)
             {
                 _hintUntil = -1f;
@@ -179,6 +216,8 @@ namespace UtsavNights.UI
         private void OnPayoff(PayoffCompleteEvent e) => _pulse = 0f;
 
         private float _hintUntil = -1f;
+        private float _nextLockRefresh;
+        private ProgressService _progress;
 
         /// <summary>Shows a short message above the tray for a few seconds (finale, locked items).</summary>
         public void ShowHint(string text, float seconds)
@@ -329,15 +368,39 @@ namespace UtsavNights.UI
                 dotImage.raycastTarget = false;
             }
 
+            GameObject lockBadge = null;
             if (entry.locked)
             {
-                icon.color = new Color(1f, 1f, 1f, 0.35f);
+                // A small badge on the top edge (PRD 12: subtle lock), shown until unlocked.
                 RectTransform lockRect = UiKit.Rect("Lock", rect);
-                UiKit.Stretch(lockRect);
-                UiKit.Text(lockRect, "Locked", UiTheme.SmallText, TextAlignmentOptions.Center, UiTheme.Muted);
+                lockRect.anchorMin = new Vector2(0f, 1f);
+                lockRect.anchorMax = new Vector2(1f, 1f);
+                lockRect.pivot = new Vector2(0.5f, 1f);
+                lockRect.sizeDelta = new Vector2(-24f, 40f);
+                lockRect.anchoredPosition = new Vector2(0f, -10f);
+                UiKit.Panel(lockRect, UiTheme.Marigold, raycast: false);
+                UiKit.Text(lockRect, "Premium", 24f, TextAlignmentOptions.Center, UiTheme.Indigo);
+                lockBadge = lockRect.gameObject;
             }
 
-            return new ItemView { Entry = entry, Background = background, Rect = rect, Name = name };
+            return new ItemView { Entry = entry, Background = background, Rect = rect, Name = name, Icon = icon, LockBadge = lockBadge };
+        }
+
+        private void RefreshLocks()
+        {
+            for (int i = 0; i < _items.Count; i++)
+            {
+                bool locked = ItemLocked(i);
+                if (_items[i].LockBadge != null)
+                {
+                    _items[i].LockBadge.SetActive(locked);
+                }
+
+                if (_items[i].Icon != null)
+                {
+                    _items[i].Icon.color = new Color(_items[i].Icon.color.r, _items[i].Icon.color.g, _items[i].Icon.color.b, locked ? 0.45f : 1f);
+                }
+            }
         }
     }
 }

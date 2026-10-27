@@ -24,7 +24,6 @@ namespace UtsavNights.UI
     {
         public const string LogTag = "[UTSAV_SOUND]";
         public const string FileName = "blind_sound_test.jsonl";
-        private const string TesterKey = "utsav.soundtest.tester";
         private const float NextSoundDelay = 0.8f;
 
         // Stress finale: six ground and aerial items on known-good spots around the starting flowerpot.
@@ -48,6 +47,7 @@ namespace UtsavNights.UI
         private TextMeshProUGUI _body;
         private RectTransform _grid;
         private RectTransform _replay;
+        private RectTransform _actionButton;
         private TextMeshProUGUI _actionLabel;
         private Action _action;
 
@@ -125,7 +125,7 @@ namespace UtsavNights.UI
                 audio.StopAll();
             }
 
-            _tester = PlayerPrefs.GetInt(TesterKey, 0) + 1;
+            _tester = CompletedTests() + 1;
             _test = null;
             _overlay.gameObject.SetActive(true);
             _overlay.SetAsLastSibling();
@@ -151,11 +151,9 @@ namespace UtsavNights.UI
             int seed = Environment.TickCount;
             _test = new BlindSoundTest(ids, seed);
             _testId = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
-            PlayerPrefs.SetInt(TesterKey, _tester);
-            PlayerPrefs.Save();
             Write(Line("test_start").Num("seed", seed).Num("sounds", ids.Count).Str("device", SystemInfo.deviceModel));
             ShowChoices(true);
-            SetAction("Stop test", Close);
+            SetAction(null, null);
             ShowQuestion();
             PlayCurrent();
         }
@@ -273,10 +271,39 @@ namespace UtsavNights.UI
             _replay.gameObject.SetActive(visible);
         }
 
+        // Null hides the bottom button (during the test only the corner Close stops it).
         private void SetAction(string label, Action action)
         {
-            _actionLabel.text = label;
+            _actionButton.gameObject.SetActive(label != null);
+            _actionLabel.text = label ?? string.Empty;
             _action = action;
+        }
+
+        /// <summary>Finished tests in the results file, so the tester number restarts when the file is pulled and removed.</summary>
+        private static int CompletedTests()
+        {
+            try
+            {
+                if (!File.Exists(FilePath))
+                {
+                    return 0;
+                }
+
+                int n = 0;
+                foreach (string line in File.ReadLines(FilePath))
+                {
+                    if (line.Contains("\"type\":\"test_complete\""))
+                    {
+                        n++;
+                    }
+                }
+
+                return n;
+            }
+            catch (IOException)
+            {
+                return 0;
+            }
         }
 
         private void Build(Transform parent)
@@ -345,7 +372,14 @@ namespace UtsavNights.UI
             action.anchorMin = action.anchorMax = action.pivot = new Vector2(0.5f, 0f);
             action.sizeDelta = new Vector2(420f, UiTheme.MinTouch);
             action.anchoredPosition = new Vector2(0f, 80f);
+            _actionButton = action;
             _actionLabel = action.GetComponentInChildren<TextMeshProUGUI>();
+
+            // Always available: leave the intro, or stop a test part way (recorded as abandoned).
+            RectTransform close = Button(_overlay, "Close", Close, UiTheme.IndigoLight, UiTheme.OffWhite);
+            close.anchorMin = close.anchorMax = close.pivot = new Vector2(1f, 1f);
+            close.sizeDelta = new Vector2(200f, UiTheme.MinTouch);
+            close.anchoredPosition = new Vector2(-24f, -24f);
 
             _overlay.gameObject.SetActive(false);
         }

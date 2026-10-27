@@ -37,3 +37,6 @@ MonoBehaviour:
   - definition: {fileID: 11400000, guid: 77b2bd2f6694b9ffca2504fc7ddcba32, type: 2}
     locked: 0
     unlockHint: 
+  - definition: {fileID: 11400000, guid: 6b4f01612e90251fc83cf2a48a11b934, type: 2}
+    locked: 1
+    unlockHint: 'Premium: watch a short ad to unlock for 24 hours'

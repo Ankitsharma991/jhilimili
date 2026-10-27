@@ -49,6 +49,7 @@ namespace UtsavNights.Gameplay
             Game.Events.Subscribe<FlameOutEvent>(OnFlameOut);
             Game.Events.Subscribe<QualityChangedEvent>(OnQualityChanged);
             Game.Events.Subscribe<AppPausedEvent>(OnAppPaused);
+            Game.Events.Subscribe<AdEvent>(OnAd);
 
             Begin("session_start");
             Field("device", SystemInfo.deviceModel);
@@ -94,6 +95,7 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<FlameOutEvent>(OnFlameOut);
             Game.Events.Unsubscribe<QualityChangedEvent>(OnQualityChanged);
             Game.Events.Unsubscribe<AppPausedEvent>(OnAppPaused);
+            Game.Events.Unsubscribe<AdEvent>(OnAd);
             if (_placement != null)
             {
                 _placement.SelectionChanged -= OnSelectionChanged;
@@ -205,6 +207,21 @@ namespace UtsavNights.Gameplay
             Begin("finale_start");
             Field("items", _finale.Total);
             Field("finales", _session.Finales);
+            Emit();
+        }
+
+        // Every ad decision, for the placement audit (Phase 4 step 9).
+        private void OnAd(AdEvent e)
+        {
+            Begin(e.Type);
+            Field("kind", e.Kind.ToString());
+            Field("placement", e.Placement);
+            Field("ms_since_payoff", e.MsSincePayoff);
+            if (e.Block != Core.Monetisation.AdBlock.None)
+            {
+                Field("block", e.Block.ToString());
+            }
+
             Emit();
         }
 

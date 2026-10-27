@@ -61,25 +61,9 @@ namespace UtsavNights.Gameplay
 
         public bool Save(GameSettings settings)
         {
-            string temp = Path + ".tmp";
             try
             {
-                string directory = System.IO.Path.GetDirectoryName(Path);
-                if (!string.IsNullOrEmpty(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                File.WriteAllText(temp, JsonUtility.ToJson(settings, true));
-                if (File.Exists(Path))
-                {
-                    File.Replace(temp, Path, null);
-                }
-                else
-                {
-                    File.Move(temp, Path);
-                }
-
+                AtomicFile.WriteAllText(Path, JsonUtility.ToJson(settings, true));
                 return true;
             }
             catch (Exception e)

@@ -122,8 +122,12 @@ namespace UtsavNights.UI
                     item.frameGetter = FrameOf(_tray.ItemRect(i));
                     if (_tray.ItemLocked(i))
                     {
-                        item.state = AccessibilityState.Disabled;
-                        item.hint = "Locked";
+                        item.hint = "Premium. Double-tap for unlock options";
+                        item.invoked += () =>
+                        {
+                            _tray.Select(index);
+                            return true;
+                        };
                         continue;
                     }
 

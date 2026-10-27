@@ -31,12 +31,14 @@ report marks the result as provisional.
 2. Turn the phone volume to about 70 %, in a quiet room, without headphones (PRD 11: phone speaker).
 3. Show the tester the 8 names on screen first, so they know the choices.
 4. Open the developer overlay, tap **Sound test**, then **Start**. The scene is cleared, and the
-   screen covers it, so only the sound gives a clue.
+   screen covers it, so only the sound gives a clue. **Close** (top right) leaves at any time; a
+   test stopped part way is saved as unfinished and the report leaves it out of the pass count.
 5. Each sound plays once. The tester taps a name or **Not sure**. **Play again** is allowed, and
    replays are counted. Don't give any hints.
-6. After the last answer the screen shows the score. Tap **Close**. The tester number goes up by
-   itself for the next person.
-7. When everyone is done, run `tools/pull_sound_test.sh`.
+6. After the last answer the screen shows the score. Tap **Close**. The tester number counts the
+   finished tests saved on the phone, so it goes up by itself for the next person.
+7. When everyone is done, run `tools/pull_sound_test.sh --clear`. This saves the results to
+   `captures/` and removes them from the phone, so the next round starts again at tester 1.
 
 **How to read it:** each tester should name 6 or more of 8. The report also shows how often each
 cracker was named correctly, and the most common mix-ups (for example, bomb named as chain lar). A

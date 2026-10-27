@@ -51,8 +51,11 @@ namespace UtsavNights.EditorTools.Main
                 catalog.Upsert(def);
             }
 
+            // Phase 4 premium item (PRD 15.1): locked until a rewarded ad or the Remove-ads purchase.
+            catalog.Upsert(more.Peacock, locked: true, unlockHint: "Premium: watch a short ad to unlock for 24 hours");
+
             EditorUtility.SetDirty(catalog);
-            TrayIconRenderer.RenderAll(assets.Definition, more.Sparkler, chakri, more.Lar, more.Bomb, rocket, more.Skyshot, more.Cake);
+            TrayIconRenderer.RenderAll(assets.Definition, more.Sparkler, chakri, more.Lar, more.Bomb, rocket, more.Skyshot, more.Cake, more.Peacock);
             AssetDatabase.SaveAssets();
             BuildBoot();
             BuildMain(assets, catalog);
@@ -157,6 +160,7 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<HapticsInstaller>();
             systems.AddComponent<QualityManager>().Configure(camera);
             systems.AddComponent<SettingsInstaller>();
+            systems.AddComponent<MonetisationInstaller>();
             systems.AddComponent<PlaytestRecorder>();
             systems.AddComponent<DevOverlay>();
 
@@ -299,6 +303,7 @@ namespace UtsavNights.EditorTools.Main
             finaleGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
             canvasGo.AddComponent<UI.ScreenReaderSupport>();
             canvasGo.AddComponent<UI.MeasureTools>();
+            canvasGo.AddComponent<UI.UnlockSheet>();
         }
 
         private static void CreatePlacement(Camera camera)
