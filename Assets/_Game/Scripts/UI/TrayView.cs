@@ -34,6 +34,8 @@ namespace UtsavNights.UI
 
         public RectTransform Panel => _panel;
 
+        public CrackerCatalog Catalog => catalog;
+
         public int ItemCount => _items.Count;
 
         public int SelectedIndex { get; private set; } = -1;

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace UtsavNights.Core.Diagnostics
 {
     /// <summary>
@@ -10,6 +12,9 @@ namespace UtsavNights.Core.Diagnostics
         public const float DefaultSampleIntervalSeconds = 30f;
 
         private readonly RollingStats _frames = new RollingStats(4096);
+        private readonly HashSet<string> _ignitedIds = new HashSet<string>();
+        private bool _selecting;
+        private bool _placedSinceSelect;
         private float _sinceSample;
 
         public PlaytestSession(float startTime, float sampleIntervalSeconds = DefaultSampleIntervalSeconds)
@@ -35,6 +40,21 @@ namespace UtsavNights.Core.Diagnostics
 
         public int QualityChanges { get; private set; }
 
+        /// <summary>Tray picks (Phase 3 tray confusion signals: picks, placements, rejections, cancels).</summary>
+        public int Selections { get; private set; }
+
+        public int Placements { get; private set; }
+
+        public int Rejections { get; private set; }
+
+        /// <summary>A tray pick dropped without placing anything.</summary>
+        public int Cancels { get; private set; }
+
+        public int Finales { get; private set; }
+
+        /// <summary>Different crackers lit this session.</summary>
+        public int DistinctIgnited => _ignitedIds.Count;
+
         /// <summary>Seconds from interactive scene to the first ignition (PRD 17 target: 30 s median); -1 if none.</summary>
         public float TimeToFirstIgnition =>
             FirstIgnitionTime >= 0f && SceneReadyTime >= 0f ? FirstIgnitionTime - SceneReadyTime : -1f;
@@ -48,9 +68,14 @@ namespace UtsavNights.Core.Diagnostics
         }
 
         /// <returns>True for the first ignition of the session.</returns>
-        public bool RecordIgnition(float time)
+        public bool RecordIgnition(float time, string crackerId = null)
         {
             Ignitions++;
+            if (!string.IsNullOrEmpty(crackerId))
+            {
+                _ignitedIds.Add(crackerId);
+            }
+
             if (FirstIgnitionTime >= 0f)
             {
                 return false;
@@ -66,6 +91,35 @@ namespace UtsavNights.Core.Diagnostics
         }
 
         public void RecordPayoff() => Payoffs++;
+
+        /// <summary>Tray selection changed; null or empty means the selection was cleared.</summary>
+        public void RecordSelection(string crackerId)
+        {
+            if (!string.IsNullOrEmpty(crackerId))
+            {
+                Selections++;
+                _selecting = true;
+                _placedSinceSelect = false;
+                return;
+            }
+
+            if (_selecting && !_placedSinceSelect)
+            {
+                Cancels++;
+            }
+
+            _selecting = false;
+        }
+
+        public void RecordPlacement()
+        {
+            Placements++;
+            _placedSinceSelect = true;
+        }
+
+        public void RecordRejection() => Rejections++;
+
+        public void RecordFinale() => Finales++;
 
         public void RecordFlameOut() => FlameOuts++;
 

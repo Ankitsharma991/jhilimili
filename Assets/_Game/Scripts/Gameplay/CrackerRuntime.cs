@@ -19,7 +19,7 @@ namespace UtsavNights.Gameplay
     public sealed class CrackerRuntime : MonoBehaviour, ITickable, IIgnitionTarget
     {
         public const string FirstIgnitionPrefKey = "gameplay.first_ignition_done";
-        private const float LoopFadeSeconds = 0.35f;
+        internal const float LoopFadeSeconds = 0.35f;
 
         [SerializeField] private CrackerDefinition definition;
         [SerializeField] private bool placeOnStart = true;
@@ -469,7 +469,7 @@ namespace UtsavNights.Gameplay
             }
         }
 
-        private static int PriorityFor(StageDefinition stage)
+        internal static int PriorityFor(StageDefinition stage)
         {
             if (stage.duckOthers > 0f)
             {

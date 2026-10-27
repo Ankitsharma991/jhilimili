@@ -41,6 +41,9 @@ namespace UtsavNights.Gameplay
         /// <summary>Raised when placement starts (the selected definition) or stops (null).</summary>
         public event Action<CrackerDefinition> SelectionChanged;
 
+        /// <summary>A placement attempt failed; the argument is the reason shown to the player.</summary>
+        public event Action<string> Rejected;
+
         public bool IsPlacing => Selected != null;
 
         public bool StayAfterPlacing
@@ -137,7 +140,9 @@ namespace UtsavNights.Gameplay
             PlacementCheck check = CheckAt(screenPoint);
             if (!check.Valid || _spawner == null)
             {
-                SetReason(PlacementRules.Message(check.Block));
+                string message = PlacementRules.Message(check.Block);
+                SetReason(message);
+                Rejected?.Invoke(message);
                 return null;
             }
 

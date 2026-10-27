@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,6 +15,7 @@ namespace UtsavNights.Gameplay
     /// Hidden performance overlay for device captures (PRD 14 device lab). Triple-tap the top-left corner
     /// to show or hide fps, frame time, tier, governor steps, particles and voices. The corner never
     /// lights the lighter. Refreshes 4 times a second; spike-style string building is fine here.
+    /// Measurement tools (Phase 3 step 13) add buttons below the stats with <see cref="AddTool"/>.
     /// </summary>
     public sealed class DevOverlay : MonoBehaviour
     {
@@ -29,10 +31,11 @@ namespace UtsavNights.Gameplay
         private int _taps;
         private float _firstTapTime;
         private float _nextRefresh;
+        private RectTransform _tools;
 
         public bool Visible => _panel != null && _panel.activeSelf;
 
-        private void Start()
+        private void Awake()
         {
             TouchInput.EnsureEnabled();
             BuildUi();
@@ -46,7 +49,49 @@ namespace UtsavNights.Gameplay
             }
         }
 
-        public void Toggle() => _panel.SetActive(!_panel.activeSelf);
+        public void Toggle()
+        {
+            _panel.SetActive(!_panel.activeSelf);
+            _tools.gameObject.SetActive(_panel.activeSelf);
+        }
+
+        /// <summary>Adds a button under the stats, shown only while the overlay is visible.</summary>
+        public void AddTool(string label, Action action)
+        {
+            if (_tools == null)
+            {
+                BuildUi();
+            }
+
+            float height = SpikeMath.DpToPx(48f, Screen.dpi);
+            var go = new GameObject(label, typeof(RectTransform), typeof(Image), typeof(Button));
+            go.transform.SetParent(_tools, false);
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
+            rect.sizeDelta = new Vector2(SpikeMath.DpToPx(160f, Screen.dpi), height);
+            rect.anchoredPosition = new Vector2(0f, -(_tools.childCount - 1) * (height + SpikeMath.DpToPx(6f, Screen.dpi)));
+            go.GetComponent<Image>().color = new Color(0.15f, 0.3f, 0.15f, 0.85f);
+            go.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                Toggle();
+                action();
+            });
+            InputBlockers.Register(rect);
+
+            var textGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+            textGo.transform.SetParent(rect, false);
+            var text = textGo.GetComponent<Text>();
+            text.font = _text.font;
+            text.fontSize = _text.fontSize;
+            text.color = _text.color;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.text = label;
+            text.raycastTarget = false;
+            var textRect = text.rectTransform;
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = textRect.offsetMax = Vector2.zero;
+        }
 
         private void Update()
         {
@@ -114,7 +159,12 @@ namespace UtsavNights.Gameplay
 
         private void BuildUi()
         {
-            var canvasGo = new GameObject("DevOverlay", typeof(Canvas), typeof(CanvasScaler));
+            if (_panel != null)
+            {
+                return;
+            }
+
+            var canvasGo = new GameObject("DevOverlay", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasGo.transform.SetParent(transform, false);
             var canvas = canvasGo.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -152,6 +202,12 @@ namespace UtsavNights.Gameplay
             textRect.offsetMin = new Vector2(12f, 6f);
             textRect.offsetMax = new Vector2(-12f, -6f);
             _panel.SetActive(false);
+
+            _tools = new GameObject("Tools", typeof(RectTransform)).GetComponent<RectTransform>();
+            _tools.SetParent(canvasGo.transform, false);
+            _tools.anchorMin = _tools.anchorMax = _tools.pivot = new Vector2(0f, 1f);
+            _tools.anchoredPosition = new Vector2(16f, -corner - panelRect.sizeDelta.y - SpikeMath.DpToPx(8f, Screen.dpi));
+            _tools.gameObject.SetActive(false);
         }
     }
 }

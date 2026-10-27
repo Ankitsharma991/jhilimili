@@ -30,6 +30,8 @@ namespace UtsavNights.Gameplay
         private PlaytestSession _session;
         private string _sessionId;
         private ProfilerRecorder _memory;
+        private PlacementController _placement;
+        private FinaleController _finale;
 
         public static string FilePath => Path.Combine(Application.persistentDataPath, FileName);
 
@@ -57,6 +59,21 @@ namespace UtsavNights.Gameplay
             Emit();
         }
 
+        private void Start()
+        {
+            if (Game.Services.TryGet(out _placement))
+            {
+                _placement.SelectionChanged += OnSelectionChanged;
+                _placement.Placed += OnPlaced;
+                _placement.Rejected += OnRejected;
+            }
+
+            if (Game.Services.TryGet(out _finale))
+            {
+                _finale.StateChanged += OnFinaleState;
+            }
+        }
+
         private void OnEnable()
         {
             Game.Loop.Add(this);
@@ -77,6 +94,17 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<FlameOutEvent>(OnFlameOut);
             Game.Events.Unsubscribe<QualityChangedEvent>(OnQualityChanged);
             Game.Events.Unsubscribe<AppPausedEvent>(OnAppPaused);
+            if (_placement != null)
+            {
+                _placement.SelectionChanged -= OnSelectionChanged;
+                _placement.Placed -= OnPlaced;
+                _placement.Rejected -= OnRejected;
+            }
+
+            if (_finale != null)
+            {
+                _finale.StateChanged -= OnFinaleState;
+            }
         }
 
         private void OnApplicationQuit() => WriteSummary("session_end");
@@ -108,7 +136,7 @@ namespace UtsavNights.Gameplay
 
         private void OnIgnited(CrackerIgnitedEvent e)
         {
-            bool firstInSession = _session.RecordIgnition(Now);
+            bool firstInSession = _session.RecordIgnition(Now, e.CrackerId);
             Begin("cracker_ignited");
             Field("id", e.CrackerId);
             Field("is_first_install", e.IsFirst);
@@ -127,6 +155,56 @@ namespace UtsavNights.Gameplay
             Begin("payoff_complete");
             Field("id", e.CrackerId);
             Field("payoffs", _session.Payoffs);
+            Emit();
+        }
+
+        private void OnSelectionChanged(Content.CrackerDefinition selected)
+        {
+            int cancelsBefore = _session.Cancels;
+            _session.RecordSelection(selected != null ? selected.Id : null);
+            if (selected != null)
+            {
+                Begin("tray_select");
+                Field("id", selected.Id);
+                Emit();
+            }
+            else if (_session.Cancels > cancelsBefore)
+            {
+                Begin("tray_cancel");
+                Field("cancels", _session.Cancels);
+                Emit();
+            }
+        }
+
+        private void OnPlaced(CrackerRuntime runtime)
+        {
+            _session.RecordPlacement();
+            Begin("cracker_placed");
+            Field("id", runtime.Definition != null ? runtime.Definition.Id : string.Empty);
+            Field("placements", _session.Placements);
+            Emit();
+        }
+
+        private void OnRejected(string reason)
+        {
+            _session.RecordRejection();
+            Begin("placement_rejected");
+            Field("reason", reason);
+            Field("rejections", _session.Rejections);
+            Emit();
+        }
+
+        private void OnFinaleState(FinaleController.FinaleState state)
+        {
+            if (state != FinaleController.FinaleState.Running)
+            {
+                return;
+            }
+
+            _session.RecordFinale();
+            Begin("finale_start");
+            Field("items", _finale.Total);
+            Field("finales", _session.Finales);
             Emit();
         }
 
@@ -200,6 +278,12 @@ namespace UtsavNights.Gameplay
             Field("flame_outs", _session.FlameOuts);
             Field("time_to_first_ignition_s", _session.TimeToFirstIgnition);
             Field("quality_changes", _session.QualityChanges);
+            Field("distinct_ignited", _session.DistinctIgnited);
+            Field("selections", _session.Selections);
+            Field("placements", _session.Placements);
+            Field("rejections", _session.Rejections);
+            Field("cancels", _session.Cancels);
+            Field("finales", _session.Finales);
             Emit();
         }
 

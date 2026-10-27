@@ -298,6 +298,7 @@ namespace UtsavNights.EditorTools.Main
             finaleGo.AddComponent<UI.FinaleButton>();
             finaleGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
             canvasGo.AddComponent<UI.ScreenReaderSupport>();
+            canvasGo.AddComponent<UI.MeasureTools>();
         }
 
         private static void CreatePlacement(Camera camera)

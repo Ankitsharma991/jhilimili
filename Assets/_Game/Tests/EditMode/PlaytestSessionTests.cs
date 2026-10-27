@@ -67,5 +67,36 @@ namespace UtsavNights.Tests
             s.AddFrame(16f, 0.1f);
             Assert.AreEqual(1, s.WindowFrames);
         }
+
+        [Test]
+        public void TraySignals_CountCancelsOnlyWithoutPlacement()
+        {
+            var s = new PlaytestSession(0f);
+            s.RecordSelection("chakri_classic");
+            s.RecordPlacement();
+            s.RecordSelection(null); // cleared after placing: not a cancel
+            s.RecordSelection("rocket_basic");
+            s.RecordRejection();
+            s.RecordSelection(null); // gave up: a cancel
+            s.RecordSelection(null); // nothing selected: ignored
+            s.RecordFinale();
+            Assert.AreEqual(2, s.Selections);
+            Assert.AreEqual(1, s.Placements);
+            Assert.AreEqual(1, s.Rejections);
+            Assert.AreEqual(1, s.Cancels);
+            Assert.AreEqual(1, s.Finales);
+        }
+
+        [Test]
+        public void DistinctIgnited_CountsEachCrackerOnce()
+        {
+            var s = new PlaytestSession(0f);
+            s.RecordIgnition(1f, "flowerpot_gold");
+            s.RecordIgnition(2f, "flowerpot_gold");
+            s.RecordIgnition(3f, "bomb_single");
+            s.RecordIgnition(4f);
+            Assert.AreEqual(4, s.Ignitions);
+            Assert.AreEqual(2, s.DistinctIgnited);
+        }
     }
 }
