@@ -64,9 +64,9 @@ namespace UtsavNights.Gameplay
                 _ads?.Preload();
             });
 
-            // While a form is up (or after a reset) the status is already Required: stop ads now, not
-            // only when the player answers.
-            ApplyToAds();
+            // While a form is up (or after a reset) the status is already Required: stop ads and hold
+            // analytics now, not only when the player answers.
+            Apply();
         }
 
         /// <summary>The Settings "Privacy options" entry.</summary>

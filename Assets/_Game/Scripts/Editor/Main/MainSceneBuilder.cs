@@ -161,6 +161,7 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<QualityManager>().Configure(camera);
             systems.AddComponent<SettingsInstaller>();
             systems.AddComponent<MonetisationInstaller>();
+            systems.AddComponent<AnalyticsInstaller>();
             systems.AddComponent<PlaytestRecorder>();
             systems.AddComponent<DevOverlay>();
 
