@@ -42,6 +42,8 @@ namespace UtsavNights.UI
         private TextMeshProUGUI _removeAdsNote;
         private TextMeshProUGUI _restoreNote;
         private GameObject _buyButton;
+        private GameObject _privacyPolicyRow;
+        private AppLinks _links;
         private bool _binding;
         private float _tipClock = -1f;
 
@@ -96,6 +98,17 @@ namespace UtsavNights.UI
         public string RestoreNote => _restoreNote != null ? _restoreNote.text : string.Empty;
 
         public bool BuyVisible => _buyButton != null && _buyButton.activeSelf;
+
+        public bool PrivacyPolicyVisible => _privacyPolicyRow != null && _privacyPolicyRow.activeSelf;
+
+        /// <summary>Same as tapping "Read" on the privacy policy row.</summary>
+        public void OpenPrivacyPolicy()
+        {
+            if (_links != null && _links.HasPrivacyPolicy)
+            {
+                ExternalLinks.Open(_links.privacyPolicyUrl);
+            }
+        }
 
         /// <summary>Same as tapping "Buy" (F11).</summary>
         public void BuyRemoveAds()
@@ -400,6 +413,9 @@ namespace UtsavNights.UI
             _usageStats.Changed += on => Edit(s => s.shareUsageStats = on, true);
             GameObject privacyRow = Row(rows, "Privacy options", "Checking ad consent", RowButton(rows, "Open", OpenPrivacyOptions));
             _privacyNote = privacyRow.transform.Find("Labels/Sub").GetComponentInChildren<TextMeshProUGUI>();
+            _links = AppLinks.Load();
+            _privacyPolicyRow = Row(rows, "Privacy policy", "What data the app and its ads use", RowButton(rows, "Read", OpenPrivacyPolicy));
+            _privacyPolicyRow.SetActive(_links.HasPrivacyPolicy);
 
             Accessible("Volume", _master);
             Accessible("Fireworks volume", _effects);
@@ -420,6 +436,8 @@ namespace UtsavNights.UI
             Accessible("Share usage statistics", _usageStats);
             Button privacyButton = privacyRow.GetComponentInChildren<Button>();
             _controls.Add(new AccessibleControl { Label = "Privacy options", Rect = (RectTransform)privacyButton.transform, Button = privacyButton });
+            Button policyButton = _privacyPolicyRow.GetComponentInChildren<Button>(true);
+            _controls.Add(new AccessibleControl { Label = "Privacy policy", Rect = (RectTransform)policyButton.transform, Button = policyButton });
 
             _overlay.gameObject.SetActive(false);
         }

@@ -202,6 +202,9 @@ namespace UtsavNights.Gameplay
         {
             if (state != FinaleController.FinaleState.Running)
             {
+                // The audit (tools/ad_audit.py) needs to know when the finale window closes.
+                Begin("finale_end");
+                Emit();
                 return;
             }
 

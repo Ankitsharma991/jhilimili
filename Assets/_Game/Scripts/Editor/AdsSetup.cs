@@ -30,6 +30,22 @@ namespace UtsavNights.EditorTools
             return config;
         }
 
+        public const string LinksPath = "Assets/_Game/Resources/AppLinks.asset";
+
+        public static AppLinks EnsureAppLinks()
+        {
+            var links = AssetDatabase.LoadAssetAtPath<AppLinks>(LinksPath);
+            if (links == null)
+            {
+                EditorAssetUtil.EnsureFolder("Assets/_Game/Resources");
+                links = ScriptableObject.CreateInstance<AppLinks>();
+                AssetDatabase.CreateAsset(links, LinksPath);
+                AssetDatabase.SaveAssets();
+            }
+
+            return links;
+        }
+
         /// <summary>
         /// Writes the app ID into the plugin's settings asset. Returns false when the Google Mobile Ads
         /// package is not installed (nothing to configure). Warns when a release build uses test IDs.
@@ -40,6 +56,12 @@ namespace UtsavNights.EditorTools
         public static bool Apply(bool release)
         {
             AdsConfig config = EnsureConfig();
+            AppLinks links = EnsureAppLinks();
+            if (release && !links.HasPrivacyPolicy)
+            {
+                Debug.LogWarning("[Ads] no privacy policy URL in " + LinksPath + "; Google Play requires one before the closed test (PRD 16).");
+            }
+
             Type settingsType = AppDomain.CurrentDomain.GetAssemblies()
                 .Select(a => a.GetType(PluginSettingsType, false))
                 .FirstOrDefault(t => t != null);

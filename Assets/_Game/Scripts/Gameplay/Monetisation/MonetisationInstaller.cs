@@ -69,6 +69,14 @@ namespace UtsavNights.Gameplay
             }
 
             DevOverlay overlay = FindFirstObjectByType<DevOverlay>();
+
+            // Phase 4 audit runs on a device: interstitials are off for R0, so switch them on to test them.
+            overlay?.AddTool("Interstitials on/off", () =>
+            {
+                _ads.Policy.InterstitialsEnabled = !_ads.Policy.InterstitialsEnabled;
+                Debug.Log($"[Ads] interstitials {(_ads.Policy.InterstitialsEnabled ? "on" : "off")} for this session");
+            });
+
             if (overlay != null && _consent.Backend is DevConsentBackend dev)
             {
                 overlay.AddTool("Consent: EEA on/off", () =>

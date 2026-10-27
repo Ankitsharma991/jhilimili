@@ -17,8 +17,11 @@ namespace UtsavNights.Tests
             @"\bUnityWebRequest\b|\bSystem\.Net\b|\bHttpClient\b|\bWebClient\b|\bTcpClient\b|\bUdpClient\b|\bSocket\b|\bWWW\b|Application\.OpenURL|java\.net\.|\bUnity\.Services\.",
             RegexOptions.Compiled);
 
-        // Path fragment -> why network access is allowed there. Empty until Phase 4.
-        private static readonly string[] Allowed = { };
+        // Files allowed to reach outside the app, each with its reason:
+        // - UI/ExternalLinks.cs opens the privacy policy in the phone's browser (PRD 16); the game itself
+        //   stays offline. The SDK assemblies (Scripts/Sdk) use the network only inside Google's and
+        //   Unity's libraries, never through these APIs, so they need no entry.
+        private static readonly string[] Allowed = { "/Scripts/UI/ExternalLinks.cs" };
 
         [Test]
         public void GameCodeMakesNoNetworkCalls()
