@@ -120,7 +120,8 @@ namespace UtsavNights.EditorTools.Main
         private static void BuildMain(FlowerpotAssets.Result assets, Content.CrackerCatalog catalog)
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            RenderSettings.skybox = null;
+            EnvironmentArt.Result environment = EnvironmentArt.Ensure();
+            RenderSettings.skybox = environment.Sky;
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = Ambient;
             RenderSettings.fog = true;
@@ -133,7 +134,7 @@ namespace UtsavNights.EditorTools.Main
             var cameraGo = new GameObject("Main Camera") { tag = "MainCamera" };
             cameraGo.transform.SetPositionAndRotation(new Vector3(0f, 1.05f, -2.0f), Quaternion.Euler(7f, 0f, 0f));
             var camera = cameraGo.AddComponent<Camera>();
-            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.clearFlags = CameraClearFlags.Skybox;
             camera.backgroundColor = NightSky;
             camera.fieldOfView = 60f;
             camera.nearClipPlane = 0.05f;
@@ -142,6 +143,7 @@ namespace UtsavNights.EditorTools.Main
             cameraGo.AddComponent<AdaptiveCameraFov>().Configure(60f, 36f, 74f);
             UniversalAdditionalCameraData cameraData = camera.GetUniversalAdditionalCameraData();
             cameraData.renderPostProcessing = true;
+            cameraData.dithering = true; // keeps the dark night-sky gradient from banding after tonemapping
             cameraData.antialiasing = AntialiasingMode.None;
             cameraData.renderShadows = false;
 
@@ -152,7 +154,7 @@ namespace UtsavNights.EditorTools.Main
             rig.Configure(camera, groundShot);
 
             CreateLights();
-            CreateCourtyard();
+            CreateCourtyard(environment);
             CreateLightProbes();
 
             var systems = new GameObject("Systems");
@@ -216,12 +218,19 @@ namespace UtsavNights.EditorTools.Main
             lamp.lightmapBakeType = LightmapBakeType.Baked;
         }
 
-        private static void CreateCourtyard()
+        /// <summary>
+        /// The courtyard (Phase 5 visual pass): a 1.5 m compound wall so the sky fills the upper half of the view,
+        /// a wooden gate between pillars, diyas, string lights on poles above the wall, and the neighbourhood
+        /// beyond: houses with lit windows, a temple spire and a water tank against the night sky.
+        /// </summary>
+        private static void CreateCourtyard(EnvironmentArt.Result art)
         {
-            Material stone = SceneKit.LitMaterial("Courtyard_Floor", new Color(0.22f, 0.16f, 0.14f), 0.2f);
+            Material stone = SceneKit.TexturedMaterial("Courtyard_Floor", art.Stone, new Vector2(8f, 8f), 0.25f);
             Material border = SceneKit.LitMaterial("Courtyard_Border", new Color(0.36f, 0.26f, 0.2f), 0.15f);
-            Material plaster = SceneKit.LitMaterial("Courtyard_Wall", new Color(0.62f, 0.43f, 0.3f), 0.1f);
+            Material plaster = SceneKit.TexturedMaterial("Courtyard_Wall", art.Plaster, new Vector2(3f, 1f), 0.1f);
             Material wood = SceneKit.LitMaterial("Courtyard_Wood", new Color(0.14f, 0.09f, 0.06f), 0.25f);
+            Material gate = SceneKit.LitMaterial("Courtyard_Gate", new Color(0.32f, 0.12f, 0.07f), 0.3f);
+            Material pillar = SceneKit.LitMaterial("Courtyard_Pillar", new Color(0.78f, 0.62f, 0.48f), 0.15f);
             Material diyaClay = SceneKit.LitMaterial("Diya_Clay", new Color(0.55f, 0.27f, 0.12f), 0.2f);
             Material diyaFlame = SceneKit.EmissiveMaterial("Diya_Flame_Main", Saffron, 4f);
             Material bulb = SceneKit.EmissiveMaterial("Lamp_Bulb_Main", Marigold, 4f);
@@ -229,14 +238,24 @@ namespace UtsavNights.EditorTools.Main
             Material stringB = SceneKit.EmissiveMaterial("String_Light_Magenta_Main", Magenta, 3f);
 
             Transform env = new GameObject("Environment").transform;
-            // Floor and step are ground for placement; walls, doorway, lamp post and diyas block it.
+            // Floor and step are ground for placement; walls, gate, lamp post and diyas block it.
             GameObject floor = SceneKit.Primitive(PrimitiveType.Plane, "Floor", env, Vector3.zero, new Vector3(2f, 1f, 2f), stone, keepCollider: true);
             floor.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);
             Static(floor);
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "BackWall", env, new Vector3(0f, 1.4f, 3.6f), new Vector3(9f, 2.8f, 0.35f), plaster, true));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "LeftWall", env, new Vector3(-3.6f, 1.4f, 0.8f), new Vector3(0.35f, 2.8f, 5.6f), plaster, true));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "RightWall", env, new Vector3(3.6f, 1.4f, 0.8f), new Vector3(0.35f, 2.8f, 5.6f), plaster, true));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "Doorway", env, new Vector3(1.4f, 1.0f, 3.42f), new Vector3(1.0f, 2.0f, 0.05f), wood, true));
+            const float wallH = 1.5f;
+            Static(SceneKit.Primitive(PrimitiveType.Cube, "BackWall", env, new Vector3(0f, wallH / 2f, 3.6f), new Vector3(9f, wallH, 0.35f), plaster, true));
+            Static(SceneKit.Primitive(PrimitiveType.Cube, "LeftWall", env, new Vector3(-3.6f, wallH / 2f, 0.8f), new Vector3(0.35f, wallH, 5.6f), plaster, true));
+            Static(SceneKit.Primitive(PrimitiveType.Cube, "RightWall", env, new Vector3(3.6f, wallH / 2f, 0.8f), new Vector3(0.35f, wallH, 5.6f), plaster, true));
+            Static(SceneKit.Primitive(PrimitiveType.Cube, "WallCoping", env, new Vector3(0f, wallH + 0.03f, 3.6f), new Vector3(9.1f, 0.06f, 0.45f), border, false));
+
+            // Gate between two pillars in the back wall.
+            Static(SceneKit.Primitive(PrimitiveType.Cube, "Gate", env, new Vector3(1.4f, 0.62f, 3.4f), new Vector3(0.95f, 1.24f, 0.06f), gate, true));
+            foreach (float x in new[] { 0.82f, 1.98f })
+            {
+                Static(SceneKit.Primitive(PrimitiveType.Cube, "GatePillar", env, new Vector3(x, 0.95f, 3.45f), new Vector3(0.22f, 1.9f, 0.3f), pillar, true));
+                Static(SceneKit.Primitive(PrimitiveType.Sphere, "PillarCap", env, new Vector3(x, 1.96f, 3.45f), new Vector3(0.2f, 0.14f, 0.2f), pillar, false));
+            }
+
             GameObject step = SceneKit.Primitive(PrimitiveType.Cube, "Step", env, new Vector3(0f, 0.04f, 2.8f), new Vector3(6f, 0.08f, 1.1f), border, true);
             step.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);
             Static(step);
@@ -253,13 +272,130 @@ namespace UtsavNights.EditorTools.Main
                 Static(SceneKit.Primitive(PrimitiveType.Sphere, "DiyaFlame", env, pos + new Vector3(0f, 0.08f, 0f), new Vector3(0.025f, 0.045f, 0.025f), diyaFlame, false));
             }
 
-            // String lights along the top of the back wall with a sag between hooks.
-            for (int i = 0; i <= 24; i++)
+            // String lights hanging between bamboo poles (and the lamp post) above the wall.
+            var hooks = new[]
             {
-                float x = -4.2f + i * 0.35f;
-                float sag = 0.14f * Mathf.Sin(Mathf.PI * (i % 6) / 6f);
-                Static(SceneKit.Primitive(PrimitiveType.Sphere, "StringLight", env, new Vector3(x, 2.72f - sag, 3.38f), Vector3.one * 0.055f, i % 3 == 0 ? stringB : stringA, false));
+                new Vector3(-3.35f, 2.35f, 3.3f), new Vector3(-1.9f, 2.12f, 3.2f), new Vector3(2.3f, 2.3f, 3.3f),
+                new Vector3(3.35f, 2.4f, 3.3f),
+            };
+            foreach (Vector3 hook in hooks)
+            {
+                if (!Mathf.Approximately(hook.x, -1.9f))
+                {
+                    Static(SceneKit.Primitive(PrimitiveType.Cylinder, "BambooPole", env, new Vector3(hook.x, hook.y / 2f, hook.z), new Vector3(0.05f, hook.y / 2f, 0.05f), wood, true));
+                }
             }
+
+            int bulbIndex = 0;
+            for (int h = 0; h < hooks.Length - 1; h++)
+            {
+                Vector3 a = hooks[h], b = hooks[h + 1];
+                int count = Mathf.Max(3, Mathf.RoundToInt(Vector3.Distance(a, b) / 0.3f));
+                for (int i = 1; i < count; i++)
+                {
+                    float t = i / (float)count;
+                    Vector3 p = Vector3.Lerp(a, b, t) - new Vector3(0f, 0.32f * 4f * t * (1f - t), 0f);
+                    Static(SceneKit.Primitive(PrimitiveType.Sphere, "StringLight", env, p, Vector3.one * 0.055f, bulbIndex++ % 3 == 0 ? stringB : stringA, false));
+                }
+            }
+
+            CreateSkyline(env);
+        }
+
+        /// <summary>
+        /// Dark neighbouring houses beyond the wall, low enough to leave the sky open: lit windows, a few with
+        /// their own string lights, a temple spire with a saffron flag, a water tank on legs. Batching-static only:
+        /// far away, so they stay out of the lightmap bake.
+        /// </summary>
+        private static void CreateSkyline(Transform env)
+        {
+            Material house = SceneKit.LitMaterial("Skyline_House", new Color(0.075f, 0.06f, 0.1f), 0.05f);
+            Material houseB = SceneKit.LitMaterial("Skyline_House_B", new Color(0.1f, 0.07f, 0.09f), 0.05f);
+            Material window = SceneKit.EmissiveMaterial("Skyline_Window", new Color(1f, 0.72f, 0.38f), 1.4f);
+            Material windowCool = SceneKit.EmissiveMaterial("Skyline_Window_Cool", new Color(0.75f, 0.8f, 1f), 0.7f);
+            Material temple = SceneKit.LitMaterial("Skyline_Temple", new Color(0.16f, 0.1f, 0.08f), 0.05f);
+            Material flag = SceneKit.EmissiveMaterial("Skyline_Flag", Saffron, 0.8f);
+            Material lights = SceneKit.EmissiveMaterial("String_Light_Marigold", Marigold, 3f);
+
+            Transform root = new GameObject("Skyline").transform;
+            root.SetParent(env, false);
+            var random = new System.Random(2026);
+
+            // x centre, width, height, depth (z of the front face).
+            // The camera looks 7 degrees down at the play area, so the houses stay low and far: their roofs peek
+            // just over the wall and leave the sky above for the aerial bursts.
+            var houses = new[]
+            {
+                (-10.5f, 4.4f, 3.4f, 15f), (-6.2f, 3.8f, 2.6f, 13f), (-2.6f, 3.2f, 3.8f, 17f), (1.0f, 3.6f, 2.9f, 14f),
+                (5.0f, 4.2f, 4.2f, 18f), (9.4f, 4.6f, 2.8f, 13.5f), (13.6f, 3.8f, 3.6f, 16f), (-14.6f, 4.0f, 3.0f, 16.5f),
+            };
+            for (int h = 0; h < houses.Length; h++)
+            {
+                (float x, float w, float height, float z) = houses[h];
+                GameObject body = SceneKit.Primitive(PrimitiveType.Cube, "House", root, new Vector3(x, height / 2f, z + 2f), new Vector3(w, height, 4f), h % 2 == 0 ? house : houseB, false);
+                Skyline(body);
+                // Parapet lip on the flat roof.
+                Skyline(SceneKit.Primitive(PrimitiveType.Cube, "Parapet", root, new Vector3(x, height + 0.12f, z + 0.1f), new Vector3(w + 0.1f, 0.24f, 0.2f), h % 2 == 0 ? house : houseB, false));
+
+                int floors = Mathf.Max(1, Mathf.FloorToInt(height / 1.4f));
+                int columns = Mathf.Max(1, Mathf.FloorToInt(w / 1.1f));
+                for (int f = 0; f < floors; f++)
+                {
+                    for (int c = 0; c < columns; c++)
+                    {
+                        if (random.NextDouble() < 0.45)
+                        {
+                            continue; // dark room
+                        }
+
+                        float wx = x - w / 2f + (c + 0.5f) * w / columns;
+                        float wy = height - 0.85f - f * 1.4f; // from the roofline down, so they show above the wall
+                        Skyline(SceneKit.Primitive(PrimitiveType.Quad, "Window", root, new Vector3(wx, wy, z - 0.01f), new Vector3(0.34f, 0.44f, 1f),
+                            random.NextDouble() < 0.8 ? window : windowCool, false));
+                    }
+                }
+
+                if (h % 3 == 0)
+                {
+                    // Festival lights along this roof edge.
+                    for (float lx = x - w / 2f + 0.15f; lx < x + w / 2f; lx += 0.35f)
+                    {
+                        Skyline(SceneKit.Primitive(PrimitiveType.Sphere, "RoofLight", root, new Vector3(lx, height - 0.05f, z - 0.05f), Vector3.one * 0.09f, lights, false));
+                    }
+                }
+            }
+
+            // Temple spire (shikhara): stacked, narrowing blocks with a finial and a flag.
+            Vector3 templeBase = new Vector3(7.2f, 0f, 22f);
+            float y = 0f;
+            for (int i = 0; i < 6; i++)
+            {
+                float size = 3.2f - i * 0.48f;
+                float tier = i == 0 ? 3.2f : 1.1f;
+                Skyline(SceneKit.Primitive(PrimitiveType.Cube, "Shikhara", root, templeBase + new Vector3(0f, y + tier / 2f, 0f), new Vector3(size, tier, size), temple, false));
+                y += tier;
+            }
+
+            Skyline(SceneKit.Primitive(PrimitiveType.Sphere, "Kalash", root, templeBase + new Vector3(0f, y + 0.25f, 0f), new Vector3(0.45f, 0.55f, 0.45f), temple, false));
+            Skyline(SceneKit.Primitive(PrimitiveType.Cube, "FlagPole", root, templeBase + new Vector3(0f, y + 1.1f, 0f), new Vector3(0.05f, 1.4f, 0.05f), temple, false));
+            GameObject flagQuad = SceneKit.Primitive(PrimitiveType.Quad, "Flag", root, templeBase + new Vector3(0.38f, y + 1.55f, -0.05f), new Vector3(0.7f, 0.42f, 1f), flag, false);
+            flagQuad.transform.localRotation = Quaternion.Euler(0f, 0f, -8f);
+            Skyline(flagQuad);
+
+            // Water tank on legs over the left houses.
+            Vector3 tank = new Vector3(-6.2f, 2.6f, 15f);
+            Skyline(SceneKit.Primitive(PrimitiveType.Cylinder, "WaterTank", root, tank + new Vector3(0f, 1.6f, 0f), new Vector3(1.3f, 0.55f, 1.3f), house, false));
+            foreach (Vector2 leg in new[] { new Vector2(-0.45f, -0.45f), new Vector2(0.45f, -0.45f), new Vector2(-0.45f, 0.45f), new Vector2(0.45f, 0.45f) })
+            {
+                Skyline(SceneKit.Primitive(PrimitiveType.Cube, "TankLeg", root, tank + new Vector3(leg.x, 0.5f, leg.y), new Vector3(0.06f, 1.0f, 0.06f), house, false));
+            }
+        }
+
+        /// <summary>Far scenery: batched, but not part of the lightmap bake (lit by probes and the moon).</summary>
+        private static void Skyline(GameObject go)
+        {
+            GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic);
+            go.GetComponent<MeshRenderer>().receiveGI = ReceiveGI.LightProbes;
         }
 
         private static void Static(GameObject go) => SceneKit.MakeStatic(go);
@@ -378,8 +514,15 @@ namespace UtsavNights.EditorTools.Main
             settings.lightmapResolution = 10f;
             settings.lightmapPadding = 2;
             settings.lightmapMaxSize = 512;
-            settings.directSampleCount = 16;
-            settings.indirectSampleCount = 64;
+            settings.directSampleCount = 32;
+            settings.indirectSampleCount = 256;
+
+            // Smooths the noise that showed as contour blotches on the walls.
+            settings.filteringMode = LightingSettings.FilterMode.Advanced;
+            settings.denoiserTypeIndirect = LightingSettings.DenoiserType.None;
+            settings.filterTypeIndirect = LightingSettings.FilterType.Gaussian;
+            settings.filteringGaussianRadiusIndirect = 3f;
+            settings.filterTypeDirect = LightingSettings.FilterType.Gaussian;
             settings.maxBounces = 2;
             EditorUtility.SetDirty(settings);
             Lightmapping.lightingSettings = settings;

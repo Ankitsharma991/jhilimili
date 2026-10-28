@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+"""PRD 17 metrics report for the closed test and launch reviews (Phase 5 step 6, Docs/Phase5/CLOSED_TEST.md).
+
+Input: events.csv from the BigQuery query in Docs/Phase5/metrics_query.sql (Firebase's free BigQuery
+export). One row per event, with the columns user, ts, event, id, is_first, duration_s, ignitions,
+ms_since_launch, placement, ms_since_payoff, sku, key, value, avg_fps, tier, downgrades.
+
+Usage:
+  tools/metrics_report.py events.csv --since 2026-11-01 --days 7 [--crashes N] [--installs installs.csv]
+                          [--ecpm 0.50] [--out report.md]
+  tools/metrics_report.py --self-test
+
+--crashes: crashes in the period, from Crashlytics or Play Console Android vitals; crash-free sessions are
+1 - crashes / (session_end events + crashes). --installs: Play Console's installs CSV export (UTF-16).
+--ecpm: your measured AdMob eCPM in USD, for the PRD 15.3 revenue check.
+"""
+import argparse
+import csv
+import io
+import os
+import statistics
+import sys
+from collections import defaultdict
+from datetime import date, datetime, timedelta, timezone
+
+TARGETS = {
+    "time_to_first_ignition_s": 30.0,
+    "first_cracker_completion": 0.80,
+    "ignitions_per_session": 8.0,
+    "d1_retention": 0.20,
+    "crash_free_sessions": 0.99,
+}
+
+# AdPolicy (Core/Monetisation): an interstitial needs 10 s since the last payoff. Rewarded ads are asked for.
+INTERSTITIAL_PAYOFF_QUIET_MS = 10_000
+
+
+def parse_ts(text):
+    text = text.strip()
+    if text.isdigit():  # BigQuery event_timestamp in microseconds
+        return datetime.fromtimestamp(int(text) / 1_000_000, tz=timezone.utc)
+    text = text.replace(" UTC", "+00:00").replace("Z", "+00:00")
+    ts = datetime.fromisoformat(text)
+    return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+
+
+def num(row, key):
+    value = (row.get(key) or "").strip()
+    if value == "":
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def load_events(path_or_rows, since, days):
+    rows = path_or_rows if isinstance(path_or_rows, list) else list(csv.DictReader(open(path_or_rows, newline="")))
+    start = datetime.combine(since, datetime.min.time(), tzinfo=timezone.utc)
+    end = start + timedelta(days=days)
+    events = []
+    for row in rows:
+        ts = parse_ts(row["ts"])
+        if start <= ts < end:
+            row = dict(row)
+            row["_ts"] = ts
+            events.append(row)
+    events.sort(key=lambda r: r["_ts"])
+    return events
+
+
+def compute(events, crashes=None, ecpm=None):
+    by_user = defaultdict(list)
+    for e in events:
+        by_user[e["user"]].append(e)
+
+    m = {"users": len(by_user)}
+    new_users = [u for u, evs in by_user.items() if any(e["event"] == "app_first_open" for e in evs)]
+    m["new_users"] = len(new_users)
+
+    # Time to first ignition: launch (scene_ready time minus its ms_since_launch) to the user's first ignition.
+    ttfi = []
+    for u in new_users:
+        evs = by_user[u]
+        ready = next((e for e in evs if e["event"] == "scene_ready"), None)
+        first = next((e for e in evs if e["event"] == "cracker_ignited"), None)
+        if ready and first and first["_ts"] >= ready["_ts"]:
+            launch = ready["_ts"] - timedelta(milliseconds=num(ready, "ms_since_launch") or 0)
+            ttfi.append((first["_ts"] - launch).total_seconds())
+    m["new_users_who_ignited"] = sum(1 for u in new_users if any(e["event"] == "cracker_ignited" for e in by_user[u]))
+    m["time_to_first_ignition_s"] = statistics.median(ttfi) if ttfi else None
+    m["first_cracker_completion"] = (
+        sum(1 for u in new_users if any(e["event"] == "payoff_complete" for e in by_user[u])) / len(new_users) if new_users else None)
+
+    ends = [e for e in events if e["event"] == "session_end"]
+    m["sessions"] = len(ends)
+    ign = [num(e, "ignitions") for e in ends if num(e, "ignitions") is not None]
+    dur = [num(e, "duration_s") for e in ends if num(e, "duration_s") is not None]
+    m["ignitions_per_session"] = statistics.mean(ign) if ign else None
+    m["median_session_s"] = statistics.median(dur) if dur else None
+    m["sessions_per_user"] = len(ends) / len(by_user) if by_user else None
+
+    # Retention: users first seen on day d who come back on d+1 (or d+7), for cohorts whose return day is in the data.
+    last_day = max(e["_ts"].date() for e in events) if events else None
+    first_day = {u: evs[0]["_ts"].date() for u, evs in by_user.items()}
+    active = defaultdict(set)
+    for e in events:
+        active[e["user"]].add(e["_ts"].date())
+    for n in (1, 7):
+        cohort = [u for u, d in first_day.items() if last_day and d + timedelta(days=n) <= last_day]
+        back = sum(1 for u in cohort if first_day[u] + timedelta(days=n) in active[u])
+        m[f"d{n}_cohort"] = len(cohort)
+        m[f"d{n}_retention"] = back / len(cohort) if cohort else None
+
+    m["crashes"] = crashes
+    m["crash_free_sessions"] = (1 - crashes / (len(ends) + crashes)) if crashes is not None and (len(ends) + crashes) > 0 else None
+
+    shown = [e for e in events if e["event"] == "ad_shown"]
+    m["ads_shown"] = len(shown)
+    m["ad_rewards"] = sum(1 for e in events if e["event"] == "ad_reward")
+    m["ad_failures"] = sum(1 for e in events if e["event"] == "ad_failed")
+    m["ads_per_session"] = len(shown) / len(ends) if ends else None
+    m["ad_safety_violations"] = sum(
+        1 for e in shown
+        if e.get("placement") == "natural_break" and (num(e, "ms_since_payoff") or 0) >= 0
+        and (num(e, "ms_since_payoff") or 0) < INTERSTITIAL_PAYOFF_QUIET_MS)
+
+    m["purchase_started_users"] = len({e["user"] for e in events if e["event"] == "purchase_started"})
+    m["purchase_done_users"] = len({e["user"] for e in events if e["event"] == "purchase_done"})
+    m["purchase_conversion"] = m["purchase_done_users"] / len(by_user) if by_user else None
+
+    quiet = {e["user"] for e in events if e["event"] == "settings_changed" and e.get("key") == "quiet_mode" and e.get("value") == "on"}
+    m["quiet_mode_users"] = len(quiet)
+
+    fps = defaultdict(list)
+    for e in events:
+        if e["event"] == "perf_sample" and num(e, "avg_fps") is not None:
+            fps[e.get("tier") or "?"].append(num(e, "avg_fps"))
+    m["fps_by_tier"] = {t: (statistics.median(v), len(v)) for t, v in sorted(fps.items())}
+    m["downgrade_samples"] = sum(1 for e in events if e["event"] == "perf_sample" and (num(e, "downgrades") or 0) > 0)
+
+    # PRD 15.3: sessions per user x impressions per session x eCPM / 1000.
+    if ecpm is not None and m["sessions_per_user"] is not None and m["ads_per_session"] is not None:
+        m["ad_revenue_per_user_usd"] = m["sessions_per_user"] * m["ads_per_session"] * ecpm / 1000
+    else:
+        m["ad_revenue_per_user_usd"] = None
+    return m
+
+
+def load_installs(path):
+    raw = open(path, "rb").read()
+    for encoding in ("utf-16", "utf-8-sig"):
+        try:
+            text = raw.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    rows = list(csv.DictReader(io.StringIO(text)))
+    def col(row, *names):
+        for name in names:
+            for k in row:
+                if k and k.strip().lower() == name.lower():
+                    try:
+                        return int(float(row[k] or 0))
+                    except ValueError:
+                        return 0
+        return 0
+    installs = sum(col(r, "Daily User Installs", "Daily Device Installs") for r in rows)
+    uninstalls = sum(col(r, "Daily User Uninstalls", "Daily Device Uninstalls") for r in rows)
+    return {"installs": installs, "uninstalls": uninstalls, "days": len(rows)}
+
+
+def fmt(value, kind):
+    if value is None:
+        return "no data"
+    if kind == "pct":
+        return f"{value * 100:.1f}%"
+    if kind == "s":
+        return f"{value:.0f} s"
+    if kind == "usd":
+        return f"${value:.4f}"
+    return f"{value:.1f}" if isinstance(value, float) else str(value)
+
+
+def verdict(value, target, higher_is_better=True):
+    if value is None:
+        return "–"
+    ok = value >= target if higher_is_better else value <= target
+    return "✅" if ok else "❌"
+
+
+def report(m, since, days, installs=None):
+    lines = [f"# Metrics report: {since.isoformat()} + {days} day(s)", ""]
+    lines += [f"Users {m['users']} (new {m['new_users']}), sessions {m['sessions']}, "
+              f"sessions per user {fmt(m['sessions_per_user'], 'n')}.", ""]
+    if installs:
+        lines += [f"Play Console: {installs['installs']} installs, {installs['uninstalls']} uninstalls over {installs['days']} day(s).", ""]
+    lines += ["## PRD 17 targets", "", "| Metric | Value | Target | |", "|---|---|---|---|"]
+    lines.append(f"| Time to first ignition (median, new users) | {fmt(m['time_to_first_ignition_s'], 's')} | 30 s or less | {verdict(m['time_to_first_ignition_s'], 30, False)} |")
+    lines.append(f"| First-cracker completion | {fmt(m['first_cracker_completion'], 'pct')} | 80% or more | {verdict(m['first_cracker_completion'], 0.8)} |")
+    lines.append(f"| Ignitions per session | {fmt(m['ignitions_per_session'], 'n')} | 8 or more | {verdict(m['ignitions_per_session'], 8)} |")
+    lines.append(f"| D1 retention (cohort {m['d1_cohort']}) | {fmt(m['d1_retention'], 'pct')} | about 20% | {verdict(m['d1_retention'], 0.2)} |")
+    lines.append(f"| D7 retention (cohort {m['d7_cohort']}) | {fmt(m['d7_retention'], 'pct')} | secondary | |")
+    lines.append(f"| Crash-free sessions | {fmt(m['crash_free_sessions'], 'pct')} | 99% or more | {verdict(m['crash_free_sessions'], 0.99)} |")
+    lines += ["", "## Play and ads", "", "| Metric | Value |", "|---|---|"]
+    lines.append(f"| Median session length | {fmt(m['median_session_s'], 's')} |")
+    lines.append(f"| Ads shown / rewarded / failed | {m['ads_shown']} / {m['ad_rewards']} / {m['ad_failures']} |")
+    lines.append(f"| Ads per session | {fmt(m['ads_per_session'], 'n')} |")
+    lines.append(f"| Interstitials within 10 s of a payoff (must be 0) | {m['ad_safety_violations']} {'✅' if m['ad_safety_violations'] == 0 else '❌'} |")
+    lines.append(f"| Purchase started / done (users) | {m['purchase_started_users']} / {m['purchase_done_users']} ({fmt(m['purchase_conversion'], 'pct')} of users) |")
+    lines.append(f"| Users who turned on Quiet mode | {m['quiet_mode_users']} |")
+    lines.append(f"| Perf samples with a quality downgrade | {m['downgrade_samples']} |")
+    for tier, (median_fps, n) in m["fps_by_tier"].items():
+        lines.append(f"| Median fps, tier {tier} ({n} samples) | {median_fps:.0f} |")
+    lines.append(f"| Ad revenue per user (PRD 15.3) | {fmt(m['ad_revenue_per_user_usd'], 'usd')} |")
+    lines += ["", "Small tests (20 to 50 users) can judge feel, time to ignition, completion and crashes. "
+              "Retention, conversion and ad revenue need hundreds to thousands of users (PRD 17)."]
+    return "\n".join(lines)
+
+
+def self_test():
+    rows = []
+    t0 = datetime(2026, 11, 1, 18, 0, tzinfo=timezone.utc)
+
+    def add(user, at, event, **params):
+        row = {"user": user, "ts": at.isoformat(), "event": event}
+        row.update({k: str(v) for k, v in params.items()})
+        rows.append(row)
+
+    # Four new users on day 0. u1 and u2 come back on day 1; u1 also on day 7.
+    for i, user in enumerate(["u1", "u2", "u3", "u4"]):
+        start = t0 + timedelta(minutes=i)
+        add(user, start, "app_first_open", tier="mid", locale="en_IN")
+        add(user, start + timedelta(seconds=2), "scene_ready", ms_since_launch=2000)
+        if user != "u4":  # u4 never lights anything
+            add(user, start + timedelta(seconds=10 + 10 * i), "cracker_ignited", id="flowerpot_gold", is_first=1)
+            add(user, start + timedelta(seconds=20 + 10 * i), "payoff_complete", id="flowerpot_gold")
+        add(user, start + timedelta(minutes=5), "session_end", duration_s=300, ignitions=10 if user != "u4" else 0)
+        add(user, start + timedelta(minutes=1), "perf_sample", avg_fps=58.5, tier="mid", downgrades=0)
+    for user, day in (("u1", 1), ("u2", 1), ("u1", 7)):
+        at = t0 + timedelta(days=day)
+        add(user, at, "scene_ready", ms_since_launch=1500)
+        add(user, at + timedelta(minutes=4), "session_end", duration_s=240, ignitions=12)
+    add("u1", t0 + timedelta(minutes=2), "ad_shown", placement="unlock_peacock_fountain", ms_since_payoff=4000)
+    add("u1", t0 + timedelta(minutes=2, seconds=30), "ad_reward", placement="unlock_peacock_fountain", ms_since_payoff=34000)
+    add("u2", t0 + timedelta(minutes=3), "ad_shown", placement="natural_break", ms_since_payoff=5000)  # a violation
+    add("u3", t0 + timedelta(minutes=3), "purchase_started", sku="remove_ads")
+    add("u3", t0 + timedelta(minutes=3, seconds=20), "purchase_done", sku="remove_ads")
+    add("u2", t0 + timedelta(minutes=4), "settings_changed", key="quiet_mode", value="on")
+    add("u9", t0 + timedelta(days=30), "session_end", duration_s=1, ignitions=1)  # outside the window
+
+    events = load_events(rows, t0.date(), 8)
+    m = compute(events, crashes=1, ecpm=2.0)
+    checks = {
+        "users": (m["users"], 4),
+        "new_users": (m["new_users"], 4),
+        # Launch is 0 s, scene ready 2 s; ignitions at 10, 20, 30 s after the user's start: median 20 s.
+        "time_to_first_ignition_s": (m["time_to_first_ignition_s"], 20.0),
+        "first_cracker_completion": (m["first_cracker_completion"], 0.75),
+        "sessions": (m["sessions"], 7),
+        "ignitions_per_session": (round(m["ignitions_per_session"], 4), round((30 + 0 + 36) / 7, 4)),
+        "d1_retention": (m["d1_retention"], 0.5),
+        "d7_retention": (m["d7_retention"], 0.25),
+        "crash_free_sessions": (m["crash_free_sessions"], 1 - 1 / 8),
+        "ads_shown": (m["ads_shown"], 2),
+        "ad_safety_violations": (m["ad_safety_violations"], 1),
+        "purchase_done_users": (m["purchase_done_users"], 1),
+        "quiet_mode_users": (m["quiet_mode_users"], 1),
+        # 7 sessions / 4 users x 2 ads / 7 sessions x $2 / 1000.
+        "ad_revenue_per_user_usd": (round(m["ad_revenue_per_user_usd"], 6), round(7 / 4 * 2 / 7 * 2 / 1000, 6)),
+    }
+    failed = [f"{k}: got {got}, expected {want}" for k, (got, want) in checks.items() if got != want]
+    report(m, t0.date(), 8)
+    if failed:
+        print("SELF-TEST FAILED\n" + "\n".join(failed))
+        return 1
+    print(f"self-test passed ({len(checks)} checks)")
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("events", nargs="?")
+    parser.add_argument("--since", type=date.fromisoformat)
+    parser.add_argument("--days", type=int, default=7)
+    parser.add_argument("--crashes", type=int)
+    parser.add_argument("--installs")
+    parser.add_argument("--ecpm", type=float)
+    parser.add_argument("--out")
+    parser.add_argument("--self-test", action="store_true")
+    args = parser.parse_args()
+    if args.self_test:
+        return self_test()
+    if not args.events or not args.since:
+        parser.error("events.csv and --since are required")
+    m = compute(load_events(args.events, args.since, args.days), args.crashes, args.ecpm)
+    text = report(m, args.since, args.days, load_installs(args.installs) if args.installs else None)
+    if args.out:
+        os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+        open(args.out, "w").write(text + "\n")
+        print(f"Saved {args.out}")
+    print(text)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

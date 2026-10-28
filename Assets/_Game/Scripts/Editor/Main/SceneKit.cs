@@ -42,6 +42,16 @@ namespace UtsavNights.EditorTools.Main
             return m;
         }
 
+        /// <summary>Lit material with a base texture repeated <paramref name="tiling"/> times, tinted white by default.</summary>
+        public static Material TexturedMaterial(string name, Texture2D texture, Vector2 tiling, float smoothness)
+        {
+            Material m = LitMaterial(name, Color.white, smoothness);
+            m.SetTexture("_BaseMap", texture);
+            m.SetTextureScale("_BaseMap", tiling);
+            EditorUtility.SetDirty(m);
+            return m;
+        }
+
         public static Material EmissiveMaterial(string name, Color color, float intensity)
         {
             Material m = LoadOrCreate(name);

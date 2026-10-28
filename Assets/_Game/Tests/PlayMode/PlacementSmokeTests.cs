@@ -42,7 +42,7 @@ namespace UtsavNights.Tests.PlayMode
             Assert.IsTrue(ok.Valid, $"open floor should be valid, got {ok.Block}");
 
             Assert.AreEqual(PlacementBlock.TooCloseToItem, _placement.CheckAt(Screen(_scenePot.transform.position + new Vector3(0.15f, 0f, 0f))).Block);
-            Assert.AreEqual(PlacementBlock.WrongSurface, _placement.CheckAt(Screen(new Vector3(0f, 1.6f, 3.42f))).Block, "the back wall is not ground");
+            Assert.AreEqual(PlacementBlock.WrongSurface, _placement.CheckAt(Screen(new Vector3(0f, 1.0f, 3.42f))).Block, "the back wall (1.5 m high) is not ground");
             Assert.AreEqual(PlacementBlock.NoSurface, _placement.CheckAt(new Vector2(UnityEngine.Screen.width * 0.5f, UnityEngine.Screen.height - 2f)).Block, "sky");
 
             CrackerRuntime placed = _placement.PlaceAt(Screen(new Vector3(1.1f, 0f, 0.4f)));

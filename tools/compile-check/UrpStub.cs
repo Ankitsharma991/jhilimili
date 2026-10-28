@@ -35,6 +35,7 @@ namespace UnityEngine.Rendering.Universal
         public bool renderShadows { get; set; }
         public bool renderPostProcessing { get; set; }
         public AntialiasingMode antialiasing { get; set; }
+        public bool dithering { get; set; }
     }
     public static class CameraExtensions { public static UniversalAdditionalCameraData GetUniversalAdditionalCameraData(this Camera camera) => null; }
     public sealed class Bloom : VolumeComponent

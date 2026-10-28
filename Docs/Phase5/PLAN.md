@@ -44,3 +44,40 @@ when the accounts are.
 | 2 Asset import rules | Done 2026-10-28. New sounds and art get their rule on first import; the content lint checks 18 sounds and 9 icons before every build: 0 errors, 4 warnings on placeholders. Delivery spec for licensed audio in [ASSETS.md](ASSETS.md) |
 | 3 Performance guards | Done 2026-10-28. The game allocates 0.02 KB per frame idle and 0.95 KB during the stress finale (guarded in tests). A startup timeline from process start to interactive is logged on every launch, and `measure_cold_start.sh` reads it. Frame-spike share and GC are in the 30 s perf sample. Device re-test table in [PERFORMANCE.md](PERFORMANCE.md) |
 | 4 In-app review prompt | Done 2026-10-28. Rules in Core (second launch on, a finale or 10 bursts, quiet moment, 2 min clear of ads, once a session and per 30 days). Play In-App Review through JNI in store builds, a test card elsewhere. How to test it: [RELEASE.md](RELEASE.md), last section |
+| 5 Store listing kit | Done 2026-10-28. App icon (the launcher icon was Unity's default until now), Play icon and feature graphic as own procedural art; honest short and full descriptions; screenshot script with Play's format checks; shot list and video brief in [STORE_LISTING.md](STORE_LISTING.md) |
+| 6 Closed test kit | Done 2026-10-28. [CLOSED_TEST.md](CLOSED_TEST.md): setup checklist, tester invite (English and Hindi), feedback form with the feel-preference question, 14-day schedule, monitoring thresholds, decision table. `tools/metrics_report.py` computes the PRD 17 metrics from Firebase's BigQuery export ([metrics_query.sql](metrics_query.sql)); self-tested |
+| 7 Launch plan | Done 2026-10-28. Diwali 2026 (8 Nov) is too close for production: run the closed test through Diwali week for festival data, launch staged in late November, New Year's Eve as a second peak, Diwali 2027 as the full launch. Master launch checklist, rollout stages, release notes and day 1/3/7 template in [LAUNCH.md](LAUNCH.md) |
+
+All Phase 5 code and documents are in place. What remains needs the owner: the accounts and setup in the [launch checklist](LAUNCH.md#launch-checklist), the device tests and the closed test.
+
+## Visual pass (2026-10-28)
+
+The scene was blockout art. Changes, all own procedural art (LICENCE_LOG own-006):
+
+| Before | After |
+|---|---|
+| A 2.8 m wall filled about 75% of the portrait view; a flat-colour sky strip | 1.5 m compound wall with coping, a gate between pillars; a painted night-sky panorama (stars, moon, city-light haze); houses with lit windows and roof lights, a temple spire, a water tank beyond the wall |
+| String lights along the top of the wall | Strung between bamboo poles and the lamp post above the wall |
+| Contour blotches on the walls (64 indirect samples, no filtering) | 256 samples with Gaussian filtering; plaster texture |
+| Flat dark floor | Sandstone tiles with grout |
+| Plain coloured cracker bodies | Printed wrappers: spiral stripes (rocket), stars (skyshot), sunburst (cake), zigzag (single bang), bunting (anar band), feather eyes (peacock), dots (chakri, chain) |
+
+Review renders without a device: **Utsav → Phase 2 → Capture Scene Shots** (or `SceneShots.CiCapture`) writes
+`captures/visual/`. **Check on the low-tier phone:** the skyline adds about 100 small static objects (batched),
+and the sky is one 2048 × 1024 texture, so confirm fps in the device re-test ([PERFORMANCE.md](PERFORMANCE.md)).
+
+### Effects review (2026-10-28)
+
+**Utsav → Phase 2 → Capture Effect Shots** (`SceneShots.CiCaptureEffects`) renders each cracker mid-show, plus the
+sky as the aerial follow sees it. It found one real defect: when the camera looked up at an aerial burst, the
+sky showed **olive and red rings**. The cause was post-processing, not the texture: the neutral tonemapper's toe
+stretched each 8-bit step of the very dark sky into a visible band (mid and high tiers only, which run
+post-processing). Fixed by:
+- lifting the zenith colour out of the crushed range;
+- dithering the sky texture by about one level;
+- turning on camera dithering;
+- using high-quality compression (BC7, or ASTC 4×4 on Android) for the sky;
+- widening stars near the zenith, so they stay round in the panorama.
+
+The shared spark glow is now uncompressed (16 KB). The fireworks effects themselves were tuned in the Phase 2
+feel tests and are unchanged.

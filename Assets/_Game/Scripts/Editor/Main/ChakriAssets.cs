@@ -1,6 +1,7 @@
 using System;
 using UnityEditor;
 using UnityEngine;
+using UtsavNights.Core.Art;
 using UtsavNights.Content;
 using UtsavNights.Core;
 using UtsavNights.Core.Crackers;
@@ -167,8 +168,8 @@ namespace UtsavNights.EditorTools.Main
         private static GameObject BuildModel()
         {
             var root = new GameObject("Model_Chakri");
-            Material paperA = SceneKit.LitMaterial("Chakri_Paper_Red", new Color(0.85f, 0.18f, 0.2f), 0.3f);
-            Material paperB = SceneKit.LitMaterial("Chakri_Paper_Green", new Color(0.2f, 0.62f, 0.3f), 0.3f);
+            Material paperA = CrackerWrappers.Material("Chakri_Paper_Red", WrapperPattern.Dots, new Color(0.85f, 0.18f, 0.2f), new Color(0.95f, 0.74f, 0.2f), new Color(0.95f, 0.74f, 0.2f));
+            Material paperB = CrackerWrappers.Material("Chakri_Paper_Green", WrapperPattern.Dots, new Color(0.2f, 0.62f, 0.3f), new Color(0.95f, 0.74f, 0.2f), new Color(0.95f, 0.74f, 0.2f));
             Material core = SceneKit.LitMaterial("Chakri_Core", new Color(0.9f, 0.82f, 0.4f), 0.4f);
             SceneKit.Primitive(PrimitiveType.Cylinder, "CoilOuter", root.transform, new Vector3(0f, 0.03f, 0f), new Vector3(CoilRadius * 2f, 0.012f, CoilRadius * 2f), paperA, keepCollider: false);
             SceneKit.Primitive(PrimitiveType.Cylinder, "CoilInner", root.transform, new Vector3(0f, 0.031f, 0f), new Vector3(CoilRadius * 1.4f, 0.013f, CoilRadius * 1.4f), paperB, keepCollider: false);

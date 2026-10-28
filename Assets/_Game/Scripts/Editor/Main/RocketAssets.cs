@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using UtsavNights.Core.Art;
 using UtsavNights.Content;
 using UtsavNights.Core;
 using F = UtsavNights.EditorTools.Main.FlowerpotAssets;
@@ -162,7 +163,7 @@ namespace UtsavNights.EditorTools.Main
         {
             var root = new GameObject("Model_Rocket");
             Material glass = SceneKit.LitMaterial("Rocket_Bottle", new Color(0.12f, 0.32f, 0.18f), 0.85f);
-            Material tube = SceneKit.LitMaterial("Rocket_Tube", new Color(0.82f, 0.16f, 0.22f), 0.35f);
+            Material tube = CrackerWrappers.Material("Rocket_Tube", WrapperPattern.SpiralStripes, new Color(0.82f, 0.16f, 0.22f), new Color(1f, 0.82f, 0.25f), new Color(0.95f, 0.74f, 0.2f));
             Material cone = SceneKit.LitMaterial("Rocket_Cone", new Color(0.95f, 0.78f, 0.2f), 0.4f);
             Material stick = SceneKit.LitMaterial("Rocket_Stick", new Color(0.6f, 0.45f, 0.28f), 0.1f);
             SceneKit.Primitive(PrimitiveType.Cylinder, "Bottle", root.transform, new Vector3(0f, 0.09f, 0f), new Vector3(0.09f, 0.09f, 0.09f), glass, keepCollider: false);

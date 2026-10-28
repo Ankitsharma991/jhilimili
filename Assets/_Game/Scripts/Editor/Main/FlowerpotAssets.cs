@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using UtsavNights.Core.Art;
 using UnityEngine.Rendering;
 using UtsavNights.Content;
 using UtsavNights.Core;
@@ -44,7 +45,7 @@ namespace UtsavNights.EditorTools.Main
             AudioClip click = WriteClip("lighter_click", ProceduralSounds.Generate(ProceduralSounds.Kind.Click, SampleRate, 3004), false);
             AudioClip flameOut = WriteClip("lighter_flame_out", ProceduralSounds.Generate(ProceduralSounds.Kind.Pop, SampleRate, 3005), false);
 
-            Texture2D glow = AssetDatabase.LoadAssetAtPath<Texture2D>(GlowTexturePath);
+            Texture2D glow = KeepGlowSmooth();
             Material additive = ParticleMaterial("Flowerpot_Spark_Additive", glow, additive: true);
             Material smokeMat = ParticleMaterial("Flowerpot_Smoke_Alpha", glow, additive: false);
 
@@ -159,6 +160,22 @@ namespace UtsavNights.EditorTools.Main
             ContentLint.AssetImportLinter.Apply(importer);
             importer.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+        }
+
+        /// <summary>
+        /// The soft glow behind every spark, flash and smoke puff. Compression banded its smooth gradient into
+        /// visible rings when a burst flash fills the screen (aerial follow), so it stays uncompressed: 64 px, 16 KB.
+        /// </summary>
+        internal static Texture2D KeepGlowSmooth()
+        {
+            var importer = (TextureImporter)AssetImporter.GetAtPath(GlowTexturePath);
+            if (importer != null && importer.textureCompression != TextureImporterCompression.Uncompressed)
+            {
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(GlowTexturePath);
         }
 
         internal static Material ParticleMaterial(string name, Texture2D texture, bool additive)
@@ -299,7 +316,7 @@ namespace UtsavNights.EditorTools.Main
         {
             var root = new GameObject("Model_Flowerpot");
             Material clay = SceneKit.LitMaterial("Flowerpot_Clay", new Color(0.62f, 0.3f, 0.14f), 0.25f);
-            Material band = SceneKit.LitMaterial("Flowerpot_Band", new Color(0.85f, 0.65f, 0.18f), 0.4f);
+            Material band = CrackerWrappers.Material("Flowerpot_Band", WrapperPattern.Bunting, new Color(0.96f, 0.9f, 0.76f), new Color(0.82f, 0.14f, 0.18f), new Color(0.95f, 0.74f, 0.2f));
             Material fuse = SceneKit.LitMaterial("Flowerpot_Fuse", new Color(0.75f, 0.12f, 0.08f), 0.2f);
             SceneKit.Primitive(PrimitiveType.Cylinder, "Body", root.transform, new Vector3(0f, 0.13f, 0f), new Vector3(0.24f, 0.13f, 0.24f), clay, keepCollider: false);
             SceneKit.Primitive(PrimitiveType.Cylinder, "Band", root.transform, new Vector3(0f, 0.2f, 0f), new Vector3(0.245f, 0.015f, 0.245f), band, keepCollider: false);

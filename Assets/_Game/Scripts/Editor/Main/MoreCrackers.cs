@@ -1,6 +1,7 @@
 using System;
 using UnityEditor;
 using UnityEngine;
+using UtsavNights.Core.Art;
 using UtsavNights.Content;
 using UtsavNights.Core;
 using UtsavNights.Core.Crackers;
@@ -128,7 +129,7 @@ namespace UtsavNights.EditorTools.Main
             smoke = F.SavePrefab(smoke, "FX_Lar_Smoke", folder);
 
             var model = new GameObject("Model_Lar");
-            Material red = SceneKit.LitMaterial("Lar_Paper", new Color(0.78f, 0.12f, 0.12f), 0.3f);
+            Material red = CrackerWrappers.Material("Lar_Paper", WrapperPattern.Dots, new Color(0.78f, 0.12f, 0.12f), new Color(0.95f, 0.74f, 0.2f), new Color(0.95f, 0.74f, 0.2f));
             Material cord = SceneKit.LitMaterial("Lar_Cord", new Color(0.65f, 0.55f, 0.35f), 0.1f);
             SceneKit.Primitive(PrimitiveType.Cube, "Cord", model.transform, new Vector3(0f, 0.012f, 0f), new Vector3(pops * spacing + 0.02f, 0.006f, 0.006f), cord, false);
             for (int i = 0; i < pops; i += 2)
@@ -192,7 +193,7 @@ namespace UtsavNights.EditorTools.Main
 
             var model = new GameObject("Model_Bomb");
             Material twine = SceneKit.LitMaterial("Bomb_Twine", new Color(0.62f, 0.46f, 0.26f), 0.15f);
-            Material band = SceneKit.LitMaterial("Bomb_Band", new Color(0.8f, 0.14f, 0.14f), 0.3f);
+            Material band = CrackerWrappers.Material("Bomb_Band", WrapperPattern.Zigzag, new Color(0.8f, 0.14f, 0.14f), new Color(0.95f, 0.74f, 0.2f), new Color(0.15f, 0.5f, 0.28f));
             SceneKit.Primitive(PrimitiveType.Sphere, "Ball", model.transform, new Vector3(0f, 0.065f, 0f), new Vector3(0.13f, 0.12f, 0.13f), twine, false);
             SceneKit.Primitive(PrimitiveType.Cylinder, "Band", model.transform, new Vector3(0f, 0.065f, 0f), new Vector3(0.135f, 0.012f, 0.135f), band, false);
             SceneKit.Primitive(PrimitiveType.Cylinder, "Fuse", model.transform, new Vector3(0f, 0.14f, 0f), new Vector3(0.006f, 0.02f, 0.006f), band, false);
@@ -257,7 +258,7 @@ namespace UtsavNights.EditorTools.Main
             glitter = F.SavePrefab(glitter, "FX_Skyshot_Glitter", folder);
 
             var model = new GameObject("Model_Skyshot");
-            Material card = SceneKit.LitMaterial("Skyshot_Card", new Color(0.18f, 0.35f, 0.75f), 0.3f);
+            Material card = CrackerWrappers.Material("Skyshot_Card", WrapperPattern.Stars, new Color(0.18f, 0.35f, 0.75f), new Color(1f, 0.9f, 0.4f), new Color(0.95f, 0.74f, 0.2f));
             Material label = SceneKit.LitMaterial("Skyshot_Label", new Color(0.95f, 0.8f, 0.25f), 0.3f);
             Material dark = SceneKit.LitMaterial("Skyshot_Mouth", new Color(0.08f, 0.06f, 0.05f), 0.1f);
             SceneKit.Primitive(PrimitiveType.Cube, "Base", model.transform, new Vector3(0f, 0.015f, 0f), new Vector3(0.16f, 0.03f, 0.16f), card, false);
@@ -332,7 +333,7 @@ namespace UtsavNights.EditorTools.Main
             burst = F.SavePrefab(burst, "FX_Cake_Burst", folder);
 
             var model = new GameObject("Model_Cake");
-            Material box = SceneKit.LitMaterial("Cake_Box", new Color(0.72f, 0.12f, 0.16f), 0.35f);
+            Material box = CrackerWrappers.Material("Cake_Box", WrapperPattern.Sunburst, new Color(0.72f, 0.12f, 0.16f), new Color(1f, 0.62f, 0.18f), new Color(0.95f, 0.74f, 0.2f));
             Material top = SceneKit.LitMaterial("Cake_Top", new Color(0.95f, 0.75f, 0.2f), 0.4f);
             Material hole = SceneKit.LitMaterial("Cake_Hole", new Color(0.06f, 0.04f, 0.04f), 0.1f);
             SceneKit.Primitive(PrimitiveType.Cube, "Box", model.transform, new Vector3(0f, 0.09f, 0f), new Vector3(0.3f, 0.18f, 0.24f), box, false);
@@ -399,7 +400,7 @@ namespace UtsavNights.EditorTools.Main
             smoke = F.SavePrefab(smoke, "FX_Peacock_Smoke", folder);
 
             var model = new GameObject("Model_Peacock");
-            Material body = SceneKit.LitMaterial("Peacock_Body", new Color(0.08f, 0.32f, 0.38f), 0.35f);
+            Material body = CrackerWrappers.Material("Peacock_Body", WrapperPattern.FeatherEyes, new Color(0.08f, 0.32f, 0.38f), new Color(0.12f, 0.22f, 0.7f), new Color(0.95f, 0.74f, 0.2f));
             Material band = SceneKit.LitMaterial("Peacock_Band", new Color(0.85f, 0.65f, 0.18f), 0.5f);
             Material eye = SceneKit.LitMaterial("Peacock_Eye", new Color(0.2f, 0.45f, 0.9f), 0.5f);
             Material fuse = SceneKit.LitMaterial("Peacock_Fuse", new Color(0.75f, 0.12f, 0.08f), 0.2f);

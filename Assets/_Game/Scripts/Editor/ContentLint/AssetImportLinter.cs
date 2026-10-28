@@ -80,7 +80,8 @@ namespace UtsavNights.EditorTools.ContentLint
         public static void Apply(TextureImporter importer)
         {
             bool icon = importer.assetPath.StartsWith(ImportRules.IconFolder, System.StringComparison.Ordinal);
-            int max = icon ? ImportRules.MaxIconSize : ImportRules.MaxArtSize;
+            int max = icon ? ImportRules.MaxIconSize
+                : importer.assetPath.StartsWith(ImportRules.SkyFolder, System.StringComparison.Ordinal) ? ImportRules.MaxSkySize : ImportRules.MaxArtSize;
             if (icon)
             {
                 importer.textureType = TextureImporterType.Sprite;

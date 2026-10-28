@@ -116,8 +116,12 @@ namespace UtsavNights.Core.Assets
         /// <summary>Spike leftovers are archived and not shipped content.</summary>
         public const string SpikeArt = "Assets/_Game/Art/Spike/";
 
+        /// <summary>The night-sky panorama spans 360 degrees, so it needs more pixels than other art.</summary>
+        public const string SkyFolder = "Assets/_Game/Art/Sky/";
+
         public const int MaxIconSize = 256;
         public const int MaxArtSize = 1024;
+        public const int MaxSkySize = 2048;
 
         /// <summary>Decompressed one-shots and loops stay in RAM; this keeps them well inside the 700 MB low tier.</summary>
         public const float DecompressedBudgetMb = 32f;
@@ -235,7 +239,7 @@ namespace UtsavNights.Core.Assets
             foreach (TextureFacts tex in textures)
             {
                 bool icon = tex.Path.StartsWith(IconFolder, StringComparison.Ordinal);
-                int max = icon ? MaxIconSize : MaxArtSize;
+                int max = icon ? MaxIconSize : tex.Path.StartsWith(SkyFolder, StringComparison.Ordinal) ? MaxSkySize : MaxArtSize;
                 if (tex.MaxSize > max)
                 {
                     issues.Add(new AssetIssue(tex.Path, true, $"max size {tex.MaxSize}, rule {max}"));

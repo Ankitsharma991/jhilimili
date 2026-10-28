@@ -90,6 +90,8 @@ MONO="$D/MonoBleedingEdge/bin/mono"; MCSC=("$MONO" "$D/MonoBleedingEdge/lib/mono
 mkdir -p mono && cp "$NUNIT" mono/
 "${MCSC[@]}" -target:library -out:mono/Core.dll $(find "$A/Scripts/Core" -name "*.cs" -not -path "*/Core/Runtime/*")
 "${MCSC[@]}" -out:mono/CoreTests.exe -r:mono/Core.dll -r:mono/nunit.framework.dll "$HERE/CoreTestRunner.cs" \
-  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests,CameraTimingTests,QualityGovernorTests,PlaytestSessionTests,GameSettingsTests,PlacementRulesTests,StageMathTests,ScreenFitTests,FinaleScheduleTests,BlindSoundTestTests,AdPolicyTests,PlayerProgressTests,ConsentRulesTests,EntitlementsTests,AnalyticsSchemaTests,AdAuditTests,ReleaseChecksTests,ImportRulesTests,StartupTimelineTests,ReviewPolicyTests}.cs
+  "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests,CameraTimingTests,QualityGovernorTests,PlaytestSessionTests,GameSettingsTests,PlacementRulesTests,StageMathTests,ScreenFitTests,FinaleScheduleTests,BlindSoundTestTests,AdPolicyTests,PlayerProgressTests,ConsentRulesTests,EntitlementsTests,AnalyticsSchemaTests,AdAuditTests,ReleaseChecksTests,ImportRulesTests,StartupTimelineTests,ReviewPolicyTests,StoreArtPainterTests,EnvironmentPainterTests}.cs
 "$MONO" mono/CoreTests.exe
+step "Tool self-tests"
+python3 "$HERE/../metrics_report.py" --self-test
 echo "All project assemblies compiled."
