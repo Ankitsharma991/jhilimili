@@ -88,6 +88,21 @@ namespace UtsavNights.Core.Home
             new Box3(-HalfWidth - 0.05f, 6.12f, 0f, HalfWidth + 0.05f, Eaves, 0.12f), // cornice under the roof
         };
 
+        /// <summary>
+        /// The Main scene's own courtyard fittings, in house space: the low step along the back wall, the lamp post and the
+        /// bamboo poles that carry the string lights. Decorations keep out of them.
+        /// </summary>
+        public static readonly Box3[] CourtyardFixtures =
+        {
+            new Box3(-3f, 0f, 4.65f, 3f, CourtyardStepTop, 5.75f),
+            new Box3(-2.0f, 0f, 5.5f, -1.8f, 2.4f, 5.7f),
+            new Box3(-3.38f, 0f, 5.67f, -3.32f, 2.4f, 5.73f),
+            new Box3(2.27f, 0f, 5.67f, 2.33f, 2.35f, 5.73f),
+            new Box3(3.32f, 0f, 5.67f, 3.38f, 2.45f, 5.73f),
+        };
+
+        public const float CourtyardStepTop = 0.08f;
+
         public static PointFrame Frame(string pointId) => Array.Find(Frames, f => f.PointId == pointId);
 
         /// <summary>The openings cut in the front wall: every door and window point, and the upper door.</summary>

@@ -189,6 +189,8 @@ namespace UtsavNights.Core.Home
             // Floor, step and plinth.
             surfaces.Add(new SurfacePatch("courtyard floor", Surface.Ground, new V3(-inner, 0f, 0f), new V3(2 * inner, 0, 0), new V3(0, 0, back), Up));
             surfaces.Add(new SurfacePatch("front step", Surface.Step, new V3(-0.85f, 0.15f, 0.1f), new V3(1.7f, 0, 0), new V3(0, 0, 0.4f), Up));
+            surfaces.Add(new SurfacePatch("courtyard step", Surface.Step, new V3(-3f, HouseGeometry.CourtyardStepTop, 4.65f), new V3(6f, 0, 0), new V3(0, 0, 1.1f), Up));
+            solids.AddRange(HouseGeometry.CourtyardFixtures);
             surfaces.Add(new SurfacePatch("plinth", Surface.Step, new V3(-3.4f, HouseGeometry.Plinth, -0.02f), new V3(6.8f, 0, 0), new V3(0, 0, 0.12f), Up));
 
             // The house front, below the cornice.
@@ -435,7 +437,7 @@ namespace UtsavNights.Core.Home
                 case PlacementProblem.OverEdge:
                     return $"The {name} would hang over the edge here.";
                 case PlacementProblem.HitsHouse:
-                    return $"The {name} would go into the wall here.";
+                    return $"The {name} would run into a wall or step here.";
                 case PlacementProblem.Overlaps:
                     return "Another decoration is already here.";
                 case PlacementProblem.BlocksDoor:

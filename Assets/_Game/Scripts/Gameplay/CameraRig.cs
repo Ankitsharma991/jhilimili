@@ -47,8 +47,51 @@ namespace UtsavNights.Gameplay
         private bool _reduceMotion;
         private bool _quietMode;
         private bool _registered;
+        private bool _overrideOn;
+        private float _overrideWeight;
+        private Vector3 _overridePosition;
+        private Quaternion _overrideRotation = Quaternion.identity;
+
+        /// <summary>Seconds the camera takes to turn to an override pose (decoration mode) and back.</summary>
+        public const float OverrideSeconds = 0.8f;
 
         public bool IsAerialActive => _aerial.IsActive;
+
+        /// <summary>0 on the ground shot, 1 fully on the override pose (eased).</summary>
+        public float OverrideWeight => _overrideWeight;
+
+        public bool IsOverridden => _overrideOn;
+
+        /// <summary>
+        /// Hands the camera to another view (decoration mode turns it to the house). The camera eases over
+        /// <see cref="OverrideSeconds"/>, or cuts with reduce-motion. Aerial follow is cancelled.
+        /// </summary>
+        public void BeginOverride(Vector3 position, Quaternion rotation)
+        {
+            _overrideOn = true;
+            _aerial.Cancel();
+            SetOverridePose(position, rotation);
+            if (_reduceMotion)
+            {
+                _overrideWeight = 1f;
+            }
+        }
+
+        public void SetOverridePose(Vector3 position, Quaternion rotation)
+        {
+            _overridePosition = position;
+            _overrideRotation = rotation;
+        }
+
+        /// <summary>Eases back to the ground shot.</summary>
+        public void EndOverride()
+        {
+            _overrideOn = false;
+            if (_reduceMotion)
+            {
+                _overrideWeight = 0f;
+            }
+        }
 
         public float AerialWeight => _aerial.Weight;
 
@@ -183,6 +226,17 @@ namespace UtsavNights.Gameplay
                 {
                     position += toTarget / distance * Mathf.Min(pushInDistance, distance * 0.25f) * push;
                 }
+            }
+
+            float step = deltaSeconds / OverrideSeconds;
+            _overrideWeight = Mathf.Clamp01(_overrideWeight + (_overrideOn ? step : -step));
+            if (_overrideWeight > 0f)
+            {
+                // Swing through a point above the courtyard, so the turn to the house never passes through a wall.
+                float t = Mathf.SmoothStep(0f, 1f, _overrideWeight);
+                Vector3 mid = (position + _overridePosition) * 0.5f + Vector3.up * 0.6f * Mathf.Sin(t * Mathf.PI);
+                position = Vector3.Lerp(Vector3.Lerp(position, mid, t), Vector3.Lerp(mid, _overridePosition, t), t);
+                rotation = Quaternion.Slerp(rotation, _overrideRotation, t);
             }
 
             float shake = _shake.Strength;

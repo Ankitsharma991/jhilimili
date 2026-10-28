@@ -165,6 +165,7 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<SettingsInstaller>();
             systems.AddComponent<MonetisationInstaller>();
             systems.AddComponent<AvatarInstaller>();
+            systems.AddComponent<DecorationController>().Configure(camera, rig);
             systems.AddComponent<AnalyticsInstaller>();
             systems.AddComponent<PlaytestRecorder>();
             systems.AddComponent<DevOverlay>();
@@ -231,10 +232,7 @@ namespace UtsavNights.EditorTools.Main
         {
             Material stone = SceneKit.TexturedMaterial("Courtyard_Floor", art.Stone, new Vector2(8f, 8f), 0.25f);
             Material border = SceneKit.LitMaterial("Courtyard_Border", new Color(0.36f, 0.26f, 0.2f), 0.15f);
-            Material plaster = SceneKit.TexturedMaterial("Courtyard_Wall", art.Plaster, new Vector2(3f, 1f), 0.1f);
             Material wood = SceneKit.LitMaterial("Courtyard_Wood", new Color(0.14f, 0.09f, 0.06f), 0.25f);
-            Material gate = SceneKit.LitMaterial("Courtyard_Gate", new Color(0.32f, 0.12f, 0.07f), 0.3f);
-            Material pillar = SceneKit.LitMaterial("Courtyard_Pillar", new Color(0.78f, 0.62f, 0.48f), 0.15f);
             Material diyaClay = SceneKit.LitMaterial("Diya_Clay", new Color(0.55f, 0.27f, 0.12f), 0.2f);
             Material diyaFlame = SceneKit.EmissiveMaterial("Diya_Flame_Main", Saffron, 4f);
             Material bulb = SceneKit.EmissiveMaterial("Lamp_Bulb_Main", Marigold, 4f);
@@ -242,23 +240,13 @@ namespace UtsavNights.EditorTools.Main
             Material stringB = SceneKit.EmissiveMaterial("String_Light_Magenta_Main", Magenta, 3f);
 
             Transform env = new GameObject("Environment").transform;
-            // Floor and step are ground for placement; walls, gate, lamp post and diyas block it.
+            // Floor and step are ground for placement; the lamp post, diyas and the house's walls and gate (HomeInstaller) block it.
             GameObject floor = SceneKit.Primitive(PrimitiveType.Plane, "Floor", env, Vector3.zero, new Vector3(2f, 1f, 2f), stone, keepCollider: true);
             floor.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);
             Static(floor);
-            const float wallH = 1.5f;
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "BackWall", env, new Vector3(0f, wallH / 2f, 3.6f), new Vector3(9f, wallH, 0.35f), plaster, true));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "LeftWall", env, new Vector3(-3.6f, wallH / 2f, 0.8f), new Vector3(0.35f, wallH, 5.6f), plaster, true));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "RightWall", env, new Vector3(3.6f, wallH / 2f, 0.8f), new Vector3(0.35f, wallH, 5.6f), plaster, true));
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "WallCoping", env, new Vector3(0f, wallH + 0.03f, 3.6f), new Vector3(9.1f, 0.06f, 0.45f), border, false));
-
-            // Gate between two pillars in the back wall.
-            Static(SceneKit.Primitive(PrimitiveType.Cube, "Gate", env, new Vector3(1.4f, 0.62f, 3.4f), new Vector3(0.95f, 1.24f, 0.06f), gate, true));
-            foreach (float x in new[] { 0.82f, 1.98f })
-            {
-                Static(SceneKit.Primitive(PrimitiveType.Cube, "GatePillar", env, new Vector3(x, 0.95f, 3.45f), new Vector3(0.22f, 1.9f, 0.3f), pillar, true));
-                Static(SceneKit.Primitive(PrimitiveType.Sphere, "PillarCap", env, new Vector3(x, 1.96f, 3.45f), new Vector3(0.2f, 0.14f, 0.2f), pillar, false));
-            }
+            // Phase 7: the courtyard walls and the gate are the player's house's boundary and gate modules, built at runtime
+            // by the HomeInstaller with the house behind the camera (Core/Home/HouseGeometry).
+            new GameObject("Home").AddComponent<HomeInstaller>().Configure(HouseArt.Ensure());
 
             GameObject step = SceneKit.Primitive(PrimitiveType.Cube, "Step", env, new Vector3(0f, 0.04f, 2.8f), new Vector3(6f, 0.08f, 1.1f), border, true);
             step.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);
@@ -444,6 +432,15 @@ namespace UtsavNights.EditorTools.Main
             avatarRect.offsetMin = Vector2.zero;
             avatarRect.offsetMax = Vector2.zero;
             avatarGo.AddComponent<UI.AvatarCreator>();
+            // Phase 7: decoration mode, opened from the house button next to the avatar button.
+            var decorGo = new GameObject("DecorationMode", typeof(RectTransform));
+            decorGo.transform.SetParent(safe.transform, false);
+            var decorRect = (RectTransform)decorGo.transform;
+            decorRect.anchorMin = Vector2.zero;
+            decorRect.anchorMax = Vector2.one;
+            decorRect.offsetMin = Vector2.zero;
+            decorRect.offsetMax = Vector2.zero;
+            decorGo.AddComponent<UI.DecorationMode>();
             var finaleGo = new GameObject("Finale", typeof(RectTransform));
             finaleGo.transform.SetParent(safe.transform, false);
             var finaleRect = (RectTransform)finaleGo.transform;

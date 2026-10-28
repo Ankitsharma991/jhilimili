@@ -136,6 +136,14 @@ namespace UtsavNights.Gameplay
             var go = new GameObject(Name(d));
             go.transform.SetParent(transform, false);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            if (info.Mode == PlacementMode.Free)
+            {
+                // Standing and hung items block crackers like any other object; rangoli and strands do not.
+                var box = go.AddComponent<BoxCollider>();
+                box.center = new Vector3(0f, info.Height / 2f, 0f);
+                box.size = new Vector3(info.Width, info.Height, info.Depth);
+            }
+
             MeshRenderer renderer = go.AddComponent<MeshRenderer>();
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             return new Entry { Go = go, Renderer = renderer, OwnMesh = own, Paints = paints };

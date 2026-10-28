@@ -174,6 +174,25 @@ namespace UtsavNights.Tests
         }
 
         [Test]
+        public void Batch_IsOneUndoStepAndAllOrNothing()
+        {
+            var editor = new HouseEditor(HouseState.Fresh(), new MemoryJournalStore());
+            string before = editor.Design.Fingerprint();
+            var both = new CommandBatch(new SetModule("window_ground_left", "window_jali"), new SetModule("window_ground_right", "window_jali"));
+            Assert.IsTrue(editor.Do(both));
+            Assert.AreEqual("window_jali", editor.Design.ModuleAt("window_ground_right").module);
+            Assert.AreEqual(1, editor.UndoCount);
+            editor.Undo();
+            Assert.AreEqual(before, editor.Design.Fingerprint());
+
+            Assert.IsFalse(editor.Do(new CommandBatch(new SetPaint(2, 0, 0), new SetModule("door", "window_jali"))), "a bad part refuses the whole batch");
+            Assert.AreEqual(before, editor.Design.Fingerprint());
+
+            string text = HouseCommandCodec.Encode(both);
+            Assert.AreEqual(text, HouseCommandCodec.Encode(HouseCommandCodec.Decode(text)));
+        }
+
+        [Test]
         public void Codec_IgnoresTheDeviceCulture()
         {
             System.Globalization.CultureInfo saved = System.Threading.Thread.CurrentThread.CurrentCulture;

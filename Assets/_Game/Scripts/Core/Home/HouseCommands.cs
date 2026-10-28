@@ -318,6 +318,63 @@ namespace UtsavNights.Core.Home
         }
     }
 
+    /// <summary>Several commands as one undo step (both ground-floor windows at once). All apply, or none.</summary>
+    public sealed class CommandBatch : IHouseCommand
+    {
+        private readonly IHouseCommand[] _commands;
+
+        public CommandBatch(params IHouseCommand[] commands) => _commands = commands;
+
+        public string Kind => "batch";
+
+        public bool Apply(HouseDesign design)
+        {
+            for (int i = 0; i < _commands.Length; i++)
+            {
+                if (!_commands[i].Apply(design))
+                {
+                    for (int j = i - 1; j >= 0; j--)
+                    {
+                        _commands[j].Revert(design);
+                    }
+
+                    return false;
+                }
+            }
+
+            return _commands.Length > 0;
+        }
+
+        public void Revert(HouseDesign design)
+        {
+            for (int i = _commands.Length - 1; i >= 0; i--)
+            {
+                _commands[i].Revert(design);
+            }
+        }
+
+        public void Encode(CommandWriter w)
+        {
+            w.Int(_commands.Length);
+            foreach (IHouseCommand c in _commands)
+            {
+                w.Str(HouseCommandCodec.Encode(c));
+            }
+        }
+
+        internal static CommandBatch Decode(CommandReader r)
+        {
+            int n = r.Count();
+            var list = new IHouseCommand[n];
+            for (int i = 0; i < n; i++)
+            {
+                list[i] = HouseCommandCodec.Decode(r.Str()) ?? throw new FormatException("bad batch item");
+            }
+
+            return new CommandBatch(list);
+        }
+    }
+
     /// <summary>Commands as text for the journal: a tag, then fields separated by '|', invariant culture, ids escaped.</summary>
     public static class HouseCommandCodec
     {
@@ -343,6 +400,7 @@ namespace UtsavNights.Core.Home
                     "module" => new SetModule(r.Str(), r.Str(), r.Int()),
                     "paint" => new SetPaint(r.Int(), r.Int(), r.Int()),
                     "layout" => new LoadDesign(LoadDesign.DecodeDesign(r)),
+                    "batch" => CommandBatch.Decode(r),
                     _ => null,
                 };
                 return command != null && r.AtEnd ? command : null;

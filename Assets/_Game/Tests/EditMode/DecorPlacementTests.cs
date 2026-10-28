@@ -80,7 +80,7 @@ namespace UtsavNights.Tests
             PlacementContext ctx = DecorPlacement.For(HouseDesign.Default(), 2);
             PlacementResult r = DecorPlacement.Check(ctx, Pose("pot_marigold", 2f, 0f, 0.15f));
             Assert.AreEqual(PlacementProblem.HitsHouse, r.Problem, "it would stand in the plinth");
-            StringAssert.Contains("into the wall", r.Reason);
+            StringAssert.Contains("would run into a wall", r.Reason);
             Assert.IsTrue(DecorPlacement.Check(ctx, Pose("pot_marigold", 2f, 0f, 0.25f)).Ok);
             Assert.AreEqual(PlacementProblem.HitsHouse, DecorPlacement.Check(ctx, Pose("pot_marigold", 3.35f, 0f, 2f)).Problem, "the side wall");
         }
@@ -110,7 +110,7 @@ namespace UtsavNights.Tests
             Assert.AreEqual("Keep the doorway clear so people can come and go.", r.Reason);
             Assert.IsTrue(DecorPlacement.Check(ctx, Pose("rangoli_lotus", 0f, 0f, 1.2f)).Ok, "rangoli belongs at the door");
             Assert.IsTrue(DecorPlacement.Check(ctx, Pose("diya_clay", 0.5f, 0.15f, 0.3f, surface: Surface.Step)).Ok, "diyas on the step");
-            Assert.AreEqual(PlacementProblem.BlocksGate, DecorPlacement.Check(ctx, Pose("pot_marigold", HouseGeometry.GateX, 0f, 5.4f)).Problem);
+            Assert.AreEqual(PlacementProblem.BlocksGate, DecorPlacement.Check(ctx, Pose("pot_marigold", HouseGeometry.GateX, HouseGeometry.CourtyardStepTop, 5.2f, surface: Surface.Step)).Problem, "on the courtyard step before the gate");
         }
 
         [Test]
