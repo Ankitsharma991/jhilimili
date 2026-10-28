@@ -175,6 +175,68 @@ namespace UtsavNights.EditorTools.Main
             EditorApplication.Exit(0);
         }
 
+        /// <summary>
+        /// Phase 6 art review: the twelve preset avatars in a row in the courtyard, the faces close up, and one avatar at
+        /// slim, average and broad. Output: captures/visual/avatars-*.png.
+        /// </summary>
+        [MenuItem("Utsav/Phase 6/Capture Avatar Shots", priority = 90)]
+        public static void CaptureAvatars()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+            {
+                Debug.LogWarning("[SceneShots] No GPU (-nographics); nothing rendered.");
+                return;
+            }
+
+            EditorSceneManager.OpenScene(MainSceneBuilder.MainScenePath, OpenSceneMode.Single);
+            GameObject.Find("PlacementGhost")?.SetActive(false);
+            Camera camera = Camera.main;
+            Directory.CreateDirectory(Folder);
+            var stage = new GameObject("AvatarStage").transform;
+            var presets = Core.Avatar.AvatarPresets.All;
+            for (int i = 0; i < presets.Count; i++)
+            {
+                int row = i / 6, col = i % 6;
+                Gameplay.AvatarView view = Gameplay.AvatarView.Create(stage, presets[i], "Preset" + i);
+                view.transform.position = new Vector3((col - 2.5f) * 0.62f, 0f, 1.2f + row * 1.3f);
+                view.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // face the camera
+            }
+
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 1.25f, -2.6f), Quaternion.Euler(6f, 0f, 0f));
+            camera.fieldOfView = 40f;
+            Render(camera, "avatars-presets", 1920, 1080);
+
+            // Faces: the first row's heads close up.
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 1.66f * 1.0f, 0.15f), Quaternion.identity);
+            camera.fieldOfView = 42f;
+            Render(camera, "avatars-faces", 1920, 720);
+            Object.DestroyImmediate(stage.gameObject);
+
+            // Body styles: the same avatar slim, average, broad, front and side.
+            stage = new GameObject("AvatarStage").transform;
+            float[] styles = { 0f, 1f, 2f };
+            for (int i = 0; i < 6; i++)
+            {
+                Core.Avatar.AvatarProfile p = presets[0].Clone();
+                p.bodyStyle = styles[i % 3];
+                Gameplay.AvatarView view = Gameplay.AvatarView.Create(stage, p, "Body" + i);
+                view.transform.position = new Vector3((i - 2.5f) * 0.62f, 0f, 1.2f);
+                view.transform.rotation = Quaternion.Euler(0f, i < 3 ? 180f : 90f, 0f);
+            }
+
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 1.0f, -2.2f), Quaternion.Euler(2f, 0f, 0f));
+            camera.fieldOfView = 44f;
+            Render(camera, "avatars-bodies", 1920, 1080);
+            Object.DestroyImmediate(stage.gameObject);
+            Debug.Log($"[SceneShots] avatar shots saved to {Folder}");
+        }
+
+        public static void CiCaptureAvatars()
+        {
+            CaptureAvatars();
+            EditorApplication.Exit(0);
+        }
+
         /// <summary>Smoke and fuse sparks don't decide when the show peaks.</summary>
         private static bool IsSecondary(string emitterName) => emitterName.Contains("Smoke") || emitterName.Contains("FuseSpark");
 
