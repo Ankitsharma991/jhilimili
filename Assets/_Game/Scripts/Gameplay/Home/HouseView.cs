@@ -94,7 +94,10 @@ namespace UtsavNights.Gameplay
             EnsureLights();
             foreach (Light l in _lights)
             {
-                l.enabled = on;
+                if (l != null)
+                {
+                    l.enabled = on;
+                }
             }
         }
 

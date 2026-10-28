@@ -29,11 +29,22 @@ SELECT
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'bottom') AS bottom,
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'full') AS full_length,
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'headwear') AS headwear,
-  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'has_avatar') AS has_avatar
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'has_avatar') AS has_avatar,
+  -- R1 (Phase 7) house and decoration events
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'decorations') AS decorations,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'edits') AS edits,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'saved') AS saved,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'category') AS category,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'point') AS point,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'module') AS module,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'slot') AS slot,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'lines') AS lines
 FROM `PROJECT.analytics_000000000.events_*`
 WHERE _TABLE_SUFFIX BETWEEN '20261101' AND '20261131'
   AND event_name IN ('app_first_open', 'scene_ready', 'cracker_placed', 'cracker_ignited', 'payoff_complete',
                      'session_end', 'settings_changed', 'ad_shown', 'ad_failed', 'ad_reward',
                      'purchase_started', 'purchase_done', 'clip_shared', 'perf_sample',
-                     'avatar_creator_opened', 'avatar_saved', 'avatar_skipped')
+                     'avatar_creator_opened', 'avatar_saved', 'avatar_skipped',
+                     'decor_mode_opened', 'decor_mode_closed', 'decoration_placed', 'house_module_changed',
+                     'layout_saved', 'layout_loaded', 'house_restored')
 ORDER BY user, ts

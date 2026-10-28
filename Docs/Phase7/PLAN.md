@@ -40,6 +40,8 @@ Decorations in the courtyard (rangoli, diyas, lights along the walls) are also s
 | 3. Decoration items | Done. `Core/Home/DecorGenerator`: 11 free items (clay diya, brass samai, akash kandil, paper lantern, garden lamp, tulsi vrindavan, marigold pot, palm, bench, cane chair, charpai) and 5 rangoli templates (lotus, peacock, geometric, diya ring, Tihar mandala), each built to its catalogue footprint; 5 path items (warm and coloured string lights, light curtain, mango-leaf toran, marigold garland, hanging marigold strands) hung between two points with sag. `DecorBudget`: units and triangles per tier, cost per 3 m of path. `HousePalette.Decor`: colours per item and variant, glowing paints. `HouseMesh` gained lathe, ball, disc, strut, two-sided and flat shapes. `Gameplay/Home/DecorView` (one shared mesh per item, path meshes per item, updates only what changed) and `HomeRendering` (mesh conversion and shared materials for the house and decorations). Captures: `Utsav/Phase 7/Capture Decoration Shots`. Tests: `DecorGeneratorTests` (catalogue lint: footprints, triangles per budget unit, path ends and sag, variants, light), `DecorViewTests` |
 | 4. Placement validation | Done. `Core/Home/DecorPlacement`: the house's surfaces for a design (floor, step, plinth, house front, boundary wall faces and tops, balcony rail, roof terrace and parapet, or the tiled slopes), its solid parts, and the door and gate clearances; a raycast to the surfaces; snapping to a 5 cm grid and 15 degree turns; hung items hang from walls and rail edges facing out; rules for surface type, support within 20 degrees, footprint on its surface, the house, other items (items may stand on rangoli), door and gate clearance, hanging height, path length and route; budgets per tier and per category; a plain-language reason for every refusal; `Audit` lists items a module swap left unsupported. Tests: `DecorPlacementTests` (every rule with its reason) |
 | 5. Decoration mode | Done. `CameraRig` override (eases to the house and back through a point above the courtyard; cuts with reduce-motion). `Gameplay/Home`: `HomeService` (house.json and journal, the editor, views, placement for the current tier, colliders for the house's solid parts so crackers keep out of walls), `HomeInstaller`, `DecorationController` (house and floor views with pan and pinch zoom; an armed item's ghost tinted green or red with the reason; place, pick, drag to move, re-hang a strand by an end, two-finger rotate and pinch scale, turn, size, colour, copy and delete buttons; undo and redo). `UI/DecorationMode` (house button in the HUD; top bar: view, layouts, undo, redo, Done; Decorate tab: festival filter, categories, item shelf; House tab: modules, colours, wall finish; selection bar; layouts sheet with 3 free slots). `CommandBatch` (both windows in one undo step). The scene's walls and gate are now the house's boundary and gate modules. Tests: `DecorationModeSmokeTests` (Play Mode: open, place, undo, redo, save, red ghost, select and move, house tab, shelf filter, layouts, journal recovery after a kill) |
+| 6. Courtyard and recovery | Done. Decorations show in the courtyard during fireworks; the house's edits are restored on start (journal replay, Play Mode test `KilledMidEdit_TheEditComesBackOnRestart`). The porch lamp and facade uplight are on only in decoration mode. The avatar's spot is a courtyard fixture that decorations keep out of. The scene's own diyas, lamp post and string lights stay as fixed scenery. Tests: `HomeBudgetSmokeTests` (each tier's full budget within its triangles, shared materials; house lights), `PerformanceGuardTests` (decorated courtyard and decoration mode allocate almost nothing per frame) |
+| 7. Measure and review | Done. Analytics: `decor_mode_opened`, `decor_mode_closed` (edits, saved, decorations), `decoration_placed` (item and category ids), `house_module_changed` (point and module ids), `layout_saved` and `layout_loaded` (slot number), `house_restored` (journal lines replayed), and `decorations` on `session_end`. Never a layout name, a position or anything typed (schema test; the privacy policy says so). The metrics report gains a house section for the exit gate: share of users who decorate, placements and visits per decorator, sessions ending with a decorated courtyard, and D1 and D7 return of decorators against everyone else; the BigQuery query has the new columns. Performance per tier: step 6 results. Cultural review list: `CULTURAL_REVIEW.md`. Tests: `AnalyticsSchemaTests` (decoration events), `AnalyticsSmokeTests` (Play Mode: the events reach analytics without layout names), metrics report self-test |
 
 ### Step 1 notes
 
@@ -104,3 +106,25 @@ Decorations in the courtyard (rangoli, diyas, lights along the walls) are also s
   passes. What remains for step 6: decorations and the fireworks together (performance with a full budget), and whether
   the old scene diyas and lamp post stay as fixed scenery.
 - **Review list:** drawer height on a phone and on the tablet, the house button icon, and whether "Floor view" is clear.
+
+### Step 6 results
+
+| Tier | Decorations | Units | Triangles (budget) | Shared materials |
+|---|---|---|---|---|
+| Low | 19 | 60 | 7,670 (30,000) | 38 |
+| Mid | 30 | 100 | 11,592 (60,000) | 47 |
+| High | 50 | 160 | 19,658 (100,000) | 48 |
+
+Garbage per frame (editor, player loop): decorated courtyard 0.02 KB average, decoration mode open 0.00 KB. Frame rate on
+the target phones is still to be measured on the devices (step 7 and the owner's device pass).
+
+## Phase 7 result
+
+House customisation and decoration mode (F17, F18) are built.
+- **Exit gate data:** the `decoration_placed`, `decor_mode_*` and `session_end.decorations` events, and the metrics report's
+  house section with decorators' D1 and D7 return against everyone else's.
+- **Open items** (with the feedback round after all PRD features):
+  - the cultural review (`CULTURAL_REVIEW.md`);
+  - frame rate with a full budget on the target phones;
+  - decoration mode's layout on a phone and on the tablet;
+  - the review lists in the step notes above.

@@ -208,6 +208,7 @@ namespace UtsavNights.UI
             if (_home.Editor.SaveLayout(slot, "Layout " + (slot + 1)))
             {
                 _home.Save();
+                Game.Events.Publish(new HouseLayoutEvent(slot, saved: true));
             }
 
             Refresh();
@@ -216,7 +217,11 @@ namespace UtsavNights.UI
         public void LoadLayout(int slot)
         {
             _controller.Deselect();
-            _home.Editor.LoadLayout(slot);
+            if (_home.Editor.LoadLayout(slot))
+            {
+                Game.Events.Publish(new HouseLayoutEvent(slot, saved: false));
+            }
+
             Refresh();
         }
 

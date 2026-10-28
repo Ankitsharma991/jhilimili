@@ -89,8 +89,8 @@ namespace UtsavNights.Core.Home
         };
 
         /// <summary>
-        /// The Main scene's own courtyard fittings, in house space: the low step along the back wall, the lamp post and the
-        /// bamboo poles that carry the string lights. Decorations keep out of them.
+        /// The Main scene's own courtyard fittings, in house space: the low step along the back wall, the lamp post, the
+        /// bamboo poles that carry the string lights, and the avatar's spot. Decorations keep out of them.
         /// </summary>
         public static readonly Box3[] CourtyardFixtures =
         {
@@ -99,6 +99,9 @@ namespace UtsavNights.Core.Home
             new Box3(-3.38f, 0f, 5.67f, -3.32f, 2.4f, 5.73f),
             new Box3(2.27f, 0f, 5.67f, 2.33f, 2.35f, 5.73f),
             new Box3(3.32f, 0f, 5.67f, 3.38f, 2.45f, 5.73f),
+
+            // Where the player's avatar stands in the courtyard (CourtyardAvatar.Spot, world (-0.7, 0, 2.12)).
+            new Box3(-0.95f, 0f, 4.27f, -0.45f, 1.8f, 4.77f),
         };
 
         public const float CourtyardStepTop = 0.08f;

@@ -67,6 +67,31 @@ namespace UtsavNights.Tests.PlayMode
             Assert.Less(result[0], IdleLimitKb, "the animated avatar adds no per-frame garbage");
         }
 
+        [UnityTest]
+        public IEnumerator DecoratedCourtyardAndDecorationMode_AllocateAlmostNothing()
+        {
+            new Gameplay.HouseStore().Delete();
+            SceneManager.LoadScene("Main");
+            yield return null;
+            Assert.IsTrue(Core.Runtime.Game.Services.TryGet(out Gameplay.HomeService home));
+            HomeLoad.FillToBudget(home.Design, Core.Quality.TierDetection.High);
+            home.Refresh();
+            yield return WaitSeconds(2f);
+            var result = new float[2];
+            yield return Measure(60, result);
+            Debug.Log($"[UTSAV_PERF] idle decorated gc_kb_per_frame avg={result[0]:0.00} max={result[1]:0.00}");
+            Assert.Less(result[0], IdleLimitKb, "placed decorations add no per-frame garbage");
+
+            UI.DecorationMode mode = Object.FindFirstObjectByType<UI.DecorationMode>();
+            mode.Open();
+            yield return WaitSeconds(1.5f);
+            yield return Measure(60, result);
+            Debug.Log($"[UTSAV_PERF] decoration mode gc_kb_per_frame avg={result[0]:0.00} max={result[1]:0.00}");
+            mode.Done();
+            new Gameplay.HouseStore().Delete();
+            Assert.Less(result[0], IdleLimitKb, "decoration mode with nothing touched adds no per-frame garbage");
+        }
+
         private static IEnumerator WaitSeconds(float seconds)
         {
             float end = Time.realtimeSinceStartup + seconds;

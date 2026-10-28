@@ -54,7 +54,14 @@ namespace UtsavNights.Gameplay
             Game.Events.Subscribe<AvatarCreatorOpenedEvent>(OnCreatorOpened);
             Game.Events.Subscribe<AvatarSavedEvent>(OnAvatarSaved);
             Game.Events.Subscribe<AvatarSkippedEvent>(OnAvatarSkipped);
+            Game.Events.Subscribe<DecorModeOpenedEvent>(OnDecorOpened);
+            Game.Events.Subscribe<DecorModeClosedEvent>(OnDecorClosed);
+            Game.Events.Subscribe<DecorationPlacedEvent>(OnDecorationPlaced);
+            Game.Events.Subscribe<HouseModuleChangedEvent>(OnModuleChanged);
+            Game.Events.Subscribe<HouseLayoutEvent>(OnLayout);
         }
+
+        private bool _reportedRestore;
 
         public IAnalyticsBackend Backend { get; }
 
@@ -83,6 +90,11 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<AvatarCreatorOpenedEvent>(OnCreatorOpened);
             Game.Events.Unsubscribe<AvatarSavedEvent>(OnAvatarSaved);
             Game.Events.Unsubscribe<AvatarSkippedEvent>(OnAvatarSkipped);
+            Game.Events.Unsubscribe<DecorModeOpenedEvent>(OnDecorOpened);
+            Game.Events.Unsubscribe<DecorModeClosedEvent>(OnDecorClosed);
+            Game.Events.Unsubscribe<DecorationPlacedEvent>(OnDecorationPlaced);
+            Game.Events.Unsubscribe<HouseModuleChangedEvent>(OnModuleChanged);
+            Game.Events.Unsubscribe<HouseLayoutEvent>(OnLayout);
         }
 
         /// <summary>app_first_open once per install (PRD 17: install quality).</summary>
@@ -120,7 +132,9 @@ namespace UtsavNights.Gameplay
             _sessionEnded = true;
             FlushSettings();
             bool hasAvatar = Game.Services.TryGet(out ProfileService profiles) && profiles.Current.created;
-            Send("session_end", new EventParams().Add("duration_s", (long)(Now - _sessionStart)).Add("ignitions", (long)_ignitions).Add("has_avatar", hasAvatar));
+            long decorations = Game.Services.TryGet(out HomeService home) ? home.Design.decorations.Count : 0L;
+            Send("session_end", new EventParams().Add("duration_s", (long)(Now - _sessionStart)).Add("ignitions", (long)_ignitions).Add("has_avatar", hasAvatar)
+                .Add("decorations", decorations));
         }
 
         public void Tick(float deltaSeconds)
@@ -225,8 +239,29 @@ namespace UtsavNights.Gameplay
             SetAllowed(Core.Monetisation.ConsentRules.AnalyticsAllowed(share, status));
         }
 
-        private void OnSceneReady(SceneReadyEvent e) =>
+        private void OnSceneReady(SceneReadyEvent e)
+        {
             Send("scene_ready", new EventParams().Add("ms_since_launch", (long)(e.SecondsSinceLaunch * 1000f)));
+
+            // An interrupted decorating session that the journal brought back (once per scene).
+            if (Game.Services.TryGet(out HomeService home) && home.Recovered > 0 && !_reportedRestore)
+            {
+                _reportedRestore = true;
+                Send("house_restored", new EventParams().Add("lines", (long)home.Recovered));
+            }
+        }
+
+        private void OnDecorOpened(DecorModeOpenedEvent e) => Send("decor_mode_opened", new EventParams().Add("decorations", (long)e.Decorations));
+
+        private void OnDecorClosed(DecorModeClosedEvent e) =>
+            Send("decor_mode_closed", new EventParams().Add("edits", (long)e.Edits).Add("saved", e.Saved).Add("decorations", (long)e.Decorations));
+
+        private void OnDecorationPlaced(DecorationPlacedEvent e) =>
+            Send("decoration_placed", new EventParams().Add("id", e.Item).Add("category", e.Category.ToString().ToLowerInvariant()));
+
+        private void OnModuleChanged(HouseModuleChangedEvent e) => Send("house_module_changed", new EventParams().Add("point", e.Point).Add("module", e.Module));
+
+        private void OnLayout(HouseLayoutEvent e) => Send(e.Saved ? "layout_saved" : "layout_loaded", new EventParams().Add("slot", (long)e.Slot));
 
         private void OnCreatorOpened(AvatarCreatorOpenedEvent e) => Send("avatar_creator_opened", new EventParams().Add("first", e.First));
 

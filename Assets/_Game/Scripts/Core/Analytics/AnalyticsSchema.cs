@@ -18,7 +18,7 @@ namespace UtsavNights.Core.Analytics
             { "cracker_placed", new[] { "id" } },
             { "cracker_ignited", new[] { "id", "is_first" } },
             { "payoff_complete", new[] { "id" } },
-            { "session_end", new[] { "duration_s", "ignitions", "has_avatar" } },
+            { "session_end", new[] { "duration_s", "ignitions", "has_avatar", "decorations" } },
             { "settings_changed", new[] { "key", "value" } },
             { "ad_shown", new[] { "placement", "ms_since_payoff" } },
             { "ad_failed", new[] { "placement", "ms_since_payoff" } },
@@ -32,6 +32,16 @@ namespace UtsavNights.Core.Analytics
             { "avatar_creator_opened", new[] { "first" } },
             { "avatar_saved", new[] { "from_preset", "garments", "top", "bottom", "full", "headwear" } },
             { "avatar_skipped", new string[0] },
+
+            // R1, Phase 7 (exit gate: decoration use per user and the return rate). Catalogue ids and counts only: never a
+            // layout name, position or anything typed.
+            { "decor_mode_opened", new[] { "decorations" } },
+            { "decor_mode_closed", new[] { "edits", "saved", "decorations" } },
+            { "decoration_placed", new[] { "id", "category" } },
+            { "house_module_changed", new[] { "point", "module" } },
+            { "layout_saved", new[] { "slot" } },
+            { "layout_loaded", new[] { "slot" } },
+            { "house_restored", new[] { "lines" } },
         };
 
         public static IEnumerable<string> EventNames => Events.Keys;

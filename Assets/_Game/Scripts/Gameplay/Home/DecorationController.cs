@@ -128,8 +128,15 @@ namespace UtsavNights.Gameplay
             Selected = 0;
             _home.Editor.Changed += OnEdited;
             CameraPose(out Vector3 p, out Quaternion r);
-            _rig?.BeginOverride(p, r);
-            _home.House?.SetLightsEnabled(true);
+            if (_rig != null)
+            {
+                _rig.BeginOverride(p, r);
+            }
+
+            if (_home.House != null)
+            {
+                _home.House.SetLightsEnabled(true);
+            }
             Message = "Pick a decoration below, or tap one on the house to move it.";
             Game.Events.Publish(new DecorModeOpenedEvent(_home.Design.decorations.Count));
             StateChanged?.Invoke();
@@ -148,7 +155,16 @@ namespace UtsavNights.Gameplay
             Deselect();
             bool saved = save && _home.Editor.Unsaved && _home.Save();
             _home.Editor.Changed -= OnEdited;
-            _rig?.EndOverride();
+            if (_rig != null)
+            {
+                _rig.EndOverride();
+            }
+
+            // Unity objects: compare with == null (the ?. operator misses objects destroyed by a scene unload).
+            if (_home.House != null)
+            {
+                _home.House.SetLightsEnabled(false);
+            }
             IsOpen = false;
             Game.Events.Publish(new DecorModeClosedEvent(_editsThisVisit, saved, _home.Design.decorations.Count));
             StateChanged?.Invoke();

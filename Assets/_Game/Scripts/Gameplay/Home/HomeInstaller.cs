@@ -35,6 +35,10 @@ namespace UtsavNights.Gameplay
             _colliders.localPosition = new Vector3(0f, 0f, HouseGeometry.WorldFrontZ);
             QualityManager quality = FindFirstObjectByType<QualityManager>();
             Game.Services.Register(new HomeService(new HouseStore(), _house, _decor, () => quality != null ? quality.Tier : 1, _colliders));
+
+            // The porch lamp and facade uplight only matter when the camera faces the house (decoration mode). In the
+            // fireworks view they would light nothing visible and take the low tier's two per-object lights from crackers.
+            _house.SetLightsEnabled(false);
         }
 
         private void OnDestroy()

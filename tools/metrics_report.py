@@ -157,6 +157,28 @@ def compute(events, crashes=None, ecpm=None):
                 worn[v] += 1
     m["top_garments"] = worn.most_common(8)
 
+    # R1 (Phase 7) exit gate: decoration use per user and the return rate. Decorators are users who opened decoration
+    # mode; their D1 and D7 return is compared with everyone else's.
+    decorators = {e["user"] for e in events if e["event"] == "decor_mode_opened"}
+    placed = [e for e in events if e["event"] == "decoration_placed"]
+    m["decorators"] = len(decorators)
+    m["decorator_share"] = len(decorators) / len(by_user) if by_user else None
+    m["placements_per_decorator"] = len(placed) / len(decorators) if decorators else None
+    m["decor_visits_per_decorator"] = sum(1 for e in events if e["event"] == "decor_mode_opened") / len(decorators) if decorators else None
+    closes = [e for e in events if e["event"] == "decor_mode_closed"]
+    m["decor_visits_saved"] = sum(1 for e in closes if (num(e, "saved") or 0) >= 1) / len(closes) if closes else None
+    with_count = [e for e in ends if num(e, "decorations") is not None]
+    m["sessions_with_decorations"] = sum(1 for e in with_count if num(e, "decorations") >= 1) / len(with_count) if with_count else None
+    m["house_restores"] = sum(1 for e in events if e["event"] == "house_restored")
+    m["layout_saves"] = sum(1 for e in events if e["event"] == "layout_saved")
+    for n in (1, 7):
+        for group, users in (("decorators", decorators), ("others", set(by_user) - decorators)):
+            cohort = [u for u in users if last_day and first_day[u] + timedelta(days=n) <= last_day]
+            back = sum(1 for u in cohort if first_day[u] + timedelta(days=n) in active[u])
+            m[f"d{n}_retention_{group}"] = back / len(cohort) if cohort else None
+    m["top_decorations"] = Counter(e.get("id") for e in placed if e.get("id")).most_common(8)
+    m["top_modules"] = Counter(e.get("module") for e in events if e["event"] == "house_module_changed" and e.get("module")).most_common(6)
+
     # PRD 15.3: sessions per user x impressions per session x eCPM / 1000.
     if ecpm is not None and m["sessions_per_user"] is not None and m["ads_per_session"] is not None:
         m["ad_revenue_per_user_usd"] = m["sessions_per_user"] * m["ads_per_session"] * ecpm / 1000
@@ -238,6 +260,18 @@ def report(m, since, days, installs=None):
     lines.append(f"| Saves that started from a preset | {fmt(m['avatar_from_preset'], 'pct')} |")
     if m["top_garments"]:
         lines.append(f"| Most worn | {', '.join(f'{g} ({n})' for g, n in m['top_garments'])} |")
+    lines += ["", "## House and decorations (R1, Phase 7 exit gate)", "", "| Metric | Value |", "|---|---|"]
+    lines.append(f"| Users who decorated | {m['decorators']} ({fmt(m['decorator_share'], 'pct')} of users) |")
+    lines.append(f"| Decorations placed per decorator | {fmt(m['placements_per_decorator'], 'n')} |")
+    lines.append(f"| Decoration visits per decorator | {fmt(m['decor_visits_per_decorator'], 'n')} ({fmt(m['decor_visits_saved'], 'pct')} saved) |")
+    lines.append(f"| Sessions ending with a decorated courtyard | {fmt(m['sessions_with_decorations'], 'pct')} |")
+    lines.append(f"| D1 return, decorators / others | {fmt(m['d1_retention_decorators'], 'pct')} / {fmt(m['d1_retention_others'], 'pct')} |")
+    lines.append(f"| D7 return, decorators / others | {fmt(m['d7_retention_decorators'], 'pct')} / {fmt(m['d7_retention_others'], 'pct')} |")
+    lines.append(f"| Layouts saved / interrupted edits restored | {m['layout_saves']} / {m['house_restores']} |")
+    if m["top_decorations"]:
+        lines.append(f"| Most placed | {', '.join(f'{g} ({n})' for g, n in m['top_decorations'])} |")
+    if m["top_modules"]:
+        lines.append(f"| Most chosen house parts | {', '.join(f'{g} ({n})' for g, n in m['top_modules'])} |")
     lines += ["", "Small tests (20 to 50 users) can judge feel, time to ignition, completion and crashes. "
               "Retention, conversion and ad revenue need hundreds to thousands of users (PRD 17)."]
     return "\n".join(lines)
@@ -277,6 +311,17 @@ def self_test():
     add("u1", t0 + timedelta(minutes=1, seconds=40), "avatar_saved", from_preset=1, garments=5, top="kurta", bottom="dhoti", full_length="none", headwear="turban")
     add("u2", t0 + timedelta(minutes=1), "avatar_creator_opened", first=1)
     add("u2", t0 + timedelta(minutes=1, seconds=20), "avatar_skipped")
+    # u1 decorates twice (two visits, three placements); u3 once. u1 comes back on day 1, u3 does not.
+    add("u1", t0 + timedelta(minutes=2), "decor_mode_opened", decorations=0)
+    add("u1", t0 + timedelta(minutes=2, seconds=10), "decoration_placed", id="diya_clay", category="lamps")
+    add("u1", t0 + timedelta(minutes=2, seconds=20), "decoration_placed", id="diya_clay", category="lamps")
+    add("u1", t0 + timedelta(minutes=2, seconds=30), "house_module_changed", point="door", module="door_carved_arch")
+    add("u1", t0 + timedelta(minutes=2, seconds=40), "decor_mode_closed", edits=3, saved=1, decorations=2)
+    add("u1", t0 + timedelta(days=1, minutes=1), "decor_mode_opened", decorations=2)
+    add("u1", t0 + timedelta(days=1, minutes=1, seconds=5), "decoration_placed", id="rangoli_lotus", category="rangoli")
+    add("u1", t0 + timedelta(days=1, minutes=1, seconds=9), "decor_mode_closed", edits=1, saved=0, decorations=3)
+    add("u3", t0 + timedelta(minutes=4), "decor_mode_opened", decorations=0)
+    add("u3", t0 + timedelta(minutes=4, seconds=10), "house_restored", lines=4)
 
     events = load_events(rows, t0.date(), 8)
     m = compute(events, crashes=1, ecpm=2.0)
@@ -299,6 +344,14 @@ def self_test():
         "avatar_from_preset": (m["avatar_from_preset"], 1.0),
         "creator_first_opens": (m["creator_first_opens"], 2),
         "top_garment": (m["top_garments"][0][0] if m["top_garments"] else None, "kurta"),
+        "decorators": (m["decorators"], 2),
+        "decorator_share": (m["decorator_share"], 0.5),
+        "placements_per_decorator": (m["placements_per_decorator"], 1.5),
+        "decor_visits_saved": (m["decor_visits_saved"], 0.5),
+        "d1_retention_decorators": (m["d1_retention_decorators"], 0.5),
+        "d1_retention_others": (m["d1_retention_others"], 0.5),
+        "top_decoration": (m["top_decorations"][0][0] if m["top_decorations"] else None, "diya_clay"),
+        "house_restores": (m["house_restores"], 1),
         # 7 sessions / 4 users x 2 ads / 7 sessions x $2 / 1000.
         "ad_revenue_per_user_usd": (round(m["ad_revenue_per_user_usd"], 6), round(7 / 4 * 2 / 7 * 2 / 1000, 6)),
     }

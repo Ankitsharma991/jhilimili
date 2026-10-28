@@ -17,7 +17,11 @@ namespace UtsavNights.Tests
                 "settings_changed", "ad_shown", "ad_failed", "ad_reward", "purchase_started", "purchase_done",
                 "clip_shared", "perf_sample",
             };
-            string[] r1 = { "avatar_creator_opened", "avatar_saved", "avatar_skipped" };
+            string[] r1 =
+            {
+                "avatar_creator_opened", "avatar_saved", "avatar_skipped", "decor_mode_opened", "decor_mode_closed", "decoration_placed",
+                "house_module_changed", "layout_saved", "layout_loaded", "house_restored",
+            };
             CollectionAssert.AreEquivalent(prd.Concat(r1), AnalyticsSchema.EventNames.ToArray());
         }
 
@@ -32,6 +36,31 @@ namespace UtsavNights.Tests
             }
 
             CollectionAssert.IsEmpty(AnalyticsSchema.Validate("session_end", new EventParams().Add("duration_s", 300L).Add("ignitions", 9L).Add("has_avatar", true)));
+        }
+
+        [Test]
+        public void DecorationEvents_CarryIdsAndCountsOnly()
+        {
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("decoration_placed", new EventParams().Add("id", "lantern_akash_kandil").Add("category", "lamps")));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("house_module_changed", new EventParams().Add("point", "window_ground_left").Add("module", "window_jali")));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("decor_mode_closed", new EventParams().Add("edits", 12L).Add("saved", true).Add("decorations", 9L)));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("session_end", new EventParams().Add("duration_s", 60L).Add("ignitions", 2L).Add("has_avatar", false).Add("decorations", 3L)));
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("layout_saved", new EventParams().Add("slot", 0L).Add("name", "diwali")), "layout names stay on the phone");
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("decoration_placed", new EventParams().Add("id", "diya_clay").Add("x", 1.5)), "no positions");
+            foreach (Core.Home.DecorInfo info in Core.Home.HomeCatalog.Decorations)
+            {
+                Assert.IsTrue(AnalyticsSchema.IsSafeId(info.Id), info.Id);
+            }
+
+            foreach (Core.Home.ModuleInfo module in Core.Home.HomeCatalog.Modules)
+            {
+                Assert.IsTrue(AnalyticsSchema.IsSafeId(module.Id), module.Id);
+            }
+
+            foreach (Core.Home.AttachmentPoint point in Core.Home.HomeCatalog.Points)
+            {
+                Assert.IsTrue(AnalyticsSchema.IsSafeId(point.Id), point.Id);
+            }
         }
 
         [Test]

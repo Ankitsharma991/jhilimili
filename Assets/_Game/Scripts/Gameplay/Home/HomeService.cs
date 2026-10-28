@@ -58,6 +58,20 @@ namespace UtsavNights.Gameplay
         public string Module { get; }
     }
 
+    /// <summary>A layout slot was saved or loaded (the slot number only, never its name).</summary>
+    public readonly struct HouseLayoutEvent
+    {
+        public HouseLayoutEvent(int slot, bool saved)
+        {
+            Slot = slot;
+            Saved = saved;
+        }
+
+        public int Slot { get; }
+
+        public bool Saved { get; }
+    }
+
     /// <summary>
     /// The player's house for this session (Phase 7 step 5): house.json and its journal, the editor (an interrupted
     /// session is replayed when the scene starts), the house and decoration views, placement checks for the current

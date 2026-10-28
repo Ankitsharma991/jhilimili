@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UtsavNights.Core.Analytics;
+using UtsavNights.Core.Home;
 using UtsavNights.Core.Runtime;
 using UtsavNights.Gameplay;
 
@@ -12,6 +13,55 @@ namespace UtsavNights.Tests.PlayMode
     /// <summary>Phase 4 step 6 (F12): events flow with consent, stop with the switch off, and hold during a consent form.</summary>
     public class AnalyticsSmokeTests
     {
+        [UnityTest]
+        public IEnumerator DecorationEvents_ReachAnalytics()
+        {
+            new HouseStore().Delete();
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            Assert.IsTrue(Game.Services.TryGet(out AnalyticsService analytics));
+            Assert.IsTrue(Game.Services.TryGet(out SettingsService settings));
+            Assert.IsTrue(Game.Services.TryGet(out ConsentService consent));
+            var log = (DevAnalyticsBackend)analytics.Backend;
+            var dev = (DevConsentBackend)consent.Backend;
+            bool wasEea = dev.InEea;
+            bool wasSharing = settings.Current.shareUsageStats;
+            try
+            {
+                dev.InEea = false;
+                dev.Reset();
+                consent.Gather();
+                settings.Change(s => s.shareUsageStats = true);
+                var mode = Object.FindFirstObjectByType<UI.DecorationMode>();
+                mode.Open();
+                Assert.AreEqual("decor_mode_opened", log.LastEvent);
+
+                Assert.IsTrue(Game.Services.TryGet(out HomeService home));
+                PlacedDecor pose = new PlacedDecor { uid = home.Design.nextUid, item = "rangoli_lotus", x = 0f, z = 2.5f, scale = 1f };
+                Assert.IsTrue(home.Do(new PlaceDecor(pose)));
+                Assert.AreEqual("decoration_placed", log.LastEvent);
+                string line = System.IO.File.ReadAllLines(DevAnalyticsBackend.FilePath)[^1];
+                StringAssert.Contains("\"id\":\"rangoli_lotus\"", line);
+                StringAssert.Contains("\"category\":\"rangoli\"", line);
+
+                mode.SaveLayout(0);
+                Assert.AreEqual("layout_saved", log.LastEvent);
+                StringAssert.DoesNotContain("Layout 1", System.IO.File.ReadAllLines(DevAnalyticsBackend.FilePath)[^1], "layout names stay on the phone");
+
+                mode.Done();
+                Assert.AreEqual("decor_mode_closed", log.LastEvent);
+                analytics.EndSession();
+                StringAssert.Contains("\"decorations\":1", System.IO.File.ReadAllLines(DevAnalyticsBackend.FilePath)[^1]);
+            }
+            finally
+            {
+                dev.InEea = wasEea;
+                settings.Change(s => s.shareUsageStats = wasSharing);
+                new HouseStore().Delete();
+            }
+        }
+
         [UnityTest]
         public IEnumerator AvatarEvents_ReachAnalytics_WithoutTheName()
         {
