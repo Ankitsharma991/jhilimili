@@ -20,7 +20,7 @@ import io
 import os
 import statistics
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
 
 TARGETS = {
@@ -139,6 +139,24 @@ def compute(events, crashes=None, ecpm=None):
     m["fps_by_tier"] = {t: (statistics.median(v), len(v)) for t, v in sorted(fps.items())}
     m["downgrade_samples"] = sum(1 for e in events if e["event"] == "perf_sample" and (num(e, "downgrades") or 0) > 0)
 
+    # R1 (Phase 6) exit gate: do players keep an avatar? Share of sessions that end with one.
+    with_flag = [e for e in ends if num(e, "has_avatar") is not None]
+    m["sessions_with_avatar"] = sum(1 for e in with_flag if num(e, "has_avatar") >= 1) / len(with_flag) if with_flag else None
+    m["creator_opens"] = sum(1 for e in events if e["event"] == "avatar_creator_opened")
+    m["creator_first_opens"] = sum(1 for e in events if e["event"] == "avatar_creator_opened" and (num(e, "first") or 0) >= 1)
+    saves = [e for e in events if e["event"] == "avatar_saved"]
+    m["avatar_saves"] = len(saves)
+    m["avatar_skips"] = sum(1 for e in events if e["event"] == "avatar_skipped")
+    m["avatar_save_rate"] = len(saves) / (len(saves) + m["avatar_skips"]) if (saves or m["avatar_skips"]) else None
+    m["avatar_from_preset"] = sum(1 for e in saves if (num(e, "from_preset") or 0) >= 1) / len(saves) if saves else None
+    worn = Counter()
+    for e in saves:
+        for key in ("top", "bottom", "full_length", "full", "headwear"):
+            v = (e.get(key) or "").strip()
+            if v and v != "none":
+                worn[v] += 1
+    m["top_garments"] = worn.most_common(8)
+
     # PRD 15.3: sessions per user x impressions per session x eCPM / 1000.
     if ecpm is not None and m["sessions_per_user"] is not None and m["ads_per_session"] is not None:
         m["ad_revenue_per_user_usd"] = m["sessions_per_user"] * m["ads_per_session"] * ecpm / 1000
@@ -213,6 +231,13 @@ def report(m, since, days, installs=None):
     for tier, (median_fps, n) in m["fps_by_tier"].items():
         lines.append(f"| Median fps, tier {tier} ({n} samples) | {median_fps:.0f} |")
     lines.append(f"| Ad revenue per user (PRD 15.3) | {fmt(m['ad_revenue_per_user_usd'], 'usd')} |")
+    lines += ["", "## Avatar (R1, Phase 6 exit gate)", "", "| Metric | Value |", "|---|---|"]
+    lines.append(f"| Sessions ending with an avatar | {fmt(m['sessions_with_avatar'], 'pct')} |")
+    lines.append(f"| Creator opened (first time) | {m['creator_opens']} ({m['creator_first_opens']}) |")
+    lines.append(f"| Saved / skipped | {m['avatar_saves']} / {m['avatar_skips']} ({fmt(m['avatar_save_rate'], 'pct')} saved) |")
+    lines.append(f"| Saves that started from a preset | {fmt(m['avatar_from_preset'], 'pct')} |")
+    if m["top_garments"]:
+        lines.append(f"| Most worn | {', '.join(f'{g} ({n})' for g, n in m['top_garments'])} |")
     lines += ["", "Small tests (20 to 50 users) can judge feel, time to ignition, completion and crashes. "
               "Retention, conversion and ad revenue need hundreds to thousands of users (PRD 17)."]
     return "\n".join(lines)
@@ -248,6 +273,10 @@ def self_test():
     add("u3", t0 + timedelta(minutes=3, seconds=20), "purchase_done", sku="remove_ads")
     add("u2", t0 + timedelta(minutes=4), "settings_changed", key="quiet_mode", value="on")
     add("u9", t0 + timedelta(days=30), "session_end", duration_s=1, ignitions=1)  # outside the window
+    add("u1", t0 + timedelta(minutes=1), "avatar_creator_opened", first=1)
+    add("u1", t0 + timedelta(minutes=1, seconds=40), "avatar_saved", from_preset=1, garments=5, top="kurta", bottom="dhoti", full_length="none", headwear="turban")
+    add("u2", t0 + timedelta(minutes=1), "avatar_creator_opened", first=1)
+    add("u2", t0 + timedelta(minutes=1, seconds=20), "avatar_skipped")
 
     events = load_events(rows, t0.date(), 8)
     m = compute(events, crashes=1, ecpm=2.0)
@@ -266,6 +295,10 @@ def self_test():
         "ad_safety_violations": (m["ad_safety_violations"], 1),
         "purchase_done_users": (m["purchase_done_users"], 1),
         "quiet_mode_users": (m["quiet_mode_users"], 1),
+        "avatar_save_rate": (m["avatar_save_rate"], 0.5),
+        "avatar_from_preset": (m["avatar_from_preset"], 1.0),
+        "creator_first_opens": (m["creator_first_opens"], 2),
+        "top_garment": (m["top_garments"][0][0] if m["top_garments"] else None, "kurta"),
         # 7 sessions / 4 users x 2 ads / 7 sessions x $2 / 1000.
         "ad_revenue_per_user_usd": (round(m["ad_revenue_per_user_usd"], 6), round(7 / 4 * 2 / 7 * 2 / 1000, 6)),
     }

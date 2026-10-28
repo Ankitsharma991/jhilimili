@@ -107,6 +107,7 @@ namespace UtsavNights.UI
 
             Draft = _profiles.Current.Clone();
             _fromPreset = false;
+            Game.Events.Publish(new AvatarCreatorOpenedEvent(!_profiles.Current.created));
             _stage = AvatarPreviewStage.Create(Draft, PreviewWidth, PreviewHeight);
             _preview.texture = _stage.Texture;
             _overlay.gameObject.SetActive(true);
@@ -132,6 +133,7 @@ namespace UtsavNights.UI
         {
             if (IsOpen)
             {
+                Game.Events.Publish(new AvatarSkippedEvent());
                 CloseOverlay();
             }
         }
@@ -210,6 +212,13 @@ namespace UtsavNights.UI
             change(Draft);
             _fromPreset = false;
             Changed();
+        }
+
+        /// <summary>Sets the optional name. Not a change to the look, so a saved preset still counts as one.</summary>
+        public void EditName(string name)
+        {
+            Draft.name = AvatarProfile.CleanName(name);
+            Refresh();
         }
 
         public string GarmentLabel(int row) => Worn(row)?.Name ?? (OutfitRows[row].optional ? "None" : "—");
@@ -479,7 +488,7 @@ namespace UtsavNights.UI
             input.placeholder = placeholder;
             input.characterLimit = AvatarProfile.MaxNameLength;
             input.lineType = TMP_InputField.LineType.SingleLine;
-            input.onEndEdit.AddListener(v => Edit(p => p.name = AvatarProfile.CleanName(v)));
+            input.onEndEdit.AddListener(EditName);
             _refreshers.Add(() => input.SetTextWithoutNotify(Draft.name));
         }
 

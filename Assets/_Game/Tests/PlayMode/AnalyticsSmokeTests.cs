@@ -13,6 +13,56 @@ namespace UtsavNights.Tests.PlayMode
     public class AnalyticsSmokeTests
     {
         [UnityTest]
+        public IEnumerator AvatarEvents_ReachAnalytics_WithoutTheName()
+        {
+            new ProfileStore().Delete();
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            Assert.IsTrue(Game.Services.TryGet(out AnalyticsService analytics));
+            Assert.IsTrue(Game.Services.TryGet(out SettingsService settings));
+            Assert.IsTrue(Game.Services.TryGet(out ConsentService consent));
+            var log = (DevAnalyticsBackend)analytics.Backend;
+            var dev = (DevConsentBackend)consent.Backend;
+            bool wasEea = dev.InEea;
+            bool wasSharing = settings.Current.shareUsageStats;
+            try
+            {
+                dev.InEea = false;
+                dev.Reset();
+                consent.Gather();
+                settings.Change(s => s.shareUsageStats = true);
+                var creator = Object.FindFirstObjectByType<UI.AvatarCreator>();
+
+                creator.Open();
+                Assert.AreEqual("avatar_creator_opened", log.LastEvent);
+                creator.Skip();
+                Assert.AreEqual("avatar_skipped", log.LastEvent);
+
+                creator.Open();
+                creator.ApplyPreset(5); // kurta, dhoti, shawl, chappals, turban
+                creator.EditName("Ravi");
+                creator.Save();
+                Assert.AreEqual("avatar_saved", log.LastEvent);
+                string line = System.IO.File.ReadAllLines(DevAnalyticsBackend.FilePath)[^1];
+                StringAssert.Contains("\"from_preset\":1", line);
+                StringAssert.Contains("\"top\":\"kurta\"", line);
+                StringAssert.Contains("\"headwear\":\"turban\"", line);
+                StringAssert.DoesNotContain("Ravi", line, "the name never leaves the phone");
+                yield return null;
+
+                analytics.EndSession();
+                StringAssert.Contains("\"has_avatar\":1", System.IO.File.ReadAllLines(DevAnalyticsBackend.FilePath)[^1]);
+            }
+            finally
+            {
+                dev.InEea = wasEea;
+                settings.Change(s => s.shareUsageStats = wasSharing);
+                new ProfileStore().Delete();
+            }
+        }
+
+        [UnityTest]
         public IEnumerator Events_FollowConsentAndTheUsageSwitch()
         {
             SceneManager.LoadScene("Main");

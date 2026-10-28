@@ -63,3 +63,23 @@ data model and creator are independent of the mesh source, a commissioned rig ca
 | 5 Avatar creator | Done 2026-10-28. PRD 12 screen from a new person button next to Settings: live 3D preview (drag to turn) rendered in a studio far below the courtyard with its own short-range lights; Looks (12 presets), Body (optional name, body, height, skin-tone slider on the tone ramp, shoulders, hips, legs, head, calm or lively), Face, Hair (with a note when headwear hides it) and Outfit (a stepper and colour chip per layer, accessory switches) tabs; **Skip always visible** (also Android back) discards, Save writes profile.json. Found by the tests: the preview's 2× MSAA clashed with URP's (now off). 4 Play Mode tests. Not yet reviewed on a phone screen |
 | 6 Courtyard | Done 2026-10-28. `CourtyardAvatar`: appears once the player has saved an avatar (the R0 courtyard is unchanged otherwise), stands behind the diyas left of centre, crouches with the ignite gesture when a cracker is lit, turns towards and celebrates each burst (new `PayoffStartedEvent`; 2.5 s cooldown), blocks placement on its spot, rigid skinning on the low tier. Idle allocation with the avatar animating: 0.00 KB per frame. Compile check now builds the Play Mode tests too. 4 tests |
 | 7 Clipping matrix and packs | Done 2026-10-28. `AvatarPoser` skins exactly as Unity does (rotation order tested); `ClippingCheck` runs 38 garments × 3 body styles × 5 poses = **570 combinations** in under half a second and writes [CLIPPING.md](CLIPPING.md): **0 blockers**, 87 small warnings. The first run found 407 blockers; fixes: long hems follow a mix of both thighs (and the shins below the knee), robes and saris end just above the shoes, loose bottoms stay slim above the knee, tunic hems got more room, the sherwani more flare, the dupatta sits clear of the collar; with a long hem the clips take shorter strides and bow from the waist instead of squatting; low tier uses two-bone skinning (one bone tore long hems). A negative-control test proves the check still catches a squat in a lehenga. Wardrobe pack format with validator: [PACKS.md](PACKS.md). 12 tests |
+| 8 Measure | Done 2026-10-28. Analytics: `avatar_creator_opened` (first), `avatar_saved` (from a preset, garment count, top, bottom, full-length and headwear ids), `avatar_skipped`, and `has_avatar` on `session_end`, the exit-gate number. Never the name, body shape or skin tone (schema test; the privacy policy says so). The metrics report gains an avatar section (share of sessions with an avatar, save rate, preset share, most-worn garments); the BigQuery query has the new columns. Performance: the courtyard avatar adds no per-frame allocation (0.00 KB); body 634 vertices, garments under 3,000 each, two-bone skinning on the low tier |
+
+## Phase 6 result
+
+F15 and F16 are built and tested: create, save and load an avatar that fits all clothing (preset or manual), 38
+garments across 5 occasion tags in layered slots, and **0 clipping blockers** across 3 body shapes and 5 poses
+([CLIPPING.md](CLIPPING.md)). Deliverables: the avatar creator, 38 garments (20 required), the clipping test report.
+
+**Still needed before R1 ships:**
+- **Cultural review** of the garments and presets by people from each tradition (PRD 8). Record it in each garment's
+  `culturalReview` ([PACKS.md](PACKS.md)) and in LICENCE_LOG own-007.
+- **Device check:** frame rate with the avatar in the courtyard on the low-tier phone, and the creator's layout on a
+  small phone screen. Neither has been seen on a real screen beyond the tablet.
+- **Exit gate:** "users keep the avatar in a meaningful share of sessions" can only be measured with players. The
+  metrics report shows it once Firebase is connected.
+
+**Known limits** (the PRD allows these for v1): the look is stylised; there is no cloth simulation, so long hems
+follow the legs by skinning and the clips adapt (shorter strides, a bow instead of a squat); the avatar walks in
+place until the neighbourhood of Phase 8.
+

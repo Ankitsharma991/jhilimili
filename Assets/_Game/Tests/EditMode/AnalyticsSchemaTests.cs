@@ -17,7 +17,21 @@ namespace UtsavNights.Tests
                 "settings_changed", "ad_shown", "ad_failed", "ad_reward", "purchase_started", "purchase_done",
                 "clip_shared", "perf_sample",
             };
-            CollectionAssert.AreEquivalent(prd, AnalyticsSchema.EventNames.ToArray());
+            string[] r1 = { "avatar_creator_opened", "avatar_saved", "avatar_skipped" };
+            CollectionAssert.AreEquivalent(prd.Concat(r1), AnalyticsSchema.EventNames.ToArray());
+        }
+
+        [Test]
+        public void AvatarEvents_CarryNoNameBodyOrSkin()
+        {
+            var saved = new EventParams().Add("from_preset", true).Add("garments", 4L).Add("top", "kurta").Add("bottom", "churidar").Add("full", "none").Add("headwear", "turban");
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("avatar_saved", saved));
+            foreach (string banned in new[] { "name", "skin_tone", "body_style", "height" })
+            {
+                Assert.IsNotEmpty(AnalyticsSchema.Validate("avatar_saved", new EventParams().Add(banned, "x")), banned + " is not allowed");
+            }
+
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("session_end", new EventParams().Add("duration_s", 300L).Add("ignitions", 9L).Add("has_avatar", true)));
         }
 
         [Test]

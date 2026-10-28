@@ -18,7 +18,7 @@ namespace UtsavNights.Core.Analytics
             { "cracker_placed", new[] { "id" } },
             { "cracker_ignited", new[] { "id", "is_first" } },
             { "payoff_complete", new[] { "id" } },
-            { "session_end", new[] { "duration_s", "ignitions" } },
+            { "session_end", new[] { "duration_s", "ignitions", "has_avatar" } },
             { "settings_changed", new[] { "key", "value" } },
             { "ad_shown", new[] { "placement", "ms_since_payoff" } },
             { "ad_failed", new[] { "placement", "ms_since_payoff" } },
@@ -27,6 +27,11 @@ namespace UtsavNights.Core.Analytics
             { "purchase_done", new[] { "sku" } },
             { "clip_shared", new[] { "target" } },
             { "perf_sample", new[] { "avg_fps", "tier", "downgrades" } },
+
+            // R1, Phase 6 (avatar exit gate: do players keep an avatar?). Never the name, body shape or skin tone.
+            { "avatar_creator_opened", new[] { "first" } },
+            { "avatar_saved", new[] { "from_preset", "garments", "top", "bottom", "full", "headwear" } },
+            { "avatar_skipped", new string[0] },
         };
 
         public static IEnumerable<string> EventNames => Events.Keys;

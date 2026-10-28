@@ -51,6 +51,9 @@ namespace UtsavNights.Gameplay
             Game.Events.Subscribe<PurchaseEvent>(OnPurchase);
             Game.Events.Subscribe<SettingsChangedEvent>(OnSettings);
             Game.Events.Subscribe<AppPausedEvent>(OnPaused);
+            Game.Events.Subscribe<AvatarCreatorOpenedEvent>(OnCreatorOpened);
+            Game.Events.Subscribe<AvatarSavedEvent>(OnAvatarSaved);
+            Game.Events.Subscribe<AvatarSkippedEvent>(OnAvatarSkipped);
         }
 
         public IAnalyticsBackend Backend { get; }
@@ -77,6 +80,9 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<PurchaseEvent>(OnPurchase);
             Game.Events.Unsubscribe<SettingsChangedEvent>(OnSettings);
             Game.Events.Unsubscribe<AppPausedEvent>(OnPaused);
+            Game.Events.Unsubscribe<AvatarCreatorOpenedEvent>(OnCreatorOpened);
+            Game.Events.Unsubscribe<AvatarSavedEvent>(OnAvatarSaved);
+            Game.Events.Unsubscribe<AvatarSkippedEvent>(OnAvatarSkipped);
         }
 
         /// <summary>app_first_open once per install (PRD 17: install quality).</summary>
@@ -113,7 +119,8 @@ namespace UtsavNights.Gameplay
 
             _sessionEnded = true;
             FlushSettings();
-            Send("session_end", new EventParams().Add("duration_s", (long)(Now - _sessionStart)).Add("ignitions", (long)_ignitions));
+            bool hasAvatar = Game.Services.TryGet(out ProfileService profiles) && profiles.Current.created;
+            Send("session_end", new EventParams().Add("duration_s", (long)(Now - _sessionStart)).Add("ignitions", (long)_ignitions).Add("has_avatar", hasAvatar));
         }
 
         public void Tick(float deltaSeconds)
@@ -220,6 +227,13 @@ namespace UtsavNights.Gameplay
 
         private void OnSceneReady(SceneReadyEvent e) =>
             Send("scene_ready", new EventParams().Add("ms_since_launch", (long)(e.SecondsSinceLaunch * 1000f)));
+
+        private void OnCreatorOpened(AvatarCreatorOpenedEvent e) => Send("avatar_creator_opened", new EventParams().Add("first", e.First));
+
+        private void OnAvatarSaved(AvatarSavedEvent e) => Send("avatar_saved", new EventParams().Add("from_preset", e.FromPreset).Add("garments", (long)e.Garments)
+            .Add("top", e.Top).Add("bottom", e.Bottom).Add("full", e.Full).Add("headwear", e.Headwear));
+
+        private void OnAvatarSkipped(AvatarSkippedEvent e) => Send("avatar_skipped", new EventParams());
 
         private void OnPlaced(CrackerPlacedEvent e) => Send("cracker_placed", new EventParams().Add("id", e.CrackerId));
 

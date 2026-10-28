@@ -20,10 +20,20 @@ SELECT
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'value') AS value,
   (SELECT COALESCE(value.double_value, value.int_value) FROM UNNEST(event_params) WHERE key = 'avg_fps') AS avg_fps,
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'tier') AS tier,
-  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'downgrades') AS downgrades
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'downgrades') AS downgrades,
+  -- R1 (Phase 6) avatar events
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'first') AS first,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'from_preset') AS from_preset,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'garments') AS garments,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'top') AS top,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'bottom') AS bottom,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'full') AS full_length,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'headwear') AS headwear,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'has_avatar') AS has_avatar
 FROM `PROJECT.analytics_000000000.events_*`
 WHERE _TABLE_SUFFIX BETWEEN '20261101' AND '20261131'
   AND event_name IN ('app_first_open', 'scene_ready', 'cracker_placed', 'cracker_ignited', 'payoff_complete',
                      'session_end', 'settings_changed', 'ad_shown', 'ad_failed', 'ad_reward',
-                     'purchase_started', 'purchase_done', 'clip_shared', 'perf_sample')
+                     'purchase_started', 'purchase_done', 'clip_shared', 'perf_sample',
+                     'avatar_creator_opened', 'avatar_saved', 'avatar_skipped')
 ORDER BY user, ts
