@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UtsavNights.Core.Runtime;
 using UtsavNights.Core.Settings;
@@ -8,7 +9,9 @@ namespace UtsavNights.Gameplay
     /// Creates the <see cref="ProgressService"/> (progress.json), the <see cref="AdService"/> and the
     /// <see cref="ConsentService"/> and the <see cref="PurchaseService"/> with the providers registered in
     /// <see cref="MonetisationProviders"/> (AdMob, UMP, Unity IAP on a device), otherwise the development
-    /// card, form and store. Consent is gathered in Start, before any ad loads.
+    /// card, form and store. Consent is gathered in Start, before any ad loads. Also the
+    /// <see cref="ReviewService"/> (Phase 5 step 4): Google Play's rating prompt in store builds, a test card
+    /// otherwise.
     /// </summary>
     [DefaultExecutionOrder(-140)]
     public sealed class MonetisationInstaller : MonoBehaviour
@@ -19,6 +22,7 @@ namespace UtsavNights.Gameplay
         private AdService _ads;
         private ConsentService _consent;
         private PurchaseService _purchases;
+        private ReviewService _review;
         private bool _owner;
 
         private void Awake()
@@ -47,6 +51,12 @@ namespace UtsavNights.Gameplay
 
             _purchases = new PurchaseService(CreatePurchaseBackend(), progress);
             Game.Services.Register(_purchases);
+
+            IReviewBackend review = BuildFlavor.IsStore ? new PlayReviewBackend() : (IReviewBackend)gameObject.AddComponent<DevReviewBackend>();
+            _review = new ReviewService(review, new ReviewStore(), _ads, () => (float)Time.realtimeSinceStartupAsDouble,
+                () => DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            Game.Services.Register(_review);
+            Game.Loop.Add(_review);
             Debug.Log($"[Ads] backend={backend.Name} interstitials={interstitialsEnabled} adsRemoved={progress.AdsRemoved}");
         }
 
@@ -77,6 +87,13 @@ namespace UtsavNights.Gameplay
                 Debug.Log($"[Ads] interstitials {(_ads.Policy.InterstitialsEnabled ? "on" : "off")} for this session");
             });
 
+            overlay?.AddTool("Review: ask now", _review.AskNowForTesting);
+            overlay?.AddTool("Review: reset", () =>
+            {
+                _review.ResetForTesting();
+                Debug.Log("[Review] reset: the prompt may come after a finale or 10 payoffs");
+            });
+
             if (overlay != null && _consent.Backend is DevConsentBackend dev)
             {
                 overlay.AddTool("Consent: EEA on/off", () =>
@@ -101,6 +118,9 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<SettingsChangedEvent>(OnSettingsChanged);
             Game.Services.Unregister<ConsentService>();
             Game.Services.Unregister<PurchaseService>();
+            Game.Loop.Remove(_review);
+            _review.Dispose();
+            Game.Services.Unregister<ReviewService>();
 
             Game.Loop.Remove(_ads);
             _ads.Dispose();

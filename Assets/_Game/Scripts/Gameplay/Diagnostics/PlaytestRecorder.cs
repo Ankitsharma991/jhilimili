@@ -54,6 +54,7 @@ namespace UtsavNights.Gameplay
             Game.Events.Subscribe<AppPausedEvent>(OnAppPaused);
             Game.Events.Subscribe<AdEvent>(OnAd);
             Game.Events.Subscribe<PurchaseEvent>(OnPurchase);
+            Game.Events.Subscribe<ReviewPromptEvent>(OnReviewPrompt);
 
             Begin("session_start");
             Field("device", SystemInfo.deviceModel);
@@ -114,6 +115,7 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<AppPausedEvent>(OnAppPaused);
             Game.Events.Unsubscribe<AdEvent>(OnAd);
             Game.Events.Unsubscribe<PurchaseEvent>(OnPurchase);
+            Game.Events.Unsubscribe<ReviewPromptEvent>(OnReviewPrompt);
             if (_placement != null)
             {
                 _placement.SelectionChanged -= OnSelectionChanged;
@@ -268,6 +270,15 @@ namespace UtsavNights.Gameplay
             Field("tier", e.Tier);
             Field("steps", e.StepsApplied);
             Field("reason", e.Reason);
+            Emit();
+        }
+
+        private void OnReviewPrompt(ReviewPromptEvent e)
+        {
+            Begin("review_prompt");
+            Field("trigger", e.Trigger);
+            Field("backend", e.Backend);
+            Field("flow_ran", e.FlowRan);
             Emit();
         }
 

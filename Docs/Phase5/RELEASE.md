@@ -120,3 +120,22 @@ What you can do, fastest first:
 **There is no remote switch:** the app works offline and has no server. Anything that needs changing
 without an update must go through AdMob or Play Console, as in the table above. Interstitials ship
 switched off, so the riskiest ad format is never live by accident.
+
+## In-app review prompt (step 4)
+
+The game asks Google Play to show its rating dialog when all of these are true:
+- it's the second launch or later;
+- this session went well: a finale finished, or 10 or more bursts;
+- the moment is quiet: nothing burning, no finale running, no sheet open, no touch for 2 s, and 3 s since
+  the last burst;
+- no ad in the last 2 minutes;
+- it hasn't asked this session, or in the last 30 days.
+
+Play adds its own limit on top and may show nothing. The game never learns whether the player rated.
+
+| Build | What appears |
+|---|---|
+| Editor and device APK | A white "Test review prompt" card with "Not now". **Developer overlay → Review: reset** makes it eligible again; **Review: ask now** shows it at once |
+| Store build | Google Play's real dialog. It only appears when the app was installed from Play: use the internal testing track. With internal app sharing the dialog shows, but Submit is greyed out [Verify] |
+
+Every request is in the playtest log as `review_prompt`, with the trigger (`finale` or `payoffs`).

@@ -1,0 +1,10 @@
+<!-- Google Play In-App Review (Phase 5 step 4). Resolved into mainTemplate.gradle by the External Dependency Manager. -->
+<dependencies>
+  <androidPackages>
+    <androidPackage spec="com.google.android.play:review:2.0.2">
+      <repositories>
+        <repository>https://maven.google.com/</repository>
+      </repositories>
+    </androidPackage>
+  </androidPackages>
+</dependencies>

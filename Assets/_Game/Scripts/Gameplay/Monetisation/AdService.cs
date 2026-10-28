@@ -126,6 +126,9 @@ namespace UtsavNights.Gameplay
             });
         }
 
+        /// <summary>Busy state the ad rules see right now; the review prompt waits for the same quiet moment.</summary>
+        public AdScene CurrentScene() => Scene();
+
         private AdScene Scene()
         {
             bool active = false;
