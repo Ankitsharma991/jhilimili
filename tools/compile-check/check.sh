@@ -79,6 +79,15 @@ NUNIT="$PKG/BuiltInPackages/com.unity.ext.nunit/net40/unity-custom/nunit.framewo
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Tests.EditMode.dll @engine.rsp @editor.rsp -r:"$D/NetStandard/compat/2.1.0/shims/netfx/mscorlib.dll" \
   -r:"$NUNIT" "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:UtsavNights.Haptics.dll -r:UtsavNights.Gameplay.dll -r:UtsavNights.UI.dll -r:UtsavNights.Editor.dll -define:"$EDITOR" "$A"/Tests/EditMode/*.cs
 
+# Play Mode tests need Unity's test runner, which Unity compiles into Library/ScriptAssemblies when it opens the project.
+TR="$ROOT/Library/ScriptAssemblies/UnityEngine.TestRunner.dll"
+if [ -f "$TR" ]; then
+  step "UtsavNights.Tests.PlayMode (editor defines)"
+  "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Tests.PlayMode.dll @engine.rsp @editor.rsp -r:"$D/NetStandard/compat/2.1.0/shims/netfx/mscorlib.dll" \
+    -r:"$NUNIT" -r:"$TR" "${DEPS[@]}" -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Effects.dll -r:UtsavNights.Audio.dll -r:UtsavNights.Haptics.dll -r:UtsavNights.Gameplay.dll -r:UtsavNights.UI.dll -define:"$EDITOR" "$A"/Tests/PlayMode/*.cs
+else
+  echo "(skipping Play Mode tests: open the project in Unity once to build its test runner)"
+fi
 step "Archived spikes (only with UTSAV_SPIKES; player and editor defines)"
 "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Spikes.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -define:"$RUNTIME;UTSAV_SPIKES" "$A"/Spikes/Scripts/*.cs
 "${CSC[@]}" -warnaserror+ -target:library -out:Spikes.editor-variant.dll @engine.rsp "${DEPS[@]}" -r:UtsavNights.Core.dll -define:"$EDITOR;UTSAV_SPIKES" "$A"/Spikes/Scripts/*.cs

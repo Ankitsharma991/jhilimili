@@ -25,6 +25,20 @@ namespace UtsavNights.Gameplay
         public float SecondsSinceLaunch { get; }
     }
 
+    /// <summary>The payoff (the burst, the fountain's peak) begins; the courtyard avatar celebrates (Phase 6 step 6).</summary>
+    public readonly struct PayoffStartedEvent
+    {
+        public PayoffStartedEvent(string crackerId, UnityEngine.Vector3 position)
+        {
+            CrackerId = crackerId;
+            Position = position;
+        }
+
+        public string CrackerId { get; }
+
+        public UnityEngine.Vector3 Position { get; }
+    }
+
     /// <summary>PRD 17 payoff_complete: the effect reached its stop stage.</summary>
     public readonly struct PayoffCompleteEvent
     {

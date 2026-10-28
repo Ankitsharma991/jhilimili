@@ -192,8 +192,21 @@ namespace UtsavNights.EditorTools.Main
             GameObject.Find("PlacementGhost")?.SetActive(false);
             Camera camera = Camera.main;
             Directory.CreateDirectory(Folder);
-            var stage = new GameObject("AvatarStage").transform;
             var presets = Core.Avatar.AvatarPresets.All;
+
+            // The courtyard avatar as players see it: game camera, its spot, idle and celebrating.
+            foreach ((Core.Avatar.AvatarClip clip, float time, string name) in new[]
+                     { (Core.Avatar.AvatarClip.Idle, 2f, "idle"), (Core.Avatar.AvatarClip.Celebrate, 0.6f, "celebrate") })
+            {
+                var spot = new GameObject("CourtyardStage").transform;
+                Gameplay.AvatarView courtyard = Gameplay.AvatarView.Create(spot, presets[3], "Courtyard");
+                courtyard.transform.SetPositionAndRotation(Gameplay.CourtyardAvatar.Spot, Quaternion.Euler(0f, Gameplay.CourtyardAvatar.RestYaw, 0f));
+                courtyard.gameObject.AddComponent<Gameplay.AvatarAnimator>().Sample(clip, time);
+                Render(camera, "avatar-courtyard-" + name);
+                Object.DestroyImmediate(spot.gameObject);
+            }
+
+            var stage = new GameObject("AvatarStage").transform;
             for (int i = 0; i < presets.Count; i++)
             {
                 int row = i / 6, col = i % 6;

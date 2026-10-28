@@ -35,4 +35,20 @@ namespace TMPro
     }
 
     public class TextMeshProUGUI : TMP_Text { }
+
+    public class TMP_InputField : Selectable
+    {
+        public enum LineType { SingleLine, MultiLineSubmit, MultiLineNewline }
+
+        public class SubmitEvent : UnityEngine.Events.UnityEvent<string> { }
+
+        public RectTransform textViewport { get; set; }
+        public TMP_Text textComponent { get; set; }
+        public Graphic placeholder { get; set; }
+        public int characterLimit { get; set; }
+        public LineType lineType { get; set; }
+        public string text { get; set; }
+        public SubmitEvent onEndEdit { get; } = new SubmitEvent();
+        public void SetTextWithoutNotify(string input) { }
+    }
 }

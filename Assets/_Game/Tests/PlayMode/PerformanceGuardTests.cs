@@ -50,6 +50,23 @@ namespace UtsavNights.Tests.PlayMode
             Assert.Less(result[0], ShowLimitKb, "average KB allocated per frame during the finale");
         }
 
+        [UnityTest]
+        public IEnumerator IdleWithTheCourtyardAvatar_StillAllocatesAlmostNothing()
+        {
+            new Gameplay.ProfileStore().Delete();
+            SceneManager.LoadScene("Main");
+            yield return null;
+            Assert.IsTrue(Core.Runtime.Game.Services.TryGet(out Gameplay.ProfileService profiles));
+            profiles.Save(Core.Avatar.AvatarPresets.All[1], fromPreset: true);
+            yield return WaitSeconds(2f);
+            Assert.IsTrue(Object.FindFirstObjectByType<Gameplay.CourtyardAvatar>().Visible);
+            var result = new float[2];
+            yield return Measure(60, result);
+            Debug.Log($"[UTSAV_PERF] idle with avatar gc_kb_per_frame avg={result[0]:0.00} max={result[1]:0.00}");
+            new Gameplay.ProfileStore().Delete();
+            Assert.Less(result[0], IdleLimitKb, "the animated avatar adds no per-frame garbage");
+        }
+
         private static IEnumerator WaitSeconds(float seconds)
         {
             float end = Time.realtimeSinceStartup + seconds;

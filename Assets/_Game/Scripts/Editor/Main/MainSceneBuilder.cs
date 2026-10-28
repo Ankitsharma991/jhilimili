@@ -164,6 +164,7 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<QualityManager>().Configure(camera);
             systems.AddComponent<SettingsInstaller>();
             systems.AddComponent<MonetisationInstaller>();
+            systems.AddComponent<AvatarInstaller>();
             systems.AddComponent<AnalyticsInstaller>();
             systems.AddComponent<PlaytestRecorder>();
             systems.AddComponent<DevOverlay>();
@@ -179,6 +180,9 @@ namespace UtsavNights.EditorTools.Main
             CreatePlacement(camera);
 
             // PRD 6.1: one cracker already stands ready; everything else comes from the tray.
+            // Phase 6: the player's avatar stands in the courtyard once they have saved one.
+            new GameObject("CourtyardAvatar").AddComponent<CourtyardAvatar>();
+
             new GameObject("StartingCrackers").AddComponent<StartingCrackers>().Configure(
                 new StartingCrackers.Item { definition = assets.Definition, position = new Vector3(0f, 0f, 0.6f) });
 
@@ -430,6 +434,16 @@ namespace UtsavNights.EditorTools.Main
             settingsRect.offsetMin = Vector2.zero;
             settingsRect.offsetMax = Vector2.zero;
             settingsGo.AddComponent<UI.SettingsSheet>();
+
+            // Phase 6: the avatar creator, opened from the person button next to Settings.
+            var avatarGo = new GameObject("AvatarCreator", typeof(RectTransform));
+            avatarGo.transform.SetParent(safe.transform, false);
+            var avatarRect = (RectTransform)avatarGo.transform;
+            avatarRect.anchorMin = Vector2.zero;
+            avatarRect.anchorMax = Vector2.one;
+            avatarRect.offsetMin = Vector2.zero;
+            avatarRect.offsetMax = Vector2.zero;
+            avatarGo.AddComponent<UI.AvatarCreator>();
             var finaleGo = new GameObject("Finale", typeof(RectTransform));
             finaleGo.transform.SetParent(safe.transform, false);
             var finaleRect = (RectTransform)finaleGo.transform;

@@ -300,7 +300,7 @@ namespace UtsavNights.UI
             // First-launch tip.
             _tip = UiKit.Rect("QuietTip", transform);
             _tip.anchorMin = new Vector2(0.06f, 1f);
-            _tip.anchorMax = new Vector2(0.82f, 1f);
+            _tip.anchorMax = new Vector2(0.7f, 1f); // clear of the avatar and settings buttons
             _tip.pivot = new Vector2(0f, 1f);
             _tip.sizeDelta = new Vector2(0f, 150f);
             _tip.anchoredPosition = new Vector2(0f, -24f);

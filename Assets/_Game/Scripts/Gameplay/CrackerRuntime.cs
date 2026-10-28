@@ -442,6 +442,10 @@ namespace UtsavNights.Gameplay
             _haptics?.Play(stage.haptic);
             _effects?.FlashStage(stage, definition, position);
             ApplyCameraCue(stage, position);
+            if (stage.payoff && cue.Repeat == 0)
+            {
+                Game.Events.Publish(new PayoffStartedEvent(definition.Id, transform.position));
+            }
         }
 
         private void ApplyCameraCue(StageDefinition stage, Vector3 position)
