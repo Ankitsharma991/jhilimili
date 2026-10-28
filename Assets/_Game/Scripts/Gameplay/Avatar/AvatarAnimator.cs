@@ -19,6 +19,8 @@ namespace UtsavNights.Gameplay
         private float _time;
         private float _fade = 1f;
         private bool _walking;
+        private bool _longHem;
+        private AvatarProfile _hemProfile;
 
         public AvatarClip Clip { get; private set; } = AvatarClip.Idle;
 
@@ -67,7 +69,13 @@ namespace UtsavNights.Gameplay
             }
 
             AnimationStyle style = _view.Profile != null ? _view.Profile.animationStyle : AnimationStyle.Calm;
-            AvatarMotion.Evaluate(Clip, _time, style, _target);
+            if (!ReferenceEquals(_view.Profile, _hemProfile))
+            {
+                _hemProfile = _view.Profile;
+                _longHem = _hemProfile != null && AvatarMotion.HasLongHem(_hemProfile);
+            }
+
+            AvatarMotion.Evaluate(Clip, _time, style, _target, _longHem);
             if (_fade < 1f)
             {
                 _fade = Mathf.Min(1f, _fade + deltaSeconds / FadeSeconds);

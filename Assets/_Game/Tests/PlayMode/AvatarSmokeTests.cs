@@ -74,7 +74,7 @@ namespace UtsavNights.Tests.PlayMode
             var root = new GameObject("AvatarTestRoot");
             try
             {
-                AvatarView view = AvatarView.Create(root.transform, AvatarPresets.All[1]);
+                AvatarView view = AvatarView.Create(root.transform, AvatarPresets.All[4]); // t-shirt, jeans, hoodie
                 var animator = view.gameObject.AddComponent<AvatarAnimator>();
                 yield return null;
                 Assert.AreEqual(AvatarClip.Idle, animator.Clip);
@@ -83,6 +83,12 @@ namespace UtsavNights.Tests.PlayMode
                 animator.Sample(AvatarClip.Ignite, 0.9f);
                 Assert.Less(view.Bone(AvatarSkeleton.Hips).localPosition.y, view.HipsBase.y - 0.15f, "crouched");
                 Assert.Greater(Quaternion.Angle(Quaternion.identity, view.Bone(AvatarSkeleton.RightUpperArm).localRotation), 40f, "reaching");
+
+                // In a sari the gesture bows from the waist instead of squatting (the clipping check's finding).
+                view.Apply(AvatarPresets.All[1]);
+                animator.Sample(AvatarClip.Ignite, 0.9f);
+                Assert.Greater(view.Bone(AvatarSkeleton.Hips).localPosition.y, view.HipsBase.y - 0.05f, "no deep squat in a long hem");
+                Assert.Greater(Quaternion.Angle(Quaternion.identity, view.Bone(AvatarSkeleton.Spine).localRotation), 30f, "bows from the waist");
 
                 animator.Play(AvatarClip.Ignite);
                 animator.SetWalking(true);

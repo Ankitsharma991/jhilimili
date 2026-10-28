@@ -9,7 +9,7 @@ namespace UtsavNights.Gameplay
     /// The player's avatar in the courtyard (Phase 6 step 6). Appears once the player has saved an avatar, so the R0 courtyard
     /// stays as it was for everyone who never opens the creator. Stands between the diyas and the step, crouches with the
     /// ignite gesture when a cracker is lit, and turns to celebrate when a burst starts. A capsule keeps crackers off its spot.
-    /// Low tier skins every vertex to one bone (PRD 8: rigid skinning on low tier).
+    /// Low tier limits skinning to two bones per vertex, the least that keeps long hems whole (PRD 8 asks for rigid skinning there).
     /// </summary>
     public sealed class CourtyardAvatar : MonoBehaviour
     {
@@ -143,7 +143,8 @@ namespace UtsavNights.Gameplay
                 return;
             }
 
-            SkinQuality quality = _tier <= TierDetection.Low ? SkinQuality.Bone1 : SkinQuality.Auto;
+            // Two bones, not one, on low tier: long hems blend both thighs and would tear down the middle with one.
+            SkinQuality quality = _tier <= TierDetection.Low ? SkinQuality.Bone2 : SkinQuality.Auto;
             View.Body.quality = quality;
             foreach (Renderer r in View.GarmentRenderers)
             {

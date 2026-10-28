@@ -87,7 +87,7 @@ namespace UtsavNights.Tests.PlayMode
             Assert.IsTrue(Game.Services.TryGet(out QualityManager quality));
             quality.SetTierManually(TierDetection.Low);
             yield return null;
-            Assert.AreEqual(SkinQuality.Bone1, _courtyard.View.Body.quality);
+            Assert.AreEqual(SkinQuality.Bone2, _courtyard.View.Body.quality);
             quality.SetTierManually(TierDetection.High);
             yield return null;
             Assert.AreEqual(SkinQuality.Auto, _courtyard.View.Body.quality);

@@ -43,30 +43,4 @@ namespace UtsavNights.Gameplay
             Game.Events.Publish(new AvatarSavedEvent(fromPreset, Current.outfit.Count));
         }
     }
-
-    /// <summary>Creates the <see cref="ProfileService"/> for the scene.</summary>
-    [DefaultExecutionOrder(-130)]
-    public sealed class AvatarInstaller : MonoBehaviour
-    {
-        private bool _owner;
-
-        private void Awake()
-        {
-            if (Game.Services.IsRegistered<ProfileService>())
-            {
-                return;
-            }
-
-            _owner = true;
-            Game.Services.Register(new ProfileService(new ProfileStore()));
-        }
-
-        private void OnDestroy()
-        {
-            if (_owner)
-            {
-                Game.Services.Unregister<ProfileService>();
-            }
-        }
-    }
 }

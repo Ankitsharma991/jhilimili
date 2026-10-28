@@ -80,20 +80,38 @@ namespace UtsavNights.Core.Avatar
             _ => IdleCycle,
         };
 
-        public static void Evaluate(AvatarClip clip, float time, AnimationStyle style, AvatarPose pose)
+        /// <summary>
+        /// True when the outfit has a long hem (sari, lehenga, robe, kurta, sherwani). The clips then move the way people do in
+        /// them: shorter strides, a bow from the waist instead of a squat, a hop without deep knee bends. Two-bone skinning can't
+        /// drape cloth over bent knees, and the clipping check (Phase 6 step 7) found legs pushing through hems in a full squat.
+        /// </summary>
+        public static bool HasLongHem(AvatarProfile profile)
+        {
+            foreach (EquippedItem item in profile.outfit)
+            {
+                if (GarmentGenerator.FollowsLegs(item.id))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static void Evaluate(AvatarClip clip, float time, AnimationStyle style, AvatarPose pose, bool longHem = false)
         {
             pose.Clear();
             float energy = style == AnimationStyle.Lively ? 1.6f : 1f;
             switch (clip)
             {
                 case AvatarClip.Walk:
-                    Walk(time, energy, pose);
+                    Walk(time, energy, pose, longHem);
                     break;
                 case AvatarClip.Ignite:
-                    Ignite(time, energy, pose);
+                    Ignite(time, energy, pose, longHem);
                     break;
                 case AvatarClip.Celebrate:
-                    Celebrate(time, energy, style, pose);
+                    Celebrate(time, energy, style, pose, longHem);
                     break;
                 default:
                     Idle(time, energy, pose);
@@ -116,10 +134,10 @@ namespace UtsavNights.Core.Avatar
         }
 
         /// <summary>A walking gait in place (moving the avatar through the world is Phase 8).</summary>
-        private static void Walk(float t, float energy, AvatarPose p)
+        private static void Walk(float t, float energy, AvatarPose p, bool longHem)
         {
             float phase = t / WalkCycle * 2f * (float)Math.PI;
-            float swing = 24f * Math.Min(1.25f, energy);
+            float swing = (longHem ? 14f : 24f) * Math.Min(1.25f, energy);
             float s = (float)Math.Sin(phase);
             float left = s, right = -s;
 
@@ -127,8 +145,9 @@ namespace UtsavNights.Core.Avatar
             p.X[AvatarSkeleton.RightUpperLeg] = -swing * right;
 
             // The knee bends while the leg swings forward through the air.
-            p.X[AvatarSkeleton.LeftLowerLeg] = 40f * Math.Max(0f, (float)Math.Sin(phase + 1.2f));
-            p.X[AvatarSkeleton.RightLowerLeg] = 40f * Math.Max(0f, (float)Math.Sin(phase + 1.2f + Math.PI));
+            float kneeLift = longHem ? 22f : 40f;
+            p.X[AvatarSkeleton.LeftLowerLeg] = kneeLift * Math.Max(0f, (float)Math.Sin(phase + 1.2f));
+            p.X[AvatarSkeleton.RightLowerLeg] = kneeLift * Math.Max(0f, (float)Math.Sin(phase + 1.2f + Math.PI));
             p.X[AvatarSkeleton.LeftFoot] = -0.3f * (p.X[AvatarSkeleton.LeftUpperLeg] + p.X[AvatarSkeleton.LeftLowerLeg]);
             p.X[AvatarSkeleton.RightFoot] = -0.3f * (p.X[AvatarSkeleton.RightUpperLeg] + p.X[AvatarSkeleton.RightLowerLeg]);
 
@@ -149,10 +168,12 @@ namespace UtsavNights.Core.Avatar
         /// Lower and lean in (0 to 0.55 s), hold the lighter at the fuse (to 1.35 s), stand back up (to 1.9 s). The hips drop exactly
         /// as much as the bent legs shorten, so the feet stay on the floor.
         /// </summary>
-        private static void Ignite(float t, float energy, AvatarPose p)
+        private static void Ignite(float t, float energy, AvatarPose p, bool longHem)
         {
             float down = Ease(Clamp01(t / 0.55f)) * (1f - Ease(Clamp01((t - 1.35f) / 0.55f)));
-            float hip = -55f * down, knee = 95f * down;
+
+            // A long hem bows from the waist with soft knees; otherwise a full squat.
+            float hip = (longHem ? -12f : -55f) * down, knee = (longHem ? 24f : 95f) * down;
             foreach (int leg in new[] { AvatarSkeleton.LeftUpperLeg, AvatarSkeleton.RightUpperLeg })
             {
                 p.X[leg] = hip;
@@ -164,13 +185,13 @@ namespace UtsavNights.Core.Avatar
             p.X[AvatarSkeleton.RightFoot] = -(hip + knee);
             p.HipsOffset = new V3(0f, -CrouchDrop(hip, knee), -0.08f * down);
 
-            p.X[AvatarSkeleton.Spine] = 22f * down;
-            p.X[AvatarSkeleton.Chest] = 10f * down;
+            p.X[AvatarSkeleton.Spine] = (longHem ? 36f : 22f) * down;
+            p.X[AvatarSkeleton.Chest] = (longHem ? 22f : 10f) * down;
             p.X[AvatarSkeleton.Head] = 12f * down;
 
             // Right arm reaches forward and down to the fuse; a small flick while holding, as the flame catches.
             float flick = t > 0.55f && t < 1.35f ? 3f * Sin(t - 0.55f, 2.5f) * energy : 0f;
-            p.X[AvatarSkeleton.RightUpperArm] = -62f * down + flick;
+            p.X[AvatarSkeleton.RightUpperArm] = (longHem ? -48f : -62f) * down + flick;
             p.Z[AvatarSkeleton.RightUpperArm] = 8f * down;
             p.X[AvatarSkeleton.RightLowerArm] = -18f * down;
             p.X[AvatarSkeleton.LeftUpperArm] = -10f * down;
@@ -179,7 +200,7 @@ namespace UtsavNights.Core.Avatar
         }
 
         /// <summary>Arms up and a hop at the burst; lively avatars hop twice and raise their arms higher.</summary>
-        private static void Celebrate(float t, float energy, AnimationStyle style, AvatarPose p)
+        private static void Celebrate(float t, float energy, AnimationStyle style, AvatarPose p, bool longHem)
         {
             float up = Ease(Clamp01(t / 0.35f)) * (1f - Ease(Clamp01((t - 1.25f) / 0.45f)));
             float raise = style == AnimationStyle.Lively ? 150f : 115f;
@@ -203,7 +224,7 @@ namespace UtsavNights.Core.Avatar
             }
 
             float height = 0.07f * Math.Min(1.3f, energy) * hop;
-            float bend = 25f * (1f - hop) * up;
+            float bend = (longHem ? 8f : 25f) * (1f - hop) * up;
             p.X[AvatarSkeleton.LeftUpperLeg] = -bend;
             p.X[AvatarSkeleton.RightUpperLeg] = -bend;
             p.X[AvatarSkeleton.LeftLowerLeg] = bend * 1.8f;

@@ -79,26 +79,27 @@ namespace UtsavNights.Core.Avatar
                     Pants(m, s, BaseGap, 6, t => t > 0.75f ? 1f + 0.12f * (float)Math.Abs(Math.Sin(t * 60f)) : 1f);
                     break;
                 case "salwar":
-                    Pants(m, s, BaseGap, 6, t => 1f + 0.8f * (float)Math.Sin(Math.PI * Math.Min(1f, t * 1.15f)));
+                    // Loose garments stay slim above the knee, where a kurta or daura hem covers them, and billow below it.
+                    Pants(m, s, BaseGap, 6, t => t < 0.45f ? 1.15f : 1f + 0.75f * (float)Math.Sin(Math.PI * Math.Min(1f, (t - 0.3f) / 0.75f)));
                     break;
                 case "suruwal":
-                    Pants(m, s, BaseGap, 6, t => t < 0.45f ? 1.55f - 0.55f * t / 0.45f : 1f);
+                    Pants(m, s, BaseGap, 6, t => t < 0.45f ? 1.12f : 1f);
                     break;
                 case "dhoti":
-                    Pants(m, s, BaseGap, 5, t => 1.75f - 0.3f * t);
+                    Pants(m, s, BaseGap, 5, t => t < 0.45f ? 1.12f : 1.55f - 0.2f * t);
                     Ribbon(m, Trim, new[] { new V3(0f, 0.98f, 0.13f), new V3(0f, 0.7f, 0.17f), new V3(0f, 0.42f, 0.16f) }, 0.05f, 0.005f, new[] { H, H, H }, s, BaseGap);
                     break;
                 case "lehenga":
-                    Skirt(m, s, BaseGap, BodyGenerator.TorsoWaist, 0.04f, 1.95f, trimHem: true);
+                    Skirt(m, s, BaseGap, BodyGenerator.TorsoWaist, 0.08f, 1.95f, trimHem: true);
                     break;
                 case "long_skirt":
-                    Skirt(m, s, BaseGap, BodyGenerator.TorsoWaist, 0.08f, 1.35f, trimHem: false);
+                    Skirt(m, s, BaseGap, BodyGenerator.TorsoWaist, 0.1f, 1.35f, trimHem: false);
                     break;
                 case "shorts":
                     Pants(m, s, BaseGap, 2, t => 1.15f);
                     break;
                 case "sari_nivi":
-                    Skirt(m, s, BaseGap, BodyGenerator.TorsoWaist, 0.03f, 1.25f, trimHem: true);
+                    Skirt(m, s, BaseGap, BodyGenerator.TorsoWaist, 0.08f, 1.25f, trimHem: true);
                     Ribbon(m, Trim, new[] { new V3(0.02f, 0.98f, 0.14f), new V3(0.02f, 0.5f, 0.17f), new V3(0.02f, 0.05f, 0.2f) }, 0.035f, 0.006f, new[] { H, H, H }, s, BaseGap + 0.004f);
                     Ribbon(m, Main, new[]
                     {
@@ -107,7 +108,7 @@ namespace UtsavNights.Core.Avatar
                     }, 0.11f, 0.004f, new[] { H, S, C, C, C, S }, s, MidGap);
                     break;
                 case "sari_seedha":
-                    Skirt(m, s, BaseGap, BodyGenerator.TorsoWaist, 0.03f, 1.25f, trimHem: true);
+                    Skirt(m, s, BaseGap, BodyGenerator.TorsoWaist, 0.08f, 1.25f, trimHem: true);
                     Ribbon(m, Main, new[]
                     {
                         new V3(-0.15f, 1.0f, -0.12f), new V3(-0.02f, 1.3f, -0.14f), new V3(0.12f, 1.44f, -0.05f), new V3(0.13f, 1.45f, 0.06f),
@@ -115,10 +116,11 @@ namespace UtsavNights.Core.Avatar
                     }, 0.11f, 0.004f, new[] { H, S, C, C, C, S }, s, MidGap);
                     break;
                 case "abaya":
-                    Top(m, s, BaseGap, BodyGenerator.TorsoHips, Sleeve.Long, hemY: 0.03f, flare: 1.25f);
+                    // Long hems end just above the shoes (about 8 cm): the feet show beneath instead of the toes poking through.
+                    Top(m, s, BaseGap, BodyGenerator.TorsoHips, Sleeve.Long, hemY: 0.08f, flare: 1.25f);
                     break;
                 case "thobe":
-                    Top(m, s, BaseGap, BodyGenerator.TorsoHips, Sleeve.Long, hemY: 0.05f, flare: 1.12f);
+                    Top(m, s, BaseGap, BodyGenerator.TorsoHips, Sleeve.Long, hemY: 0.08f, flare: 1.12f);
                     Neckline(m, s, BaseGap);
                     break;
                 case "nehru_jacket":
@@ -132,16 +134,17 @@ namespace UtsavNights.Core.Avatar
                 case "dupatta":
                     Ribbon(m, Main, new[]
                     {
-                        new V3(-0.12f, 0.95f, 0.15f), new V3(-0.11f, 1.3f, 0.13f), new V3(-0.1f, 1.45f, 0.02f), new V3(0f, 1.47f, -0.09f),
-                        new V3(0.1f, 1.45f, 0.02f), new V3(0.11f, 1.3f, 0.13f), new V3(0.12f, 0.95f, 0.15f),
-                    }, 0.075f, 0.004f, new[] { S, C, C, C, C, C, S }, s, MidGap + 0.004f);
+                        new V3(-0.12f, 0.95f, 0.15f), new V3(-0.115f, 1.3f, 0.13f), new V3(-0.11f, 1.47f, 0.035f), new V3(0f, 1.48f, -0.09f),
+                        new V3(0.11f, 1.47f, 0.035f), new V3(0.115f, 1.3f, 0.13f), new V3(0.12f, 0.95f, 0.15f),
+                    }, 0.065f, 0.004f, new[] { H, C, C, C, C, C, H }, s, MidGap + 0.014f);
                     break;
                 case "blazer":
                     Top(m, s, OuterGap, BodyGenerator.TorsoHips, Sleeve.Long, hemY: 0.8f);
                     Buttons(m, s, 0.95f, 1.15f, OuterGap, 2);
                     break;
                 case "sherwani":
-                    Top(m, s, OuterGap, BodyGenerator.TorsoHips, Sleeve.Long, hemY: 0.5f, trimHem: true);
+                    // A little more flare than the kurta it covers, so the inner hem stays inside when bowing.
+                    Top(m, s, OuterGap, BodyGenerator.TorsoHips, Sleeve.Long, hemY: 0.5f, flare: 1.26f, trimHem: true);
                     Buttons(m, s, 0.95f, 1.42f, OuterGap, 7);
                     Neckline(m, s, OuterGap);
                     break;
@@ -246,7 +249,7 @@ namespace UtsavNights.Core.Avatar
                 rings.Add(torso[r]);
             }
 
-            BodyGenerator.Loft(m, Main, rings, 16, capStart: false, capEnd: true);
+            BodyGenerator.Loft(m, Main, rings, 16, capStart: false, capEnd: true, tag: "top");
             if (trimHem)
             {
                 Ring hem = rings[0];
@@ -266,7 +269,7 @@ namespace UtsavNights.Core.Avatar
                         sleeveRings.Add(r == last && sleeve == Sleeve.Short ? Grow(a[r], 0.006f, 0f) : a[r]);
                     }
 
-                    BodyGenerator.Loft(m, Main, sleeveRings, 10, capStart: false, capEnd: false);
+                    BodyGenerator.Loft(m, Main, sleeveRings, 10, capStart: false, capEnd: false, tag: "sleeve");
                 }
             }
         }
@@ -283,7 +286,7 @@ namespace UtsavNights.Core.Avatar
             BodyGenerator.Loft(m, Main, new[]
             {
                 Scale(torso[BodyGenerator.TorsoCrotch], seat), Scale(torso[BodyGenerator.TorsoHips], Math.Max(1f, seat * 0.97f)), torso[BodyGenerator.TorsoWaist],
-            }, 16, capStart: true, capEnd: false);
+            }, 16, capStart: true, capEnd: false, tag: "seat");
             foreach (int leg in new[] { BodyGenerator.PartLeftLeg, BodyGenerator.PartRightLeg })
             {
                 List<Ring> l = parts[leg];
@@ -293,7 +296,7 @@ namespace UtsavNights.Core.Avatar
                     rings.Add(Scale(l[r], loose(r / 6f)));
                 }
 
-                BodyGenerator.Loft(m, Main, rings, 10, capStart: false, capEnd: false);
+                BodyGenerator.Loft(m, Main, rings, 10, capStart: false, capEnd: false, tag: "leg");
             }
         }
 
@@ -317,7 +320,7 @@ namespace UtsavNights.Core.Avatar
 
             rings.Add(Grow(hips, gap * 0.5f, 0f));
             rings.Add(waist);
-            BodyGenerator.Loft(m, Main, rings, 18, capStart: false, capEnd: false);
+            BodyGenerator.Loft(m, Main, rings, 18, capStart: false, capEnd: false, tag: "skirt");
             if (trimHem)
             {
                 BodyGenerator.Loft(m, Trim, new[] { Grow(rings[0], 0.003f, 0f), Grow(rings[0], 0.003f, 0.05f) }, 18, false, false);
@@ -340,7 +343,7 @@ namespace UtsavNights.Core.Avatar
                 rings.Add(new Ring { Center = fitted, Axis = axis, Side = halfWidth, Depth = thickness, BoneA = bones[i], BoneB = bones[i], Region = BodyRegion.None });
             }
 
-            BodyGenerator.Loft(m, submesh, rings, 6, capStart: true, capEnd: true);
+            BodyGenerator.Loft(m, submesh, rings, 6, capStart: true, capEnd: true, tag: "ribbon");
         }
 
         private static void Neckline(MeshData m, BodyShape s, float gap)
@@ -383,7 +386,7 @@ namespace UtsavNights.Core.Avatar
             foreach (int foot in new[] { BodyGenerator.PartLeftFoot, BodyGenerator.PartRightFoot })
             {
                 List<Ring> f = parts[foot];
-                BodyGenerator.Loft(m, Main, f, 10, capStart: true, capEnd: true);
+                BodyGenerator.Loft(m, Main, f, 10, capStart: true, capEnd: true, tag: "foot");
                 int bone = f[0].BoneA;
                 float x = f[1].Center.X;
                 HeadGenerator.Blob(m, Trim, new V3(x, sole * 0.5f, 0.06f), new V3(0.05f, sole * 0.5f + 0.002f, 0.12f), 3, 10, -1, bone);
@@ -513,12 +516,15 @@ namespace UtsavNights.Core.Avatar
         };
 
         /// <summary>
-        /// Lets a long hem move with the walking legs (PRD 8: rigid skinning, no cloth chains, on the low tier): below the crotch
-        /// each vertex takes a share of the nearer thigh's motion, growing towards the hem and towards the sides, so the fabric
-        /// swings with the stride instead of the legs pushing through it.
+        /// Lets a long hem move with the legs (PRD 8: rigid two-bone skinning, no cloth chains on low and mid tiers). Just below
+        /// the crotch a vertex blends from the hips towards the nearer thigh; lower down it follows a mix of both thighs by its
+        /// side position, so the front and back centre move with the average of the legs. That equals the hips when walking
+        /// (the legs swing opposite ways) and swings forward with both legs in a crouch, so the legs stay inside the hem.
+        /// Found by the clipping check: with the centre on the hips alone, walking legs pushed 8 to 14 cm through the front.
         /// </summary>
         public static void FollowLegs(MeshData m, float topY = 0.84f, float bottomY = 0.1f)
         {
+            const float split = 0.2f, shins = 0.62f;
             for (int i = 0; i < m.VertexCount; i++)
             {
                 V3 p = m.Positions[i];
@@ -528,9 +534,21 @@ namespace UtsavNights.Core.Avatar
                 }
 
                 float low = Math.Max(0f, Math.Min(1f, (topY - p.Y) / (topY - bottomY)));
-                float sideways = Math.Max(0f, Math.Min(1f, Math.Abs(p.X) / 0.09f));
-                m.BoneB[i] = p.X < 0f ? AvatarSkeleton.LeftUpperLeg : AvatarSkeleton.RightUpperLeg;
-                m.WeightB[i] = 0.8f * (float)Math.Sqrt(low) * sideways;
+                if (low < split)
+                {
+                    float sideways = Math.Max(0f, Math.Min(1f, Math.Abs(p.X) / 0.09f));
+                    m.BoneB[i] = p.X < 0f ? AvatarSkeleton.LeftUpperLeg : AvatarSkeleton.RightUpperLeg;
+                    m.WeightB[i] = 0.8f * (float)Math.Sqrt(low / split) * sideways;
+                }
+                else
+                {
+                    // Below the knee the hem hangs with the shins, so it doesn't swing forward with the thighs in a bow.
+                    float t = Math.Max(0f, Math.Min(1f, (p.X + 0.12f) / 0.24f));
+                    bool shin = low >= shins;
+                    m.BoneA[i] = shin ? AvatarSkeleton.LeftLowerLeg : AvatarSkeleton.LeftUpperLeg;
+                    m.BoneB[i] = shin ? AvatarSkeleton.RightLowerLeg : AvatarSkeleton.RightUpperLeg;
+                    m.WeightB[i] = t * t * (3f - 2f * t);
+                }
             }
         }
 
@@ -540,8 +558,9 @@ namespace UtsavNights.Core.Avatar
             BodyGenerator.Factors(s, out float _, out float _, out float _, out float limb);
             float leg = limb * (s.Style > 1f ? 1f + 0.08f * (s.Style - 1f) : 1f);
             float hp = 1f + 0.12f * s.Hips;
-            side = 0.09f + 0.008f * Math.Abs(s.Hips) + 0.088f * leg * hp + 0.018f;
-            depth = 0.092f * leg + 0.025f;
+            // Margins leave room for loose trousers under a tunic while walking (clipping check, Phase 6 step 7).
+            side = 0.09f + 0.008f * Math.Abs(s.Hips) + 0.088f * leg * hp + 0.04f;
+            depth = 0.092f * leg + 0.035f;
         }
 
         private static Ring Upright(V3 center, float side, float depth, int bone) =>

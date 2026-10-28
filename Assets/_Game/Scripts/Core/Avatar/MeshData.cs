@@ -75,6 +75,28 @@ namespace UtsavNights.Core.Avatar
 
         public readonly List<KeyValuePair<string, V3[]>> BlendShapes = new List<KeyValuePair<string, V3[]>>();
 
+        /// <summary>
+        /// Every lofted cross-section: first vertex, vertex count and a tag ("leg", "foot", "hem", "ribbon", ...). The clipping
+        /// check (Phase 6 step 7) uses them to find hems, legs and drapes after posing.
+        /// </summary>
+        public readonly List<Loop> Loops = new List<Loop>();
+
+        public readonly struct Loop
+        {
+            public Loop(int start, int count, string tag)
+            {
+                Start = start;
+                Count = count;
+                Tag = tag;
+            }
+
+            public int Start { get; }
+
+            public int Count { get; }
+
+            public string Tag { get; }
+        }
+
         public int VertexCount => Positions.Count;
 
         public int AddVertex(V3 position, V3 normal, float u, float v, int boneA, int boneB = -1, float weightB = 0f)

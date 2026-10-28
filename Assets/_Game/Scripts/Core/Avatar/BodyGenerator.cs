@@ -123,9 +123,10 @@ namespace UtsavNights.Core.Avatar
         public static MeshData Generate(BodyShape shape)
         {
             var mesh = new MeshData();
-            foreach (List<Ring> part in Parts(shape, 0f))
+            List<List<Ring>> parts = Parts(shape, 0f);
+            for (int i = 0; i < parts.Count; i++)
             {
-                Loft(mesh, SkinSubmesh, part, Segments(part), capStart: true, capEnd: true);
+                Loft(mesh, SkinSubmesh, parts[i], Segments(parts[i]), capStart: true, capEnd: true, tag: PartTag(i));
             }
 
             return mesh;
@@ -234,6 +235,13 @@ namespace UtsavNights.Core.Avatar
             limb = shape.Style < 1f ? Lerp(0.85f, 1f, shape.Style) : Lerp(1f, 1.3f, shape.Style - 1f);
         }
 
+        /// <summary>Loop tag for a body part: torso, arm, hand, leg or foot.</summary>
+        public static string PartTag(int part) => part == PartTorso ? "torso"
+            : part == PartLeftArm || part == PartRightArm ? "arm"
+            : part == PartLeftHand || part == PartRightHand ? "hand"
+            : part == PartLeftLeg || part == PartRightLeg ? "leg"
+            : "foot";
+
         /// <summary>Indices of the parts returned by <see cref="Parts"/>.</summary>
         public const int PartTorso = 0, PartLeftArm = 1, PartLeftHand = 2, PartLeftLeg = 3, PartLeftFoot = 4;
         public const int PartRightArm = 5, PartRightHand = 6, PartRightLeg = 7, PartRightFoot = 8;
@@ -243,11 +251,16 @@ namespace UtsavNights.Core.Avatar
         public const int TorsoUpperChest = 6, TorsoShoulderTop = 7, TorsoNeck = 8, TorsoNeckTop = 9;
 
         /// <summary>Rings around a part, with caps; ring vertices repeat the first at the seam so uvs wrap cleanly.</summary>
-        public static void Loft(MeshData mesh, int submesh, IReadOnlyList<Ring> rings, int segments, bool capStart, bool capEnd)
+        public static void Loft(MeshData mesh, int submesh, IReadOnlyList<Ring> rings, int segments, bool capStart, bool capEnd, string tag = null)
         {
             int start = mesh.VertexCount;
             for (int r = 0; r < rings.Count; r++)
             {
+                if (tag != null)
+                {
+                    mesh.Loops.Add(new MeshData.Loop(start + r * (segments + 1), segments + 1, tag));
+                }
+
                 Ring ring = rings[r];
                 Frame(ring.Axis, out V3 side, out V3 front);
                 for (int j = 0; j <= segments; j++)
