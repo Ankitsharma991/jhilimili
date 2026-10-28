@@ -92,6 +92,12 @@ mkdir -p mono && cp "$NUNIT" mono/
 "${MCSC[@]}" -out:mono/CoreTests.exe -r:mono/Core.dll -r:mono/nunit.framework.dll "$HERE/CoreTestRunner.cs" \
   "$A"/Tests/EditMode/{RollingStatsTests,IgnitionHoldTrackerTests,SpikeMathTests,ProceduralSoundsTests,CrackerStateMachineTests,CoreServicesTests,EffectsMathTests,AudioMathTests,HapticWaveformTests,LighterModelTests,CameraTimingTests,QualityGovernorTests,PlaytestSessionTests,GameSettingsTests,PlacementRulesTests,StageMathTests,ScreenFitTests,FinaleScheduleTests,BlindSoundTestTests,AdPolicyTests,PlayerProgressTests,ConsentRulesTests,EntitlementsTests,AnalyticsSchemaTests,AdAuditTests,ReleaseChecksTests,ImportRulesTests,StartupTimelineTests,ReviewPolicyTests,StoreArtPainterTests,EnvironmentPainterTests}.cs
 "$MONO" mono/CoreTests.exe
+if [ -n "${FIREBASE_SDK:-}" ]; then
+  # Optional: FIREBASE_SDK=folder with the unpacked com.google.firebase.{app,analytics,crashlytics} tgz files.
+  step "UtsavNights.Firebase against the Firebase SDK in $FIREBASE_SDK"
+  FB=$(find "$FIREBASE_SDK" -path "*Firebase/Plugins/*.dll" -not -path "*/iOS/*" -not -path "*/x86_64/*" -not -path "*Editor*" | sed 's/^/-r:/')
+  "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Firebase.dll @engine.rsp -r:"$D/NetStandard/compat/2.1.0/shims/netfx/mscorlib.dll" $FB -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Gameplay.dll -define:"$RUNTIME;UTSAV_FIREBASE" "$A"/Scripts/Sdk/Firebase/*.cs
+fi
 step "Tool self-tests"
 python3 "$HERE/../metrics_report.py" --self-test
 echo "All project assemblies compiled."

@@ -1,0 +1,25 @@
+{
+    "name": "UtsavNights.Firebase",
+    "rootNamespace": "UtsavNights.FirebaseSdk",
+    "references": [
+        "UtsavNights.Core",
+        "UtsavNights.Gameplay"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UTSAV_FIREBASE"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.google.firebase.crashlytics",
+            "expression": "14.0.0",
+            "define": "UTSAV_FIREBASE"
+        }
+    ],
+    "noEngineReferences": false
+}

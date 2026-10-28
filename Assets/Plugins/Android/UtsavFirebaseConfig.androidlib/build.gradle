@@ -1,0 +1,16 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'com.ankitsharma.utsavnights.firebaseconfig'
+    compileSdk 36
+    defaultConfig {
+        minSdk 26
+    }
+
+    // Unity's .androidlib keeps the manifest at the library root; Gradle's default is src/main.
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+        }
+    }
+}

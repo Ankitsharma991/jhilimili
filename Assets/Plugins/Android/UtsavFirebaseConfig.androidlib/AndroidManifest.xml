@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Firebase collects nothing until the game turns it on after consent and the "Share usage statistics"
+     setting (Phase 5, Docs/Phase5/FIREBASE.md). Inert while Firebase is not installed. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
+    <meta-data android:name="firebase_crashlytics_collection_enabled" android:value="false" />
+    <meta-data android:name="google_analytics_default_allow_analytics_storage" android:value="false" />
+    <meta-data android:name="google_analytics_default_allow_ad_storage" android:value="false" />
+    <meta-data android:name="google_analytics_default_allow_ad_user_data" android:value="false" />
+    <meta-data android:name="google_analytics_default_allow_ad_personalization_signals" android:value="false" />
+  </application>
+</manifest>

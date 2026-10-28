@@ -81,3 +81,10 @@ post-processing). Fixed by:
 
 The shared spark glow is now uncompressed (16 KB). The fireworks effects themselves were tuned in the Phase 2
 feel tests and are unchanged.
+
+## Firebase ready to switch on (2026-10-28)
+
+Analytics and Crashlytics backends written against Firebase Unity SDK 14.1.0 and compile-checked against the real
+DLLs. Not installed yet: they compile only once the packages are in. The "collection off at launch" manifest flags
+are already in every APK. What remains is your `google-services.json`; the steps for both sides are in
+[FIREBASE.md](FIREBASE.md).
