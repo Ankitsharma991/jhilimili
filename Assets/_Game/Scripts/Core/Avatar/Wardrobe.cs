@@ -129,7 +129,7 @@ namespace UtsavNights.Core.Avatar
             new GarmentInfo("tshirt", "T-shirt", WardrobeSlot.BaseTop, BodyRegion.Torso | BodyRegion.UpperArms, Occasion.Everyday | Occasion.Street, Inspiration.Western, 6),
             new GarmentInfo("shirt", "Shirt", WardrobeSlot.BaseTop, BodyRegion.Torso | BodyRegion.Arms, Occasion.Formal | Occasion.Everyday, Inspiration.Western, 5),
             new GarmentInfo("kurta", "Kurta", WardrobeSlot.BaseTop, BodyRegion.Torso | BodyRegion.Arms | BodyRegion.Hips | BodyRegion.UpperLegs, Occasion.Festive | Occasion.Everyday, Inspiration.SouthAsian, 6),
-            new GarmentInfo("short_kurta", "Short kurta", WardrobeSlot.BaseTop, BodyRegion.Torso | BodyRegion.Arms | BodyRegion.Hips, Occasion.Everyday | Occasion.Street, Inspiration.SouthAsian, 6),
+            new GarmentInfo("short_kurta", "Short kurta", WardrobeSlot.BaseTop, BodyRegion.Torso | BodyRegion.UpperArms | BodyRegion.Hips, Occasion.Everyday | Occasion.Street, Inspiration.SouthAsian, 6),
             new GarmentInfo("choli", "Choli blouse", WardrobeSlot.BaseTop, BodyRegion.Chest | BodyRegion.UpperArms, Occasion.Festive | Occasion.Wedding, Inspiration.SouthAsian, 5),
             new GarmentInfo("daura", "Daura", WardrobeSlot.BaseTop, BodyRegion.Torso | BodyRegion.Arms | BodyRegion.Hips | BodyRegion.UpperLegs, Occasion.Festive | Occasion.Formal, Inspiration.Nepali, 4),
 
@@ -139,14 +139,14 @@ namespace UtsavNights.Core.Avatar
             new GarmentInfo("churidar", "Churidar", WardrobeSlot.BaseBottom, BodyRegion.Hips | BodyRegion.Legs, Occasion.Festive | Occasion.Everyday, Inspiration.SouthAsian, 5),
             new GarmentInfo("salwar", "Salwar", WardrobeSlot.BaseBottom, BodyRegion.Hips | BodyRegion.Legs, Occasion.Everyday | Occasion.Festive, Inspiration.SouthAsian, 5),
             new GarmentInfo("suruwal", "Suruwal", WardrobeSlot.BaseBottom, BodyRegion.Hips | BodyRegion.Legs, Occasion.Festive | Occasion.Formal, Inspiration.Nepali, 3),
-            new GarmentInfo("dhoti", "Dhoti", WardrobeSlot.BaseBottom, BodyRegion.Hips | BodyRegion.Legs, Occasion.Festive | Occasion.Wedding, Inspiration.SouthAsian, 3),
+            new GarmentInfo("dhoti", "Dhoti", WardrobeSlot.BaseBottom, BodyRegion.Hips | BodyRegion.UpperLegs, Occasion.Festive | Occasion.Wedding, Inspiration.SouthAsian, 3),
             new GarmentInfo("lehenga", "Lehenga skirt", WardrobeSlot.BaseBottom, BodyRegion.Hips | BodyRegion.Legs, Occasion.Festive | Occasion.Wedding, Inspiration.SouthAsian, 6),
             new GarmentInfo("long_skirt", "Long skirt", WardrobeSlot.BaseBottom, BodyRegion.Hips | BodyRegion.Legs, Occasion.Everyday | Occasion.Festive, Inspiration.Western | Inspiration.SouthAsian, 5),
             new GarmentInfo("shorts", "Shorts", WardrobeSlot.BaseBottom, BodyRegion.Hips | BodyRegion.UpperLegs, Occasion.Street, Inspiration.Western, 4),
 
             // Full length (top and bottom)
-            new GarmentInfo("sari_nivi", "Sari (pleated front)", WardrobeSlot.BaseBottom | WardrobeSlot.Mid, BodyRegion.Belly | BodyRegion.Hips | BodyRegion.Legs, Occasion.Festive | Occasion.Wedding | Occasion.Everyday, Inspiration.SouthAsian, 6),
-            new GarmentInfo("sari_seedha", "Sari (front pallu)", WardrobeSlot.BaseBottom | WardrobeSlot.Mid, BodyRegion.Belly | BodyRegion.Hips | BodyRegion.Legs, Occasion.Festive | Occasion.Wedding, Inspiration.SouthAsian, 6),
+            new GarmentInfo("sari_nivi", "Sari (pleated front)", WardrobeSlot.BaseBottom | WardrobeSlot.Mid, BodyRegion.Hips | BodyRegion.Legs, Occasion.Festive | Occasion.Wedding | Occasion.Everyday, Inspiration.SouthAsian, 6),
+            new GarmentInfo("sari_seedha", "Sari (front pallu)", WardrobeSlot.BaseBottom | WardrobeSlot.Mid, BodyRegion.Hips | BodyRegion.Legs, Occasion.Festive | Occasion.Wedding, Inspiration.SouthAsian, 6),
             new GarmentInfo("abaya", "Abaya", WardrobeSlot.BaseTop | WardrobeSlot.BaseBottom, BodyRegion.Torso | BodyRegion.Arms | BodyRegion.Hips | BodyRegion.Legs, Occasion.Everyday | Occasion.Formal, Inspiration.WestAsian, 4),
             new GarmentInfo("thobe", "Thobe", WardrobeSlot.BaseTop | WardrobeSlot.BaseBottom, BodyRegion.Torso | BodyRegion.Arms | BodyRegion.Hips | BodyRegion.Legs, Occasion.Everyday | Occasion.Festive | Occasion.Formal, Inspiration.WestAsian, 4),
 
@@ -158,7 +158,7 @@ namespace UtsavNights.Core.Avatar
             // Outer
             new GarmentInfo("blazer", "Blazer", WardrobeSlot.Outer, BodyRegion.Torso | BodyRegion.Arms, Occasion.Formal | Occasion.Wedding, Inspiration.Western, 4),
             new GarmentInfo("sherwani", "Sherwani", WardrobeSlot.Outer, BodyRegion.Torso | BodyRegion.Arms | BodyRegion.Hips | BodyRegion.UpperLegs, Occasion.Wedding | Occasion.Festive | Occasion.Formal, Inspiration.SouthAsian, 5),
-            new GarmentInfo("shawl", "Shawl", WardrobeSlot.Outer, BodyRegion.UpperArms, Occasion.Everyday | Occasion.Festive, Inspiration.SouthAsian | Inspiration.Nepali, 5),
+            new GarmentInfo("shawl", "Shawl", WardrobeSlot.Outer, BodyRegion.None, Occasion.Everyday | Occasion.Festive, Inspiration.SouthAsian | Inspiration.Nepali, 5),
 
             // Headwear
             new GarmentInfo("dhaka_topi", "Dhaka topi", WardrobeSlot.Headwear, BodyRegion.None, Occasion.Festive | Occasion.Everyday | Occasion.Formal, Inspiration.Nepali, 3),
@@ -170,7 +170,7 @@ namespace UtsavNights.Core.Avatar
             // Footwear
             new GarmentInfo("sneakers", "Sneakers", WardrobeSlot.Footwear, BodyRegion.Feet, Occasion.Street | Occasion.Everyday, Inspiration.Western, 5),
             new GarmentInfo("juttis", "Juttis", WardrobeSlot.Footwear, BodyRegion.Feet, Occasion.Festive | Occasion.Wedding, Inspiration.SouthAsian, 4),
-            new GarmentInfo("chappals", "Chappals", WardrobeSlot.Footwear, BodyRegion.Feet, Occasion.Everyday, Inspiration.SouthAsian | Inspiration.Nepali, 4),
+            new GarmentInfo("chappals", "Chappals", WardrobeSlot.Footwear, BodyRegion.None, Occasion.Everyday, Inspiration.SouthAsian | Inspiration.Nepali, 4),
             new GarmentInfo("formal_shoes", "Formal shoes", WardrobeSlot.Footwear, BodyRegion.Feet, Occasion.Formal | Occasion.Wedding, Inspiration.Western, 3),
 
             // Accessories

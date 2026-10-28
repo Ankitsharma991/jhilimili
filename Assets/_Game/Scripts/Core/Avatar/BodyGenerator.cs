@@ -137,12 +137,9 @@ namespace UtsavNights.Core.Avatar
         /// </summary>
         public static List<List<Ring>> Parts(BodyShape shape, float inflate)
         {
-            float w = shape.Style < 1f ? Lerp(0.86f, 1f, shape.Style) : Lerp(1f, 1.32f, shape.Style - 1f);
-            float d = shape.Style < 1f ? Lerp(0.85f, 1f, shape.Style) : Lerp(1f, 1.42f, shape.Style - 1f);
-            float belly = shape.Style < 1f ? d : Lerp(1f, 1.62f, shape.Style - 1f);
+            Factors(shape, out float w, out float d, out float belly, out float limb);
             float sh = 1f + 0.12f * shape.Shoulders;
             float hp = 1f + 0.12f * shape.Hips;
-            float limb = shape.Style < 1f ? Lerp(0.85f, 1f, shape.Style) : Lerp(1f, 1.3f, shape.Style - 1f);
 
             var parts = new List<List<Ring>>();
             var up = V3.Up;
@@ -224,6 +221,26 @@ namespace UtsavNights.Core.Avatar
 
             return parts;
         }
+
+        /// <summary>
+        /// Size multipliers for a body style: torso width and depth, belly depth and limb thickness. Garments use the same
+        /// numbers, so a skirt or hem made for a broad body is wide enough for broad legs.
+        /// </summary>
+        public static void Factors(BodyShape shape, out float width, out float depth, out float belly, out float limb)
+        {
+            width = shape.Style < 1f ? Lerp(0.86f, 1f, shape.Style) : Lerp(1f, 1.32f, shape.Style - 1f);
+            depth = shape.Style < 1f ? Lerp(0.85f, 1f, shape.Style) : Lerp(1f, 1.42f, shape.Style - 1f);
+            belly = shape.Style < 1f ? depth : Lerp(1f, 1.62f, shape.Style - 1f);
+            limb = shape.Style < 1f ? Lerp(0.85f, 1f, shape.Style) : Lerp(1f, 1.3f, shape.Style - 1f);
+        }
+
+        /// <summary>Indices of the parts returned by <see cref="Parts"/>.</summary>
+        public const int PartTorso = 0, PartLeftArm = 1, PartLeftHand = 2, PartLeftLeg = 3, PartLeftFoot = 4;
+        public const int PartRightArm = 5, PartRightHand = 6, PartRightLeg = 7, PartRightFoot = 8;
+
+        /// <summary>Indices of the torso rings: crotch, hips, waist, belly, lower chest, chest, upper chest, shoulder top, neck, neck top.</summary>
+        public const int TorsoCrotch = 0, TorsoHips = 1, TorsoWaist = 2, TorsoBelly = 3, TorsoLowerChest = 4, TorsoChest = 5;
+        public const int TorsoUpperChest = 6, TorsoShoulderTop = 7, TorsoNeck = 8, TorsoNeckTop = 9;
 
         /// <summary>Rings around a part, with caps; ring vertices repeat the first at the seam so uvs wrap cleanly.</summary>
         public static void Loft(MeshData mesh, int submesh, IReadOnlyList<Ring> rings, int segments, bool capStart, bool capEnd)

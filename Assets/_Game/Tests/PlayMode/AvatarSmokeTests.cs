@@ -36,6 +36,68 @@ namespace UtsavNights.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Outfit_DrawsOneRendererPerGarment_AndUndresses()
+        {
+            var root = new GameObject("AvatarTestRoot");
+            try
+            {
+                AvatarProfile p = AvatarPresets.All[6].Clone(); // abaya, hijab, sneakers, watch
+                AvatarView view = AvatarView.Create(root.transform, p);
+                yield return null;
+                int count = 0;
+                foreach (Renderer r in view.GarmentRenderers)
+                {
+                    count++;
+                }
+
+                Assert.AreEqual(p.outfit.Count, count);
+                Assert.IsNotNull(view.Bone(AvatarSkeleton.Head).Find("Garment hijab (head)"), "the hijab sits on the head bone");
+
+                OutfitRules.Equip(p, WardrobeCatalog.Default, "kurta", 2);
+                OutfitRules.Unequip(p, "hijab");
+                view.Apply(p);
+                yield return null;
+                Assert.IsNull(view.Bone(AvatarSkeleton.Head).Find("Garment hijab (head)"), "taken off");
+                Assert.IsNull(view.transform.Find("Garment abaya"), "the kurta replaced the abaya");
+                Assert.IsNotNull(view.transform.Find("Garment kurta"));
+                Assert.AreNotEqual(BodyRegion.None, view.DrawnGarmentsCover & BodyRegion.Torso);
+            }
+            finally
+            {
+                Object.Destroy(root);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator Animator_PlaysOneShotsAndReturnsToTheLoop()
+        {
+            var root = new GameObject("AvatarTestRoot");
+            try
+            {
+                AvatarView view = AvatarView.Create(root.transform, AvatarPresets.All[1]);
+                var animator = view.gameObject.AddComponent<AvatarAnimator>();
+                yield return null;
+                Assert.AreEqual(AvatarClip.Idle, animator.Clip);
+
+                animator.Play(AvatarClip.Ignite);
+                animator.Sample(AvatarClip.Ignite, 0.9f);
+                Assert.Less(view.Bone(AvatarSkeleton.Hips).localPosition.y, view.HipsBase.y - 0.15f, "crouched");
+                Assert.Greater(Quaternion.Angle(Quaternion.identity, view.Bone(AvatarSkeleton.RightUpperArm).localRotation), 40f, "reaching");
+
+                animator.Play(AvatarClip.Ignite);
+                animator.SetWalking(true);
+                animator.Tick(AvatarMotion.IgniteLength + 0.01f);
+                Assert.AreEqual(AvatarClip.Walk, animator.Clip, "a one-shot returns to the loop that fits");
+                animator.SetWalking(false);
+                Assert.AreEqual(AvatarClip.Idle, animator.Clip);
+            }
+            finally
+            {
+                Object.Destroy(root);
+            }
+        }
+
+        [UnityTest]
         public IEnumerator Apply_SetsBodyStyleSkinAndProportions()
         {
             var root = new GameObject("AvatarTestRoot");

@@ -299,7 +299,10 @@ namespace UtsavNights.Core.Avatar
         }
 
         /// <summary>A partial ellipsoid around the head (hair, beards): only patches whose direction passes keep() are built.</summary>
-        private static void Shell(MeshData mesh, float scale, Func<V3, bool> keep, Func<V3, float> bulge)
+        private static void Shell(MeshData mesh, float scale, Func<V3, bool> keep, Func<V3, float> bulge) => ShellAround(mesh, Hair, scale, keep, bulge);
+
+        /// <summary>A partial ellipsoid around the head on any submesh (hair, beards, headscarves, caps).</summary>
+        public static void ShellAround(MeshData mesh, int submesh, float scale, Func<V3, bool> keep, Func<V3, float> bulge)
         {
             const int lat = 16, lon = 24;
             int[,] index = new int[lat + 1, lon + 1];
@@ -327,8 +330,8 @@ namespace UtsavNights.Core.Avatar
                         continue;
                     }
 
-                    mesh.AddTriangle(Hair, index[i, j], index[i + 1, j], index[i, j + 1], BodyRegion.Hair);
-                    mesh.AddTriangle(Hair, index[i, j + 1], index[i + 1, j], index[i + 1, j + 1], BodyRegion.Hair);
+                    mesh.AddTriangle(submesh, index[i, j], index[i + 1, j], index[i, j + 1], BodyRegion.Hair);
+                    mesh.AddTriangle(submesh, index[i, j + 1], index[i + 1, j], index[i + 1, j + 1], BodyRegion.Hair);
                 }
             }
         }

@@ -228,6 +228,91 @@ namespace UtsavNights.EditorTools.Main
             camera.fieldOfView = 44f;
             Render(camera, "avatars-bodies", 1920, 1080);
             Object.DestroyImmediate(stage.gameObject);
+            // Poses: each clip at a telling moment, in three-quarter view; long skirts mid-stride to check the hem follows the legs.
+            stage = new GameObject("AvatarStage").transform;
+            var poses = new (int preset, Core.Avatar.AvatarClip clip, float time, Core.Avatar.AnimationStyle style, string extra)[]
+            {
+                (0, Core.Avatar.AvatarClip.Idle, 2f, Core.Avatar.AnimationStyle.Calm, null),
+                (4, Core.Avatar.AvatarClip.Walk, 0.26f, Core.Avatar.AnimationStyle.Calm, null),
+                (2, Core.Avatar.AvatarClip.Walk, 0.79f, Core.Avatar.AnimationStyle.Lively, null),
+                (9, Core.Avatar.AvatarClip.Ignite, 0.9f, Core.Avatar.AnimationStyle.Calm, null),
+                (5, Core.Avatar.AvatarClip.Celebrate, 0.6f, Core.Avatar.AnimationStyle.Calm, null),
+                (10, Core.Avatar.AvatarClip.Celebrate, 0.5f, Core.Avatar.AnimationStyle.Lively, null),
+                (3, Core.Avatar.AvatarClip.Walk, 0.26f, Core.Avatar.AnimationStyle.Lively, "lehenga"),
+                (1, Core.Avatar.AvatarClip.Walk, 0.79f, Core.Avatar.AnimationStyle.Calm, "sari_nivi"),
+                (6, Core.Avatar.AvatarClip.Walk, 0.26f, Core.Avatar.AnimationStyle.Lively, "abaya"),
+                (1, Core.Avatar.AvatarClip.Ignite, 0.9f, Core.Avatar.AnimationStyle.Calm, "sari_nivi"),
+            };
+            for (int i = 0; i < poses.Length; i++)
+            {
+                Core.Avatar.AvatarProfile p = presets[poses[i].preset].Clone();
+                p.animationStyle = poses[i].style;
+                if (poses[i].extra != null)
+                {
+                    Core.Avatar.OutfitRules.Equip(p, Core.Avatar.WardrobeCatalog.Default, poses[i].extra, 0);
+                }
+
+                Gameplay.AvatarView view = Gameplay.AvatarView.Create(stage, p, "Pose" + i);
+                view.transform.position = new Vector3((i - 4.5f) * 0.6f, 0f, 1.2f);
+                view.transform.rotation = Quaternion.Euler(0f, 135f, 0f);
+                view.gameObject.AddComponent<Gameplay.AvatarAnimator>().Sample(poses[i].clip, poses[i].time);
+            }
+
+            var poseLight = new GameObject("ReviewLight").AddComponent<Light>();
+            poseLight.transform.SetParent(stage, false);
+            poseLight.type = LightType.Directional;
+            poseLight.transform.rotation = Quaternion.Euler(25f, 160f, 0f);
+            poseLight.intensity = 1.1f;
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 1.1f, -3.2f), Quaternion.Euler(3f, 0f, 0f));
+            camera.fieldOfView = 46f;
+            Render(camera, "avatars-poses", 1920, 1080);
+            Object.DestroyImmediate(stage.gameObject);
+
+            // Close look at two clothed presets celebrating (sleeves, drapes and raised arms).
+            stage = new GameObject("AvatarStage").transform;
+            for (int i = 0; i < 2; i++)
+            {
+                Core.Avatar.AvatarProfile bare = presets[i == 0 ? 5 : 10].Clone();
+                Gameplay.AvatarView view = Gameplay.AvatarView.Create(stage, bare, "Bare" + i);
+                view.transform.position = new Vector3(i == 0 ? -0.5f : 0.5f, 0f, 1.2f);
+                view.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+                view.gameObject.AddComponent<Gameplay.AvatarAnimator>().Sample(Core.Avatar.AvatarClip.Celebrate, 0.6f);
+            }
+
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 1.2f, -1.6f), Quaternion.Euler(0f, 0f, 0f));
+            camera.fieldOfView = 55f;
+            Render(camera, "avatars-joints", 1280, 1080);
+            Object.DestroyImmediate(stage.gameObject);
+
+            // Wardrobe: every garment on its own mannequin over a neutral ivory t-shirt and beige trousers, 10 per image.
+            var catalog = Core.Avatar.WardrobeCatalog.Default.All;
+            for (int page = 0; page * 10 < catalog.Count; page++)
+            {
+                stage = new GameObject("AvatarStage").transform;
+                for (int i = 0; i < 10 && page * 10 + i < catalog.Count; i++)
+                {
+                    Core.Avatar.GarmentInfo garment = catalog[page * 10 + i];
+                    Core.Avatar.AvatarProfile p = presets[(page * 10 + i) % presets.Count].Clone();
+                    p.outfit.Clear();
+                    Core.Avatar.OutfitRules.Equip(p, Core.Avatar.WardrobeCatalog.Default, "tshirt", 4);
+                    Core.Avatar.OutfitRules.Equip(p, Core.Avatar.WardrobeCatalog.Default, "trousers", 1);
+                    Core.Avatar.OutfitRules.Equip(p, Core.Avatar.WardrobeCatalog.Default, garment.Id, i);
+                    Gameplay.AvatarView view = Gameplay.AvatarView.Create(stage, p, garment.Id);
+                    view.transform.position = new Vector3((i - 4.5f) * 0.55f, 0f, 1.2f);
+                    view.transform.rotation = Quaternion.Euler(0f, 160f, 0f);
+                }
+
+                var key = new GameObject("ReviewLight").AddComponent<Light>();
+                key.transform.SetParent(stage, false);
+                key.type = LightType.Directional;
+                key.transform.rotation = Quaternion.Euler(25f, 160f, 0f);
+                key.intensity = 1.1f;
+                camera.transform.SetPositionAndRotation(new Vector3(0f, 1.1f, -3.2f), Quaternion.Euler(3f, 0f, 0f));
+                camera.fieldOfView = 46f;
+                Render(camera, "avatars-wardrobe-" + (page + 1), 1920, 1080);
+                Object.DestroyImmediate(stage.gameObject);
+            }
+
             Debug.Log($"[SceneShots] avatar shots saved to {Folder}");
         }
 

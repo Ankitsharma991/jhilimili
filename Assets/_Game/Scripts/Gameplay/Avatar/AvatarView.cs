@@ -14,6 +14,8 @@ namespace UtsavNights.Gameplay
     {
         private static Mesh _sharedBody;
         private static MeshData _bodyData;
+        private static readonly Dictionary<string, (Mesh skinned, Mesh head)> SharedGarments = new Dictionary<string, (Mesh, Mesh)>();
+        private readonly Dictionary<string, Worn> _worn = new Dictionary<string, Worn>();
 
         private readonly Transform[] _bones = new Transform[AvatarSkeleton.Count];
         private SkinnedMeshRenderer _body;
@@ -34,6 +36,9 @@ namespace UtsavNights.Gameplay
         public Transform Bone(int index) => _bones[index];
 
         public SkinnedMeshRenderer Body => _body;
+
+        /// <summary>The hips' rest position after leg length; animation offsets are added to it.</summary>
+        public Vector3 HipsBase { get; private set; }
 
         public Material SkinMaterial => _skin;
 
@@ -81,10 +86,11 @@ namespace UtsavNights.Gameplay
             }
 
             Vector3 hips = ToVector(AvatarSkeleton.Rest[AvatarSkeleton.Hips]);
-            _bones[AvatarSkeleton.Hips].localPosition = hips + Vector3.up * (AvatarSkeleton.LegLength * (legScale - 1f));
+            HipsBase = hips + Vector3.up * (AvatarSkeleton.LegLength * (legScale - 1f));
+            _bones[AvatarSkeleton.Hips].localPosition = HipsBase;
             _bones[AvatarSkeleton.Head].localScale = Vector3.one * (AvatarSkeleton.HeadScale * (1f + 0.1f * Profile.headSize));
 
-            // Only skin under garments that are actually drawn is hidden (none until the garment generator, step 3).
+            Dress();
             SetSkinMask(DrawnGarmentsCover);
             RebuildHead(OutfitRules.HairHidden(Profile, WardrobeCatalog.Default));
         }
@@ -99,6 +105,148 @@ namespace UtsavNights.Gameplay
 
             _masked = covered;
             _bodyInstance.SetTriangles(_bodyData.TrianglesExcept(BodyGenerator.SkinSubmesh, covered), BodyGenerator.SkinSubmesh);
+        }
+
+        /// <summary>
+        /// Puts on the profile's outfit: one renderer per garment, sharing the skeleton and the body's blend weights, coloured
+        /// by its variant. Garments no longer worn are removed. Then hides the skin they cover.
+        /// </summary>
+        private void Dress()
+        {
+            var wanted = new HashSet<string>();
+            BodyRegion covered = BodyRegion.None;
+            foreach (EquippedItem item in Profile.outfit)
+            {
+                GarmentInfo info = WardrobeCatalog.Default.Find(item.id);
+                if (info == null)
+                {
+                    continue;
+                }
+
+                wanted.Add(item.id);
+                if (!_worn.TryGetValue(item.id, out Worn worn))
+                {
+                    worn = Wear(item.id);
+                    _worn.Add(item.id, worn);
+                }
+
+                Rgb main = GarmentLooks.Main(item.id, item.variant), trim = GarmentLooks.Trim(item.id, item.variant);
+                worn.Main.SetColor("_BaseColor", new Color(main.R, main.G, main.B));
+                worn.Trim.SetColor("_BaseColor", new Color(trim.R, trim.G, trim.B));
+                if (worn.Skinned != null)
+                {
+                    foreach (KeyValuePair<string, float> w in BodyGenerator.Weights(Profile))
+                    {
+                        int index = worn.Skinned.sharedMesh.GetBlendShapeIndex(w.Key);
+                        if (index >= 0)
+                        {
+                            worn.Skinned.SetBlendShapeWeight(index, w.Value);
+                        }
+                    }
+                }
+
+                covered |= info.Covers;
+            }
+
+            var remove = new List<string>();
+            foreach (KeyValuePair<string, Worn> pair in _worn)
+            {
+                if (!wanted.Contains(pair.Key))
+                {
+                    remove.Add(pair.Key);
+                }
+            }
+
+            foreach (string id in remove)
+            {
+                _worn[id].Release();
+                _worn.Remove(id);
+            }
+
+            DrawnGarmentsCover = covered;
+        }
+
+        private Worn Wear(string id)
+        {
+            if (!SharedGarments.TryGetValue(id, out (Mesh skinned, Mesh head) meshes))
+            {
+                GarmentMesh data = GarmentGenerator.Build(id);
+                meshes = (data.Skinned != null ? ToMesh(data.Skinned, "Garment_" + id, skinned: true) : null,
+                    data.HeadRigid != null ? ToMesh(data.HeadRigid, "Garment_" + id + "_head", skinned: false, origin: AvatarSkeleton.Rest[AvatarSkeleton.Head]) : null);
+                SharedGarments[id] = meshes;
+            }
+
+            // Open hems, cuffs and drapes are seen from both sides.
+            var worn = new Worn { Main = NewMaterial("Garment_" + id, Color.white, 0.2f), Trim = NewMaterial("Garment_" + id + "_trim", Color.white, 0.45f) };
+            worn.Main.SetFloat("_Cull", 0f);
+            worn.Trim.SetFloat("_Cull", 0f);
+            if (meshes.skinned != null)
+            {
+                var go = new GameObject("Garment " + id);
+                go.transform.SetParent(transform, false);
+                worn.Skinned = go.AddComponent<SkinnedMeshRenderer>();
+                worn.Skinned.sharedMesh = meshes.skinned;
+                worn.Skinned.bones = _bones;
+                worn.Skinned.rootBone = _bones[AvatarSkeleton.Hips];
+                worn.Skinned.localBounds = _body.localBounds;
+                worn.Skinned.sharedMaterials = new[] { worn.Main, worn.Trim };
+            }
+
+            if (meshes.head != null)
+            {
+                var go = new GameObject("Garment " + id + " (head)");
+                go.transform.SetParent(_bones[AvatarSkeleton.Head], false);
+                go.AddComponent<MeshFilter>().sharedMesh = meshes.head;
+                worn.Head = go.AddComponent<MeshRenderer>();
+                worn.Head.sharedMaterials = new[] { worn.Main, worn.Trim };
+            }
+
+            return worn;
+        }
+
+        /// <summary>The renderers and materials of one worn garment.</summary>
+        private sealed class Worn
+        {
+            public SkinnedMeshRenderer Skinned;
+            public MeshRenderer Head;
+            public Material Main;
+            public Material Trim;
+
+            public void Release()
+            {
+                if (Skinned != null)
+                {
+                    AvatarView.Release(Skinned.gameObject);
+                }
+
+                if (Head != null)
+                {
+                    AvatarView.Release(Head.gameObject);
+                }
+
+                AvatarView.Release(Main);
+                AvatarView.Release(Trim);
+            }
+        }
+
+        /// <summary>Garment renderers by id, for tests and the clipping check.</summary>
+        public IEnumerable<Renderer> GarmentRenderers
+        {
+            get
+            {
+                foreach (Worn w in _worn.Values)
+                {
+                    if (w.Skinned != null)
+                    {
+                        yield return w.Skinned;
+                    }
+
+                    if (w.Head != null)
+                    {
+                        yield return w.Head;
+                    }
+                }
+            }
         }
 
         private void Build()
@@ -186,6 +334,11 @@ namespace UtsavNights.Gameplay
 
         private void OnDestroy()
         {
+            foreach (Worn w in _worn.Values)
+            {
+                w.Release();
+            }
+
             Release(_bodyInstance);
             Release(_headMesh);
             Release(_skin);
