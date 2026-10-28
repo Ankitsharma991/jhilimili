@@ -62,7 +62,7 @@ namespace UtsavNights.EditorTools.Main
             };
         }
 
-        private static void Write(PaintCanvas canvas, string path)
+        internal static void Write(PaintCanvas canvas, string path)
         {
             var texture = new Texture2D(canvas.Width, canvas.Height, TextureFormat.RGB24, false);
             var pixels = new Color32[canvas.Width * canvas.Height];
@@ -86,7 +86,7 @@ namespace UtsavNights.EditorTools.Main
             Object.DestroyImmediate(texture);
         }
 
-        private static void Import(string path, int maxSize, bool mipmaps, TextureWrapMode wrap,
+        internal static void Import(string path, int maxSize, bool mipmaps, TextureWrapMode wrap,
             TextureImporterCompression compression = TextureImporterCompression.Compressed)
         {
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);

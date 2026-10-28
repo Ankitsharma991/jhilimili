@@ -335,6 +335,224 @@ namespace UtsavNights.EditorTools.Main
             EditorApplication.Exit(0);
         }
 
+        /// <summary>
+        /// Phase 7 step 2: the courtyard house (default and four other module and colour sets) from the decoration-mode
+        /// side, a full view from beyond the back wall, and the boundary and gate from the game camera. The scene's own
+        /// walls and gate are hidden, as the house's boundary and gate modules replace them.
+        /// </summary>
+        [MenuItem("Utsav/Phase 7/Capture House Shots", priority = 90)]
+        public static void CaptureHouse()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+            {
+                Debug.LogWarning("[SceneShots] No GPU (-nographics); nothing rendered.");
+                return;
+            }
+
+            EditorSceneManager.OpenScene(MainSceneBuilder.MainScenePath, OpenSceneMode.Single);
+            GameObject.Find("PlacementGhost")?.SetActive(false);
+            var replaced = new System.Collections.Generic.HashSet<string> { "BackWall", "LeftWall", "RightWall", "WallCoping", "Gate", "GatePillar", "PillarCap" };
+            foreach (Transform t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (replaced.Contains(t.name))
+                {
+                    t.gameObject.SetActive(false);
+                }
+            }
+
+            Camera camera = Camera.main;
+            Directory.CreateDirectory(Folder);
+            Gameplay.HouseView view = Gameplay.HouseView.Create(null, HouseArt.Ensure());
+            Core.Home.HouseDesign design = Core.Home.HouseDesign.Default();
+            view.Show(design);
+            Render(camera, "house-courtyard-game");
+
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 1.7f, 3.2f), Quaternion.Euler(-14f, 180f, 0f));
+            camera.fieldOfView = 62f;
+            Render(camera, "house-decor-portrait");
+
+            var sets = new (string name, int wall, int trim, int material, string[] modules)[]
+            {
+                ("default", 0, 0, 0, null),
+                ("heritage", 1, 2, 2, new[] { "door_carved_arch", "window_shuttered", "window_shuttered", "window_arched", "window_arched", "balcony_jharokha", "roof_tiled_slope", "boundary_brick", "gate_arch" }),
+                ("blue", 3, 0, 0, new[] { "door_double_teal", "window_jali", "window_jali", "window_jali", "window_jali", "balcony_wood_lattice", "roof_terrace_canopy", "boundary_grill", "gate_wooden" }),
+                ("modern", 5, 5, 1, new[] { "door_steel_modern", "window_plain", "window_plain", "window_plain", "window_plain", "", "roof_flat_parapet", "boundary_plaster", "gate_iron" }),
+                ("wood", 4, 1, 3, new[] { "door_wooden_panel", "window_arched", "window_arched", "window_shuttered", "window_shuttered", "balcony_iron_rail", "roof_tiled_slope", "boundary_grill", "gate_iron" }),
+            };
+            for (int s = 0; s < sets.Length; s++)
+            {
+                Core.Home.HouseDesign d = Core.Home.HouseDesign.Default();
+                d.wallColour = sets[s].wall;
+                d.trimColour = sets[s].trim;
+                d.material = sets[s].material;
+                if (sets[s].modules != null)
+                {
+                    for (int i = 0; i < d.modules.Count; i++)
+                    {
+                        d.modules[i].module = sets[s].modules[i];
+                        d.modules[i].variant = s % 4;
+                    }
+                }
+
+                view.Show(d);
+                camera.transform.SetPositionAndRotation(new Vector3(0f, 4.4f, 8.5f), Quaternion.Euler(8f, 180f, 0f));
+                camera.fieldOfView = 52f;
+                Render(camera, "house-full-" + sets[s].name, 1920, 1080);
+            }
+
+            view.Show(design);
+            camera.transform.SetPositionAndRotation(new Vector3(0.9f, 1.55f, 0.6f), Quaternion.Euler(-4f, 195f, 0f));
+            camera.fieldOfView = 55f;
+            Render(camera, "house-door-closeup", 1600, 1200);
+            Object.DestroyImmediate(view.gameObject);
+            Debug.Log($"[SceneShots] saved to {Folder}");
+        }
+
+        /// <summary>Phase 7 step 3: a showcase layout of every decoration on the default house, and a lineup of every item.</summary>
+        [MenuItem("Utsav/Phase 7/Capture Decoration Shots", priority = 91)]
+        public static void CaptureDecor()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+            {
+                Debug.LogWarning("[SceneShots] No GPU (-nographics); nothing rendered.");
+                return;
+            }
+
+            EditorSceneManager.OpenScene(MainSceneBuilder.MainScenePath, OpenSceneMode.Single);
+            GameObject.Find("PlacementGhost")?.SetActive(false);
+            var replaced = new System.Collections.Generic.HashSet<string> { "BackWall", "LeftWall", "RightWall", "WallCoping", "Gate", "GatePillar", "PillarCap" };
+            foreach (Transform t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (replaced.Contains(t.name))
+                {
+                    t.gameObject.SetActive(false);
+                }
+            }
+
+            Camera camera = Camera.main;
+            Directory.CreateDirectory(Folder);
+            Gameplay.HouseView house = Gameplay.HouseView.Create(null, HouseArt.Ensure());
+            house.Show(Core.Home.HouseDesign.Default());
+            Gameplay.DecorView decor = Gameplay.DecorView.Create(null);
+            var items = new System.Collections.Generic.List<Core.Home.PlacedDecor>();
+            int uid = 1;
+
+            void Free(string id, float x, float y, float z, float yaw = 0f, float scale = 1f, int variant = 0) =>
+                items.Add(new Core.Home.PlacedDecor { uid = uid++, item = id, x = x, y = y, z = z, yaw = yaw, scale = scale, variant = variant });
+
+            void Path(string id, float x, float y, float z, float ex, float ey, float ez, float sag, int variant = 0) =>
+                items.Add(new Core.Home.PlacedDecor { uid = uid++, item = id, x = x, y = y, z = z, ex = ex, ey = ey, ez = ez, sag = sag, variant = variant, surface = Core.Home.Surface.Wall });
+
+            for (int i = 0; i < 5; i++)
+            {
+                Free("diya_clay", -0.6f + i * 0.3f, 0.15f, 0.32f, i * 40f, 1f, i % 3);
+            }
+
+            for (int i = 0; i < 6; i++)
+            {
+                Free("diya_clay", 1.0f + i * 0.4f, 0.3f, 0.05f);
+                Free("diya_clay", -1.0f - i * 0.4f, 0.3f, 0.05f);
+            }
+
+            Free("diya_brass_stand", -1.0f, 0f, 0.4f);
+            Free("diya_brass_stand", 1.0f, 0f, 0.4f, 0f, 1f, 1);
+            Free("pot_marigold", -1.6f, 0f, 0.3f);
+            Free("pot_marigold", 1.6f, 0f, 0.3f, 30f, 1f, 1);
+            Free("lantern_akash_kandil", 0.75f, 2.36f, 0.62f, 0f, 1f, 0);
+            Free("lantern_akash_kandil", -0.75f, 2.36f, 0.62f, 0f, 1f, 1);
+            Free("lantern_paper_round", 3.3f, 5.3f, 0.25f, 0f, 1f, 2);
+            Free("lantern_paper_round", -3.3f, 5.3f, 0.25f, 0f, 1f, 3);
+            Free("lamp_post_small", 2.8f, 0f, 2.2f);
+            Free("tulsi_planter", -1.6f, 0f, 1.7f);
+            Free("pot_palm", -3.0f, 0f, 0.5f);
+            Free("bench_wooden", 2.4f, 0f, 0.55f);
+            Free("chair_cane", -2.4f, 0f, 2.6f, 140f);
+            Free("charpai", 2.2f, 0f, 4.6f, 0f, 1f, 1);
+            Free("rangoli_lotus", 0f, 0f, 1.5f, 0f, 1.2f, 0);
+            Free("rangoli_peacock", -1.4f, 0f, 3.5f, 0f, 1f, 1);
+            Free("rangoli_geometric", 1.3f, 0f, 2.8f, 20f, 1f, 2);
+            Free("rangoli_diya_ring", 0f, 0f, 4.4f, 0f, 1f, 3);
+            Free("rangoli_mandala_tihar", -0.2f, 0f, 2.9f, 0f, 0.9f, 1);
+            Path("toran_mango", -0.68f, 2.62f, 0.09f, 0.68f, 2.62f, 0.09f, 0.08f);
+            Path("garland_marigold", -1f, 4.32f, 0.95f, 1f, 4.32f, 0.95f, 0.35f);
+            Path("garland_marigold_strands", 1.15f, 3.12f, 0.12f, 3.6f, 3.12f, 0.12f, 0.08f);
+            Path("garland_marigold_strands", -1.15f, 3.12f, 0.12f, -3.6f, 3.12f, 0.12f, 0.08f, 1);
+            Path("string_lights_warm", -3.8f, 6.1f, 0.16f, 0f, 6.1f, 0.16f, 0.15f);
+            Path("string_lights_warm", 0f, 6.1f, 0.16f, 3.8f, 6.1f, 0.16f, 0.15f);
+            Path("string_lights_colour", 3.6f, 1.62f, 0.4f, 3.6f, 1.62f, 5.6f, 0.2f);
+            Path("string_lights_colour", -3.6f, 1.62f, 0.4f, -3.6f, 1.62f, 5.6f, 0.2f);
+            Path("light_curtain", -1.2f, 6.05f, 0.16f, -3.4f, 6.05f, 0.16f, 0.02f);
+            decor.Show(items);
+
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 1.7f, 3.2f), Quaternion.Euler(-14f, 180f, 0f));
+            camera.fieldOfView = 62f;
+            Render(camera, "decor-portrait");
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 4.4f, 8.5f), Quaternion.Euler(8f, 180f, 0f));
+            camera.fieldOfView = 52f;
+            Render(camera, "decor-full", 1920, 1080);
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 1.05f, -2.0f), Quaternion.Euler(7f, 0f, 0f));
+            camera.fieldOfView = 60f;
+            Render(camera, "decor-game");
+            camera.transform.SetPositionAndRotation(new Vector3(0.2f, 1.2f, 0.9f), Quaternion.Euler(18f, 180f, 0f));
+            camera.fieldOfView = 55f;
+            Render(camera, "decor-door-closeup", 1600, 1200);
+            Object.DestroyImmediate(decor.gameObject);
+
+            // Lineup: every placed item side by side in the courtyard, variant 0.
+            decor = Gameplay.DecorView.Create(null);
+            items.Clear();
+            float lineX = -3.1f;
+            foreach (Core.Home.DecorInfo info in Core.Home.HomeCatalog.Decorations)
+            {
+                if (info.Mode == Core.Home.PlacementMode.Path)
+                {
+                    continue;
+                }
+
+                bool flat = info.Mode == Core.Home.PlacementMode.Decal;
+                float w = Mathf.Min(info.Width, 1.1f);
+                Free(info.Id, lineX + w / 2f, 0f, flat ? 3.5f : 2.5f, 0f, flat ? 0.8f : 1f);
+                if (!flat)
+                {
+                    lineX += w + 0.12f;
+                }
+                else
+                {
+                    lineX += 0f;
+                }
+            }
+
+            float rx = -2.2f;
+            foreach (Core.Home.PlacedDecor d in items)
+            {
+                if (Core.Home.HomeCatalog.Decoration(d.item).Mode == Core.Home.PlacementMode.Decal)
+                {
+                    d.x = rx;
+                    rx += 1.1f;
+                }
+            }
+
+            decor.Show(items);
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 1.9f, -2.2f), Quaternion.Euler(24f, 0f, 0f));
+            camera.fieldOfView = 50f;
+            Render(camera, "decor-lineup", 1920, 1080);
+            Object.DestroyImmediate(decor.gameObject);
+            Object.DestroyImmediate(house.gameObject);
+            Debug.Log($"[SceneShots] saved to {Folder}");
+        }
+
+        public static void CiCaptureDecor()
+        {
+            CaptureDecor();
+            EditorApplication.Exit(0);
+        }
+
+        public static void CiCaptureHouse()
+        {
+            CaptureHouse();
+            EditorApplication.Exit(0);
+        }
+
         /// <summary>Smoke and fuse sparks don't decide when the show peaks.</summary>
         private static bool IsSecondary(string emitterName) => emitterName.Contains("Smoke") || emitterName.Contains("FuseSpark");
 
