@@ -26,11 +26,14 @@ namespace UtsavNights.Core.Neighbourhood
                 layout = environment switch
                 {
                     Environments.TownLane => Build(Environments.TownLane, new[] { -3, -2, -1, 1, 2 }, vacantAt: 3,
-                        farX: new[] { -18f, -6f, 6f, 18f }, farFront: 34f, openKind: SpotKinds.Square, openTo: 27.6f, streetSpotAt: -1.5f),
+                        farX: new[] { -18f, -6f, 6f, 18f }, farFront: 34f, openKind: SpotKinds.Square, openTo: 27.6f, streetSpotAt: -1.5f,
+                        feature: EnvironmentFeatures.Features.Platform),
                     Environments.HillVillage => Build(Environments.HillVillage, new[] { -2, -1, 1 }, vacantAt: 2,
-                        farX: new[] { -14f, 0f, 14f }, farFront: 30f, openKind: SpotKinds.VillageArea, openTo: 23.6f, streetSpotAt: -1.5f),
+                        farX: new[] { -14f, 0f, 14f }, farFront: 30f, openKind: SpotKinds.VillageArea, openTo: 23.6f, streetSpotAt: -1.5f,
+                        feature: EnvironmentFeatures.Features.Chautari),
                     Environments.Riverside => Build(Environments.Riverside, new[] { -3, -2, -1, 1, 2 }, vacantAt: 3,
-                        farX: new float[0], farFront: 0f, openKind: SpotKinds.TownSpace, openTo: 20f, streetSpotAt: -1.5f),
+                        farX: new float[0], farFront: 0f, openKind: SpotKinds.TownSpace, openTo: 20f, streetSpotAt: -1.5f,
+                        feature: EnvironmentFeatures.Features.Ghat),
                     _ => null,
                 };
 
@@ -46,19 +49,32 @@ namespace UtsavNights.Core.Neighbourhood
         }
 
         /// <summary>The house design for a lot: the player's own for the home lot, a seeded neighbour's otherwise.</summary>
-        public static HouseDesign DesignFor(SettlementLayout layout, LotDef lot, HouseDesign home)
+        public static HouseDesign DesignFor(SettlementLayout layout, LotDef lot, HouseDesign home, EnvironmentInfo env = null)
         {
             if (lot.home)
             {
                 return home ?? HouseDesign.Default();
             }
 
-            return lot.vacant ? null : NeighbourDesigns.Generate(Environments.Find(layout.environment), lot.seed);
+            return lot.vacant ? null : NeighbourDesigns.Generate(env ?? Environments.Find(layout.environment), lot.seed);
         }
 
-        private static SettlementLayout Build(string env, int[] sameSide, int vacantAt, float[] farX, float farFront, string openKind, float openTo, float streetSpotAt)
+        /// <summary>Makes an installed environment pack's layout available (the pack manager, Phase 9).</summary>
+        public static void Register(SettlementLayout layout) => Cache[layout.environment] = layout;
+
+        public static void Unregister(string environment) => Cache.Remove(environment ?? string.Empty);
+
+        /// <summary>
+        /// The standard frame for a new environment (packs and the built-ins): neighbour lots at the given street positions
+        /// (in lot spacings; 0 is the home), an empty plot, far lots across the open space, and the usual spots and walk graph.
+        /// </summary>
+        public static SettlementLayout Compose(string env, int[] sameSide, int vacantAt, float[] farX, float farFront, string openKind, float openTo, string feature) =>
+            Build(env, sameSide, vacantAt, farX, farFront, openKind, openTo, -1.5f, feature);
+
+        private static SettlementLayout Build(string env, int[] sameSide, int vacantAt, float[] farX, float farFront, string openKind, float openTo, float streetSpotAt,
+            string feature)
         {
-            var l = new SettlementLayout { id = env, environment = env };
+            var l = new SettlementLayout { id = env, environment = env, feature = feature };
             int seedBase = StableHash(env) & 0xffff;
             l.lots.Add(new LotDef { id = "home", x = 0f, z = HouseGeometry.WorldFrontZ, home = true });
             foreach (int k in sameSide)

@@ -164,6 +164,8 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<QualityManager>().Configure(camera);
             systems.AddComponent<SettingsInstaller>();
             systems.AddComponent<MonetisationInstaller>();
+            systems.AddComponent<PacksInstaller>();
+            EnsurePacksConfig();
             systems.AddComponent<AvatarInstaller>();
             systems.AddComponent<DecorationController>().Configure(camera, rig);
             systems.AddComponent<WalkController>().Configure(camera, rig);
@@ -179,6 +181,7 @@ namespace UtsavNights.EditorTools.Main
             new GameObject("CrackerSpawner").AddComponent<CrackerSpawner>();
             new GameObject("WaveController").AddComponent<WaveController>().Configure(camera);
             new GameObject("FinaleController").AddComponent<FinaleController>();
+            new GameObject("ShowPlayer").AddComponent<ShowPlayer>().Configure(catalog);
             CreatePlacement(camera);
 
             // PRD 6.1: one cracker already stands ready; everything else comes from the tray.
@@ -348,6 +351,17 @@ namespace UtsavNights.EditorTools.Main
             go.GetComponent<MeshRenderer>().receiveGI = ReceiveGI.LightProbes;
         }
 
+        /// <summary>The pack server's address lives in Resources/PacksConfig (empty until the owner hosts packs; Phase 9).</summary>
+        private static void EnsurePacksConfig()
+        {
+            const string path = "Assets/_Game/Resources/" + PacksConfig.ResourcePath + ".asset";
+            if (AssetDatabase.LoadAssetAtPath<PacksConfig>(path) == null)
+            {
+                AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<PacksConfig>(), path);
+                AssetDatabase.SaveAssets();
+            }
+        }
+
         private static void Static(GameObject go) => SceneKit.MakeStatic(go);
 
         private static void CreateHud(Content.CrackerCatalog catalog)
@@ -409,6 +423,24 @@ namespace UtsavNights.EditorTools.Main
             walkRect.offsetMin = Vector2.zero;
             walkRect.offsetMax = Vector2.zero;
             walkGo.AddComponent<UI.WalkMode>();
+            var browserGo = new GameObject("EnvironmentBrowser", typeof(RectTransform));
+            browserGo.transform.SetParent(safe.transform, false);
+            var browserRect = (RectTransform)browserGo.transform;
+            browserRect.anchorMin = Vector2.zero;
+            browserRect.anchorMax = Vector2.one;
+            browserRect.offsetMin = Vector2.zero;
+            browserRect.offsetMax = Vector2.zero;
+            browserGo.AddComponent<UI.EnvironmentBrowser>().Configure(EnvironmentPreviewArt.Ensure());
+
+            // Phase 9: the storage manager for content packs, opened from Settings.
+            var storageGo = new GameObject("StorageManager", typeof(RectTransform));
+            storageGo.transform.SetParent(safe.transform, false);
+            var storageRect = (RectTransform)storageGo.transform;
+            storageRect.anchorMin = Vector2.zero;
+            storageRect.anchorMax = Vector2.one;
+            storageRect.offsetMin = Vector2.zero;
+            storageRect.offsetMax = Vector2.zero;
+            storageGo.AddComponent<UI.StorageManager>();
             var finaleGo = new GameObject("Finale", typeof(RectTransform));
             finaleGo.transform.SetParent(safe.transform, false);
             var finaleRect = (RectTransform)finaleGo.transform;

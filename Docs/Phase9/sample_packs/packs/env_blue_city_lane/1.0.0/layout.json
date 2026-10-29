@@ -1,0 +1,405 @@
+{
+    "version": 1,
+    "id": "blue_city_lane",
+    "environment": "blue_city_lane",
+    "feature": "platform",
+    "lots": [
+        {
+            "id": "home",
+            "x": 0.0,
+            "z": -2.4000000953674318,
+            "yaw": 0.0,
+            "home": true,
+            "vacant": false,
+            "seed": 0
+        },
+        {
+            "id": "lotm2",
+            "x": -16.799999237060548,
+            "z": -2.4000000953674318,
+            "yaw": 0.0,
+            "home": false,
+            "vacant": false,
+            "seed": 1656674
+        },
+        {
+            "id": "lotm1",
+            "x": -8.399999618530274,
+            "z": -2.4000000953674318,
+            "yaw": 0.0,
+            "home": false,
+            "vacant": false,
+            "seed": 1664593
+        },
+        {
+            "id": "lotp1",
+            "x": 8.399999618530274,
+            "z": -2.4000000953674318,
+            "yaw": 0.0,
+            "home": false,
+            "vacant": false,
+            "seed": 1680431
+        },
+        {
+            "id": "lotp2",
+            "x": 16.799999237060548,
+            "z": -2.4000000953674318,
+            "yaw": 0.0,
+            "home": false,
+            "vacant": false,
+            "seed": 1688350
+        },
+        {
+            "id": "vacant",
+            "x": 25.19999885559082,
+            "z": -2.4000000953674318,
+            "yaw": 0.0,
+            "home": false,
+            "vacant": true,
+            "seed": 0
+        },
+        {
+            "id": "far1",
+            "x": -12.0,
+            "z": 32.0,
+            "yaw": 180.0,
+            "home": false,
+            "vacant": false,
+            "seed": 917184
+        },
+        {
+            "id": "far2",
+            "x": 0.0,
+            "z": 32.0,
+            "yaw": 180.0,
+            "home": false,
+            "vacant": false,
+            "seed": 1021913
+        },
+        {
+            "id": "far3",
+            "x": 12.0,
+            "z": 32.0,
+            "yaw": 180.0,
+            "home": false,
+            "vacant": false,
+            "seed": 1126642
+        }
+    ],
+    "street": {
+        "kind": "street",
+        "x0": -21.0,
+        "z0": 3.799999952316284,
+        "x1": 29.39999771118164,
+        "z1": 9.800000190734864
+    },
+    "open": {
+        "kind": "square",
+        "x0": -21.0,
+        "z0": 9.800000190734864,
+        "x1": 29.39999771118164,
+        "z1": 25.600000381469728
+    },
+    "spots": [
+        {
+            "id": "courtyard",
+            "kind": "courtyard",
+            "name": "Your courtyard",
+            "lot": "home",
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.800000011920929,
+            "radius": 2.299999952316284,
+            "camX": 0.0,
+            "camY": 1.0499999523162842,
+            "camZ": -2.0,
+            "camYaw": 0.0,
+            "camPitch": 7.0,
+            "requires": [
+                "has_courtyard"
+            ],
+            "aerials": "open",
+            "pads": []
+        },
+        {
+            "id": "rooftop",
+            "kind": "rooftop",
+            "name": "Your rooftop",
+            "lot": "home",
+            "x": 0.0,
+            "y": 6.300000190734863,
+            "z": -5.199999809265137,
+            "radius": 1.600000023841858,
+            "camX": 0.0,
+            "camY": 7.350000381469727,
+            "camZ": -7.900000095367432,
+            "camYaw": 0.0,
+            "camPitch": 12.0,
+            "requires": [
+                "has_rooftop"
+            ],
+            "aerials": "open",
+            "pads": []
+        },
+        {
+            "id": "balcony",
+            "kind": "balcony",
+            "name": "Your balcony",
+            "lot": "home",
+            "x": 0.0,
+            "y": 3.299999952316284,
+            "z": -1.9500000476837159,
+            "radius": 0.3499999940395355,
+            "camX": 0.0,
+            "camY": 4.349999904632568,
+            "camZ": -2.320000171661377,
+            "camYaw": 0.0,
+            "camPitch": 20.0,
+            "requires": [
+                "has_balcony"
+            ],
+            "aerials": "none",
+            "pads": []
+        },
+        {
+            "id": "house_front",
+            "kind": "house_front",
+            "name": "Outside your gate",
+            "lot": "",
+            "x": 1.399999976158142,
+            "y": 0.0,
+            "z": 6.800000190734863,
+            "radius": 1.7999999523162842,
+            "camX": 1.399999976158142,
+            "camY": 1.0499999523162842,
+            "camZ": 4.400000095367432,
+            "camYaw": 0.0,
+            "camPitch": 7.0,
+            "requires": [],
+            "aerials": "open",
+            "pads": []
+        },
+        {
+            "id": "street",
+            "kind": "street",
+            "name": "The street",
+            "lot": "",
+            "x": -12.59999942779541,
+            "y": 0.0,
+            "z": 6.800000190734863,
+            "radius": 1.7999999523162842,
+            "camX": -16.19999885559082,
+            "camY": 1.0499999523162842,
+            "camZ": 6.800000190734863,
+            "camYaw": 90.0,
+            "camPitch": 7.0,
+            "requires": [],
+            "aerials": "pads",
+            "pads": [
+                {
+                    "x": -11.59999942779541,
+                    "y": 0.0,
+                    "z": 6.0
+                },
+                {
+                    "x": -11.59999942779541,
+                    "y": 0.0,
+                    "z": 7.600000381469727
+                }
+            ]
+        },
+        {
+            "id": "open",
+            "kind": "square",
+            "name": "The chowk",
+            "lot": "",
+            "x": 8.0,
+            "y": 0.0,
+            "z": 17.700000762939454,
+            "radius": 3.5,
+            "camX": 3.5,
+            "camY": 1.0499999523162842,
+            "camZ": 17.700000762939454,
+            "camYaw": 90.0,
+            "camPitch": 7.0,
+            "requires": [
+                "square"
+            ],
+            "aerials": "open",
+            "pads": []
+        },
+        {
+            "id": "vacant_lot",
+            "kind": "vacant_lot",
+            "name": "The empty plot",
+            "lot": "vacant",
+            "x": 25.19999885559082,
+            "y": 0.0,
+            "z": 1.0,
+            "radius": 3.0,
+            "camX": 25.19999885559082,
+            "camY": 1.0499999523162842,
+            "camZ": -2.200000047683716,
+            "camYaw": 0.0,
+            "camPitch": 7.0,
+            "requires": [
+                "open_lot"
+            ],
+            "aerials": "open",
+            "pads": []
+        }
+    ],
+    "nodes": [
+        {
+            "id": "courtyard",
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.800000011920929
+        },
+        {
+            "id": "rooftop",
+            "x": 0.0,
+            "y": 6.300000190734863,
+            "z": -5.199999809265137
+        },
+        {
+            "id": "balcony",
+            "x": 0.0,
+            "y": 3.299999952316284,
+            "z": -1.9500000476837159
+        },
+        {
+            "id": "gate_in",
+            "x": 1.399999976158142,
+            "y": 0.0,
+            "z": 2.9000000953674318
+        },
+        {
+            "id": "gate_out",
+            "x": 1.399999976158142,
+            "y": 0.0,
+            "z": 4.5
+        },
+        {
+            "id": "house_front",
+            "x": 1.399999976158142,
+            "y": 0.0,
+            "z": 6.800000190734863
+        },
+        {
+            "id": "street",
+            "x": -12.59999942779541,
+            "y": 0.0,
+            "z": 6.800000190734863
+        },
+        {
+            "id": "stm2",
+            "x": -16.799999237060548,
+            "y": 0.0,
+            "z": 6.800000190734863
+        },
+        {
+            "id": "stm1",
+            "x": -8.399999618530274,
+            "y": 0.0,
+            "z": 6.800000190734863
+        },
+        {
+            "id": "stp1",
+            "x": 8.399999618530274,
+            "y": 0.0,
+            "z": 6.800000190734863
+        },
+        {
+            "id": "stp2",
+            "x": 16.799999237060548,
+            "y": 0.0,
+            "z": 6.800000190734863
+        },
+        {
+            "id": "stp3",
+            "x": 25.19999885559082,
+            "y": 0.0,
+            "z": 6.800000190734863
+        },
+        {
+            "id": "open",
+            "x": 8.0,
+            "y": 0.0,
+            "z": 17.700000762939454
+        },
+        {
+            "id": "vacant_lot",
+            "x": 25.19999885559082,
+            "y": 0.0,
+            "z": 1.0
+        }
+    ],
+    "edges": [
+        {
+            "a": "courtyard",
+            "b": "rooftop",
+            "kind": "stairs"
+        },
+        {
+            "a": "courtyard",
+            "b": "balcony",
+            "kind": "stairs"
+        },
+        {
+            "a": "courtyard",
+            "b": "gate_in",
+            "kind": "walk"
+        },
+        {
+            "a": "gate_in",
+            "b": "gate_out",
+            "kind": "gate"
+        },
+        {
+            "a": "gate_out",
+            "b": "house_front",
+            "kind": "walk"
+        },
+        {
+            "a": "stm2",
+            "b": "street",
+            "kind": "walk"
+        },
+        {
+            "a": "street",
+            "b": "stm1",
+            "kind": "walk"
+        },
+        {
+            "a": "stm1",
+            "b": "house_front",
+            "kind": "walk"
+        },
+        {
+            "a": "house_front",
+            "b": "stp1",
+            "kind": "walk"
+        },
+        {
+            "a": "stp1",
+            "b": "stp2",
+            "kind": "walk"
+        },
+        {
+            "a": "stp2",
+            "b": "stp3",
+            "kind": "walk"
+        },
+        {
+            "a": "stp1",
+            "b": "open",
+            "kind": "walk"
+        },
+        {
+            "a": "stp3",
+            "b": "vacant_lot",
+            "kind": "walk"
+        }
+    ]
+}

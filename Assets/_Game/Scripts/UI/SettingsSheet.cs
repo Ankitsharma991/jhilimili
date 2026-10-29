@@ -102,6 +102,16 @@ namespace UtsavNights.UI
         public bool PrivacyPolicyVisible => _privacyPolicyRow != null && _privacyPolicyRow.activeSelf;
 
         /// <summary>Same as tapping "Read" on the privacy policy row.</summary>
+        /// <summary>Opens the storage manager over the settings (Phase 9).</summary>
+        public void OpenStorage()
+        {
+            StorageManager storage = FindFirstObjectByType<StorageManager>();
+            if (storage != null)
+            {
+                storage.Open();
+            }
+        }
+
         public void OpenPrivacyPolicy()
         {
             if (_links != null && _links.HasPrivacyPolicy)
@@ -406,6 +416,10 @@ namespace UtsavNights.UI
             _buyButton = buyRow.GetComponentInChildren<Button>().gameObject;
             GameObject restoreRow = Row(rows, "Restore purchases", "Bought on another phone? Get it back here", RowButton(rows, "Restore", RestorePurchases));
             _restoreNote = restoreRow.transform.Find("Labels/Sub").GetComponentInChildren<TextMeshProUGUI>();
+
+            // Phase 9: content packs on the phone (PRD 12 storage manager).
+            Section(rows, "Downloads");
+            Row(rows, "Downloads and storage", "Neighbourhood packs, sizes, updates, Wi-Fi only", RowButton(rows, "Open", OpenStorage));
 
             // PRD 15.2 and 16: a Privacy options entry, and analytics the player can switch off.
             Section(rows, "Privacy");

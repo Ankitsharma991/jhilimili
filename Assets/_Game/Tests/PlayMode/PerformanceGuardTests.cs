@@ -92,6 +92,35 @@ namespace UtsavNights.Tests.PlayMode
             Assert.Less(result[0], IdleLimitKb, "decoration mode with nothing touched adds no per-frame garbage");
         }
 
+        [UnityTest]
+        public IEnumerator WalkingThroughTheSettlement_AllocatesLittle()
+        {
+            SceneManager.LoadScene("Main");
+            yield return null;
+            Gameplay.QualityManager quality = Object.FindFirstObjectByType<Gameplay.QualityManager>();
+            quality.SetTierManually(2);
+            try
+            {
+                var walk = Object.FindFirstObjectByType<UI.WalkMode>();
+                walk.Open();
+                yield return WaitSeconds(1.5f);
+
+                // Out of the gate and along the whole street: chunks change detail on the way.
+                Assert.IsTrue(walk.Controller.WalkTo(new Vector3(-24f, 0f, 6.8f)));
+                yield return WaitSeconds(1f);
+                var result = new float[2];
+                yield return Measure(120, result);
+                Debug.Log($"[UTSAV_PERF] walking gc_kb_per_frame avg={result[0]:0.00} max={result[1]:0.00}");
+                Assert.IsTrue(walk.Controller.Agent.Walking || walk.Controller.Agent.Position.X < -10f, "it walked");
+                walk.Home();
+                Assert.Less(result[0], ShowLimitKb, "streaming chunks while walking stays within the show limit");
+            }
+            finally
+            {
+                quality.UseAutomaticTier();
+            }
+        }
+
         private static IEnumerator WaitSeconds(float seconds)
         {
             float end = Time.realtimeSinceStartup + seconds;

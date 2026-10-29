@@ -1,0 +1,47 @@
+{
+    "packId": "env_blue_city_lane",
+    "version": "1.0.0",
+    "type": "environment",
+    "title": "Blue city lane",
+    "description": "A blue-washed lane with jharokhas round a small chowk.",
+    "requires": [],
+    "sizeBytes": 41444,
+    "sha256": "7c784615ffa13f06fcfff962faaa71c24c95816a7b01eee4cc3ee6a8ed544a68",
+    "tags": {
+        "geo": [
+            "west_india"
+        ],
+        "style": [
+            "old_city"
+        ],
+        "festival": [
+            "diwali"
+        ]
+    },
+    "budget": {
+        "maxTriangles": 400000,
+        "maxTextureMB": 1.0,
+        "drawCalls": 140
+    },
+    "review": {
+        "advisor": "placeholder (owner to fill before publishing)",
+        "date": "2026-10-29"
+    },
+    "files": [
+        {
+            "path": "environment.json",
+            "sizeBytes": 1048,
+            "sha256": "a115aaa1bf29e23403e9504baa5464a8a3f3c3b7547b3d4826bf2db88a93a494"
+        },
+        {
+            "path": "layout.json",
+            "sizeBytes": 9929,
+            "sha256": "8bb2d581fa507cb66dbdb489dbaaf6f7068167e2cf722ec44b6d91e4b394416c"
+        },
+        {
+            "path": "preview.png",
+            "sizeBytes": 30467,
+            "sha256": "e7f1d08ecac4bba08ecb9016f1b4d5253cfca1bd7cf7b2cc22cb6efce5149112"
+        }
+    ]
+}

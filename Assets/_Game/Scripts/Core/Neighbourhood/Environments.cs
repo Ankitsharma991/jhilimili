@@ -15,8 +15,10 @@ namespace UtsavNights.Core.Neighbourhood
     {
         public EnvironmentInfo(string id, string name, string region, Festival festival, string description, float sizeMb,
             string openKind, Rgb ground, int[] wallColours, (string module, int weight)[] roofs, (string module, int weight)[] balconies,
-            (string module, int weight)[] windows, (string module, int weight)[] boundaries, int[] materials)
+            (string module, int weight)[] windows, (string module, int weight)[] boundaries, int[] materials, bool builtIn = true, string packId = null)
         {
+            BuiltIn = builtIn;
+            PackId = packId;
             Id = id;
             Name = name;
             Region = region;
@@ -47,7 +49,11 @@ namespace UtsavNights.Core.Neighbourhood
         /// <summary>Download size for a pack; built-in environments report their in-app share.</summary>
         public float SizeMb { get; }
 
-        public bool BuiltIn => true;
+        /// <summary>Ships in the app (true) or came in a downloaded pack.</summary>
+        public bool BuiltIn { get; }
+
+        /// <summary>The pack it came in, or null for a built-in environment.</summary>
+        public string PackId { get; }
 
         /// <summary>The open space across the street: square, village area or town space.</summary>
         public string OpenKind { get; }
@@ -103,7 +109,161 @@ namespace UtsavNights.Core.Neighbourhood
                 new[] { 0, 0, 2 }),
         };
 
-        public static EnvironmentInfo Find(string id) => Array.Find(All, e => e.Id == id);
+        private static readonly List<EnvironmentInfo> Installed = new List<EnvironmentInfo>();
+
+        /// <summary>The built-in environments, then those from installed packs.</summary>
+        public static IReadOnlyList<EnvironmentInfo> Available
+        {
+            get
+            {
+                var list = new List<EnvironmentInfo>(All);
+                list.AddRange(Installed);
+                return list;
+            }
+        }
+
+        public static EnvironmentInfo Find(string id) => Array.Find(All, e => e.Id == id) ?? Installed.Find(e => e.Id == id);
+
+        public static bool IsBuiltIn(string id) => Array.Exists(All, e => e.Id == id);
+
+        /// <summary>Adds an installed pack's environment and its layout (replacing an older version of it).</summary>
+        public static void Register(EnvironmentInfo env, SettlementLayout layout)
+        {
+            if (IsBuiltIn(env.Id))
+            {
+                return;
+            }
+
+            Installed.RemoveAll(e => e.Id == env.Id);
+            Installed.Add(env);
+            SettlementLibrary.Register(layout);
+        }
+
+        public static void Unregister(string id)
+        {
+            Installed.RemoveAll(e => e.Id == id);
+            SettlementLibrary.Unregister(id);
+        }
+    }
+
+    /// <summary>
+    /// An environment as a pack carries it (environment.json): the fields of <see cref="EnvironmentInfo"/> in a form JSON can
+    /// hold. Module choices are parallel arrays of ids and weights; an empty id is "none" (no balcony).
+    /// </summary>
+    [Serializable]
+    public sealed class EnvironmentDef
+    {
+        public string id = string.Empty;
+        public string name = string.Empty;
+        public string region = string.Empty;
+        public string[] festivals = new string[0];
+        public string description = string.Empty;
+        public string openKind = SpotKinds.Square;
+        public float[] ground = { 0.42f, 0.33f, 0.27f };
+        public int[] wallColours = new int[0];
+        public int[] materials = { 0 };
+        public string[] roofs = new string[0];
+        public int[] roofWeights = new int[0];
+        public string[] balconies = new string[0];
+        public int[] balconyWeights = new int[0];
+        public string[] windows = new string[0];
+        public int[] windowWeights = new int[0];
+        public string[] boundaries = new string[0];
+        public int[] boundaryWeights = new int[0];
+
+        /// <summary>Every problem with the definition (empty when it can be used).</summary>
+        public List<string> Problems()
+        {
+            var p = new List<string>();
+            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name))
+            {
+                p.Add("an environment needs an id and a name");
+            }
+
+            if (ToFestival() == Festival.None)
+            {
+                p.Add("an environment needs at least one known festival");
+            }
+
+            if (Array.IndexOf(SpotKinds.All, openKind) < 0 || openKind == SpotKinds.Courtyard)
+            {
+                p.Add($"open space kind '{openKind}' is not an open space");
+            }
+
+            if (ground == null || ground.Length != 3)
+            {
+                p.Add("ground needs three colour channels");
+            }
+
+            if (wallColours.Length == 0 || Array.Exists(wallColours, c => c < 0 || c >= HomeCatalog.WallColours.Length))
+            {
+                p.Add("wall colours must be indices into the house wall colours");
+            }
+
+            if (materials.Length == 0 || Array.Exists(materials, m => m < 0 || m >= HomeCatalog.Materials.Length))
+            {
+                p.Add("materials must be indices into the wall finishes");
+            }
+
+            Choices(p, "roofs", roofs, roofWeights, ModuleType.Roof, false);
+            Choices(p, "balconies", balconies, balconyWeights, ModuleType.Balcony, true);
+            Choices(p, "windows", windows, windowWeights, ModuleType.Window, false);
+            Choices(p, "boundaries", boundaries, boundaryWeights, ModuleType.Boundary, false);
+            return p;
+        }
+
+        public Festival ToFestival()
+        {
+            Festival f = Festival.None;
+            foreach (string name in festivals ?? new string[0])
+            {
+                if (Enum.TryParse(name, true, out Festival one) && one != Festival.None)
+                {
+                    f |= one;
+                }
+            }
+
+            return f;
+        }
+
+        public EnvironmentInfo ToInfo(string packId, float sizeMb) => new EnvironmentInfo(id, name, region, ToFestival(), description, sizeMb, openKind,
+            new Art.Rgb(ground[0], ground[1], ground[2]), wallColours, Zip(roofs, roofWeights), Zip(balconies, balconyWeights), Zip(windows, windowWeights),
+            Zip(boundaries, boundaryWeights), materials, builtIn: false, packId: packId);
+
+        private static (string module, int weight)[] Zip(string[] ids, int[] weights)
+        {
+            var list = new (string, int)[ids.Length];
+            for (int i = 0; i < ids.Length; i++)
+            {
+                list[i] = (ids[i] ?? string.Empty, weights[i]);
+            }
+
+            return list;
+        }
+
+        private static void Choices(List<string> p, string field, string[] ids, int[] weights, ModuleType type, bool allowNone)
+        {
+            if (ids == null || weights == null || ids.Length == 0 || ids.Length != weights.Length)
+            {
+                p.Add($"{field}: ids and weights must be equal, non-empty lists");
+                return;
+            }
+
+            for (int i = 0; i < ids.Length; i++)
+            {
+                ModuleInfo m = HomeCatalog.Module(ids[i]);
+                bool none = string.IsNullOrEmpty(ids[i]) && allowNone;
+                if (!none && (m == null || m.Type != type))
+                {
+                    p.Add($"{field}: '{ids[i]}' is not a {type.ToString().ToLowerInvariant()} module");
+                }
+
+                if (weights[i] <= 0)
+                {
+                    p.Add($"{field}: weights must be positive");
+                }
+            }
+        }
     }
 
     /// <summary>

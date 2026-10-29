@@ -360,6 +360,22 @@ namespace UtsavNights.UI
             title.pivot = new Vector2(0.5f, 1f);
             title.sizeDelta = new Vector2(-40f, 90f);
             UiKit.Text(title, "Where to?", UiTheme.BodyText, TextAlignmentOptions.Center, UiTheme.Marigold);
+
+            // The environment browser: choose a different neighbourhood.
+            RectTransform browse = UiKit.Rect("Neighbourhoods", _map);
+            browse.anchorMin = browse.anchorMax = browse.pivot = new Vector2(1f, 1f);
+            browse.sizeDelta = new Vector2(300f, 76f);
+            browse.anchoredPosition = new Vector2(-16f, -8f);
+            Button neighbourhoods = BarButton(browse, "Neighbourhoods", UiTheme.IndigoLight, UiTheme.OffWhite, () =>
+            {
+                EnvironmentBrowser browser = FindFirstObjectByType<EnvironmentBrowser>();
+                if (browser != null)
+                {
+                    _map.gameObject.SetActive(false);
+                    browser.Open();
+                }
+            });
+            UiKit.Stretch((RectTransform)neighbourhoods.transform);
             _mapPlan = UiKit.Rect("Plan", _map);
             _mapPlan.anchorMin = _mapPlan.anchorMax = new Vector2(0.5f, 0.5f);
             _mapPlan.sizeDelta = new Vector2(MapWidth, MapHeight);

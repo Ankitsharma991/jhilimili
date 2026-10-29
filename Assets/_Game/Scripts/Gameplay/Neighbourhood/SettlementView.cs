@@ -28,6 +28,7 @@ namespace UtsavNights.Gameplay
         private float _clock;
         private bool _lowMemory;
         private GameObject _groundRoot;
+        private GameObject _skyline;
 
         private sealed class LotView
         {
@@ -278,11 +279,59 @@ namespace UtsavNights.Gameplay
             Area(Layout.street, 0.004f, Scale(Environment.Ground, 1.45f), 2.5f, "Street");
             Area(Layout.open, 0.003f, Scale(Environment.Ground, 1.3f), 4f, "Open");
             Layout.ChunkRange(out int first, out int last);
+            // By the river the land stops at the ghat's edge, where the steps go down to the water.
+            bool river = Layout.feature == EnvironmentFeatures.Features.Ghat;
             var land = new GroundArea
             {
-                kind = "land", x0 = first * SettlementLayout.ChunkSize - 150f, x1 = last * SettlementLayout.ChunkSize + 150f, z0 = -80f, z1 = Layout.open.z1 + 150f,
+                kind = "land", x0 = first * SettlementLayout.ChunkSize - 150f, x1 = last * SettlementLayout.ChunkSize + 150f, z0 = -80f,
+                z1 = river ? Layout.open.z1 : Layout.open.z1 + 150f,
             };
             Area(land, -0.02f, Scale(Environment.Ground, 0.6f), 6f, "Land");
+            BuildFeatures();
+
+            // The scene's far landmarks (temple, water tank) would stand in the river.
+            // Found once: GameObject.Find cannot see it again while it is hidden.
+            _skyline = _skyline != null ? _skyline : GameObject.Find("Skyline");
+            if (_skyline != null)
+            {
+                _skyline.SetActive(!river);
+            }
+        }
+
+        /// <summary>The environment's own landmarks (ghat and river, chautari and hills, chowk platform) and their colliders.</summary>
+        private void BuildFeatures()
+        {
+            HouseMesh data = EnvironmentFeatures.Build(Layout);
+            if (data.VertexCount == 0)
+            {
+                return;
+            }
+
+            var go = new GameObject("Features");
+            go.transform.SetParent(_groundRoot.transform, false);
+            Mesh mesh = HouseMeshes.ToMesh(data, "Settlement_Features", out HousePaint[] paints);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            MeshRenderer r = go.AddComponent<MeshRenderer>();
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            var materials = new Material[paints.Length];
+            for (int i = 0; i < paints.Length; i++)
+            {
+                Rgb c = paints[i] == HousePaint.Dark ? Scale(Environment.Ground, 0.12f) : HousePalette.Decor(paints[i], "feature", 0);
+                if (paints[i] == HousePaint.Stone)
+                {
+                    c = Scale(Environment.Ground, 1.3f);
+                }
+
+                materials[i] = _shared.Materials.Get(paints[i], c, paints[i] == HousePaint.Stone ? _ground : null, 2.5f);
+            }
+
+            r.sharedMaterials = materials;
+            foreach (Box3 b in EnvironmentFeatures.Solids(Layout))
+            {
+                var box = go.AddComponent<BoxCollider>();
+                box.center = new Vector3((b.Min.X + b.Max.X) / 2f, (b.Min.Y + b.Max.Y) / 2f, (b.Min.Z + b.Max.Z) / 2f);
+                box.size = new Vector3(b.Max.X - b.Min.X, b.Max.Y - b.Min.Y, b.Max.Z - b.Min.Z);
+            }
         }
 
         private void Area(GroundArea a, float y, Rgb colour, float metres, string name)

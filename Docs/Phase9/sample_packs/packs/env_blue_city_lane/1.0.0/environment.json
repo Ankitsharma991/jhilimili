@@ -1,0 +1,63 @@
+{
+    "id": "blue_city_lane",
+    "name": "Blue city lane",
+    "region": "west_india",
+    "festivals": [
+        "Diwali"
+    ],
+    "description": "Blue-washed houses with jharokhas round a small chowk.",
+    "openKind": "square",
+    "ground": [
+        0.5,
+        0.41999998688697817,
+        0.33000001311302187
+    ],
+    "wallColours": [
+        3,
+        3,
+        3,
+        8,
+        0
+    ],
+    "materials": [
+        0,
+        0,
+        2
+    ],
+    "roofs": [
+        "roof_flat_parapet",
+        "roof_terrace_canopy"
+    ],
+    "roofWeights": [
+        6,
+        4
+    ],
+    "balconies": [
+        "balcony_jharokha",
+        "balcony_iron_rail",
+        ""
+    ],
+    "balconyWeights": [
+        6,
+        2,
+        2
+    ],
+    "windows": [
+        "window_arched",
+        "window_jali",
+        "window_shuttered"
+    ],
+    "windowWeights": [
+        4,
+        4,
+        2
+    ],
+    "boundaries": [
+        "boundary_plaster",
+        "boundary_grill"
+    ],
+    "boundaryWeights": [
+        7,
+        3
+    ]
+}

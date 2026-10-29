@@ -179,6 +179,26 @@ def compute(events, crashes=None, ecpm=None):
     m["top_decorations"] = Counter(e.get("id") for e in placed if e.get("id")).most_common(8)
     m["top_modules"] = Counter(e.get("module") for e in events if e["event"] == "house_module_changed" and e.get("module")).most_common(6)
 
+    # R2 (Phase 8) exit gate: session length and retention improve against the R0 cohort. Walkers (users who went for a
+    # walk) are compared with everyone else in the same window; an earlier R0 export gives the R0 cohort itself.
+    walkers = {e["user"] for e in events if e["event"] == "walk_started"}
+    walks = [e for e in events if e["event"] == "walk_ended"]
+    m["walkers"] = len(walkers)
+    m["walker_share"] = len(walkers) / len(by_user) if by_user else None
+    m["walks_per_walker"] = sum(1 for e in events if e["event"] == "walk_started") / len(walkers) if walkers else None
+    secs = [num(e, "seconds") for e in walks if num(e, "seconds") is not None]
+    m["median_walk_s"] = statistics.median(secs) if secs else None
+    for group, users in (("walkers", walkers), ("others", set(by_user) - walkers)):
+        d = [num(e, "duration_s") for e in ends if e["user"] in users and num(e, "duration_s") is not None]
+        m[f"median_session_s_{group}"] = statistics.median(d) if d else None
+        for n in (1, 7):
+            cohort = [u for u in users if last_day and first_day[u] + timedelta(days=n) <= last_day]
+            back = sum(1 for u in cohort if first_day[u] + timedelta(days=n) in active[u])
+            m[f"d{n}_retention_{group}"] = back / len(cohort) if cohort else None
+    m["spot_kinds"] = Counter(e.get("kind") for e in events if e["event"] == "spot_chosen" and e.get("kind")).most_common(9)
+    m["environments"] = Counter(e.get("environment") for e in ends if e.get("environment")).most_common(5)
+    m["fast_travels"] = sum(1 for e in events if e["event"] == "fast_travel")
+
     # PRD 15.3: sessions per user x impressions per session x eCPM / 1000.
     if ecpm is not None and m["sessions_per_user"] is not None and m["ads_per_session"] is not None:
         m["ad_revenue_per_user_usd"] = m["sessions_per_user"] * m["ads_per_session"] * ecpm / 1000
@@ -272,6 +292,18 @@ def report(m, since, days, installs=None):
         lines.append(f"| Most placed | {', '.join(f'{g} ({n})' for g, n in m['top_decorations'])} |")
     if m["top_modules"]:
         lines.append(f"| Most chosen house parts | {', '.join(f'{g} ({n})' for g, n in m['top_modules'])} |")
+    lines += ["", "## Neighbourhood (R2, Phase 8 exit gate)", "", "| Metric | Value |", "|---|---|"]
+    lines.append(f"| Users who walked | {m['walkers']} ({fmt(m['walker_share'], 'pct')} of users) |")
+    lines.append(f"| Walks per walker / median walk | {fmt(m['walks_per_walker'], 'n')} / {fmt(m['median_walk_s'], 's')} |")
+    lines.append(f"| Median session, walkers / others | {fmt(m['median_session_s_walkers'], 's')} / {fmt(m['median_session_s_others'], 's')} |")
+    lines.append(f"| D1 return, walkers / others | {fmt(m['d1_retention_walkers'], 'pct')} / {fmt(m['d1_retention_others'], 'pct')} |")
+    lines.append(f"| D7 return, walkers / others | {fmt(m['d7_retention_walkers'], 'pct')} / {fmt(m['d7_retention_others'], 'pct')} |")
+    lines.append(f"| Fast travels | {m['fast_travels']} |")
+    if m["spot_kinds"]:
+        lines.append(f"| Celebration spots chosen | {', '.join(f'{k} ({n})' for k, n in m['spot_kinds'])} |")
+    if m["environments"]:
+        lines.append(f"| Environments at session end | {', '.join(f'{k} ({n})' for k, n in m['environments'])} |")
+    lines.append("| Against the R0 cohort | Compare the median session and D1/D7 above with an R0-only export of the same length |")
     lines += ["", "Small tests (20 to 50 users) can judge feel, time to ignition, completion and crashes. "
               "Retention, conversion and ad revenue need hundreds to thousands of users (PRD 17)."]
     return "\n".join(lines)
@@ -322,6 +354,15 @@ def self_test():
     add("u1", t0 + timedelta(days=1, minutes=1, seconds=9), "decor_mode_closed", edits=1, saved=0, decorations=3)
     add("u3", t0 + timedelta(minutes=4), "decor_mode_opened", decorations=0)
     add("u3", t0 + timedelta(minutes=4, seconds=10), "house_restored", lines=4)
+    # u1 walks twice and chooses the chowk; u2 walks once.
+    add("u1", t0 + timedelta(minutes=3), "walk_started", environment="town_lane")
+    add("u1", t0 + timedelta(minutes=3, seconds=30), "fast_travel", spot="open")
+    add("u1", t0 + timedelta(minutes=3, seconds=40), "spot_chosen", spot="open", kind="square", environment="town_lane")
+    add("u1", t0 + timedelta(minutes=3, seconds=41), "walk_ended", seconds=41, metres=30)
+    add("u1", t0 + timedelta(days=1, minutes=2), "walk_started", environment="town_lane")
+    add("u1", t0 + timedelta(days=1, minutes=3), "walk_ended", seconds=60, metres=55)
+    add("u2", t0 + timedelta(minutes=2), "walk_started", environment="town_lane")
+    add("u2", t0 + timedelta(minutes=2, seconds=20), "walk_ended", seconds=20, metres=12)
 
     events = load_events(rows, t0.date(), 8)
     m = compute(events, crashes=1, ecpm=2.0)
@@ -352,6 +393,12 @@ def self_test():
         "d1_retention_others": (m["d1_retention_others"], 0.5),
         "top_decoration": (m["top_decorations"][0][0] if m["top_decorations"] else None, "diya_clay"),
         "house_restores": (m["house_restores"], 1),
+        "walkers": (m["walkers"], 2),
+        "walks_per_walker": (m["walks_per_walker"], 1.5),
+        "median_walk_s": (m["median_walk_s"], 41),
+        "d1_retention_walkers": (m["d1_retention_walkers"], 1.0),
+        "d1_retention_others": (m["d1_retention_others"], 0.0),
+        "top_spot_kind": (m["spot_kinds"][0][0] if m["spot_kinds"] else None, "square"),
         # 7 sessions / 4 users x 2 ads / 7 sessions x $2 / 1000.
         "ad_revenue_per_user_usd": (round(m["ad_revenue_per_user_usd"], 6), round(7 / 4 * 2 / 7 * 2 / 1000, 6)),
     }

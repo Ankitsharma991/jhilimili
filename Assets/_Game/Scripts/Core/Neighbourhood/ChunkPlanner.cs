@@ -57,6 +57,57 @@ namespace UtsavNights.Core.Neighbourhood
         /// <summary>Decorations a chunk keeps at <see cref="ChunkDetail.Simple"/>: the ones that give light, which read from afar.</summary>
         public static bool KeptAtSimple(DecorInfo info) => info != null && (info.Category == DecorCategory.Lamps || info.Category == DecorCategory.Lights);
 
+        /// <summary>The triangles a lot draws at a detail level (the view builds exactly these pieces).</summary>
+        public static long LotTriangles(HouseDesign design, ChunkDetail detail)
+        {
+            if (detail == ChunkDetail.Unloaded)
+            {
+                return 0;
+            }
+
+            if (detail == ChunkDetail.Impostor)
+            {
+                return ImpostorBuilder.Build(design).TriangleCount;
+            }
+
+            bool empty = string.IsNullOrEmpty(design.ModuleAt("balcony")?.module);
+            long n = HouseGenerator.Shell(empty).TriangleCount;
+            foreach (ModuleChoice m in design.modules)
+            {
+                HouseMesh mesh = string.IsNullOrEmpty(m.module) ? null : HouseGenerator.Module(m.point, m.module);
+                n += mesh?.TriangleCount ?? 0;
+            }
+
+            foreach (PlacedDecor d in design.decorations)
+            {
+                DecorInfo info = HomeCatalog.Decoration(d.item);
+                if (detail == ChunkDetail.Simple && !ChunkPlanner.KeptAtSimple(info))
+                {
+                    continue;
+                }
+
+                HouseMesh mesh = info.Mode == PlacementMode.Path
+                    ? DecorGenerator.Path(d.item, new V3(d.x, d.y, d.z), new V3(d.ex, d.ey, d.ez), d.sag)
+                    : DecorGenerator.Item(d.item);
+                n += mesh?.TriangleCount ?? 0;
+            }
+
+            return n;
+        }
+
+        /// <summary>The most a settlement can draw: every lot at full detail, plus its landmarks (a pack's budget check).</summary>
+        public static long WorstTriangles(SettlementLayout layout, EnvironmentInfo env)
+        {
+            long n = EnvironmentFeatures.Build(layout).TriangleCount;
+            foreach (LotDef lot in layout.lots)
+            {
+                HouseDesign d = SettlementLibrary.DesignFor(layout, lot, null, env);
+                n += d != null ? LotTriangles(d, ChunkDetail.Full) : 0;
+            }
+
+            return n;
+        }
+
         public ChunkDetail DetailOf(int chunk) => _current.TryGetValue(chunk, out ChunkDetail d) ? d : ChunkDetail.Unloaded;
 
         /// <summary>

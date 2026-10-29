@@ -176,6 +176,9 @@ namespace UtsavNights.Core.Neighbourhood
         public int version = CurrentVersion;
         public string id = string.Empty;
         public string environment = string.Empty;
+
+        /// <summary>The environment's landmark: "ghat", "chautari", "platform" or empty (see <see cref="EnvironmentFeatures"/>).</summary>
+        public string feature = string.Empty;
         public List<LotDef> lots = new List<LotDef>();
         public GroundArea street = new GroundArea { kind = "street" };
         public GroundArea open = new GroundArea { kind = "square" };

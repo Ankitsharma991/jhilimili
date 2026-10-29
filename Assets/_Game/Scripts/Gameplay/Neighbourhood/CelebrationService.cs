@@ -24,6 +24,14 @@ namespace UtsavNights.Gameplay
         public string Environment { get; }
     }
 
+    /// <summary>The player chose an environment in the browser (analytics in step 7).</summary>
+    public readonly struct EnvironmentChosenEvent
+    {
+        public EnvironmentChosenEvent(string environment) => Environment = environment;
+
+        public string Environment { get; }
+    }
+
     /// <summary>
     /// Where the player celebrates (Phase 8 step 4, PRD 10, F20): the chosen spot moves the fireworks camera and the
     /// placement area there, with the spot's aerials rule, launch pads and a clear-sky check that sees the player's own

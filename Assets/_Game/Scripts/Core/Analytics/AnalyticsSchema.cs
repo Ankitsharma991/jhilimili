@@ -18,7 +18,7 @@ namespace UtsavNights.Core.Analytics
             { "cracker_placed", new[] { "id" } },
             { "cracker_ignited", new[] { "id", "is_first" } },
             { "payoff_complete", new[] { "id" } },
-            { "session_end", new[] { "duration_s", "ignitions", "has_avatar", "decorations" } },
+            { "session_end", new[] { "duration_s", "ignitions", "has_avatar", "decorations", "environment", "walk_s" } },
             { "settings_changed", new[] { "key", "value" } },
             { "ad_shown", new[] { "placement", "ms_since_payoff" } },
             { "ad_failed", new[] { "placement", "ms_since_payoff" } },
@@ -42,6 +42,14 @@ namespace UtsavNights.Core.Analytics
             { "layout_saved", new[] { "slot" } },
             { "layout_loaded", new[] { "slot" } },
             { "house_restored", new[] { "lines" } },
+
+            // R2, Phase 8 (exit gate: session length and retention against the R0 cohort). Ids and counts only, never a
+            // position or a route.
+            { "walk_started", new[] { "environment" } },
+            { "walk_ended", new[] { "seconds", "metres" } },
+            { "fast_travel", new[] { "spot" } },
+            { "spot_chosen", new[] { "spot", "kind", "environment" } },
+            { "environment_chosen", new[] { "environment" } },
         };
 
         public static IEnumerable<string> EventNames => Events.Keys;

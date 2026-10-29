@@ -57,6 +57,8 @@ The fireworks need open sky, so nothing tall stands in front of the fireworks ca
 | 3. Walking | Done. `Core/Neighbourhood/WalkNavigator` (walkable areas: courtyard, gate opening, street and open space, vacant plot, rooftop and balcony by stairs when the house has them; straight walks inside the areas, otherwise A* over the walk graph; joystick sliding along edges; home availability tags) and `WalkAgent` (walking pace 1.4 m/s, turning, stairs fades). Gates open: the gate module has an open variant (leaves swung into the courtyard) and the gate's solid is split into pillars and leaves. `Gameplay/Neighbourhood/WalkController` (the player's avatar walks; follow camera with drag-to-look and limited zoom, kept in front of walls; tap-to-move; joystick; fast travel with a fade; the settlement's detail follows the avatar). `UI/WalkMode` (walking-figure button; Home, Map and Joystick; a map with a pin per spot and the avatar's dot), `UI/StickInput`. Walk and decoration modes never open together. Tests: `WalkNavigatorTests` (Mono), `WalkModeSmokeTests` (Play Mode) |
 | 4. Celebration locations | Done. `Core/Neighbourhood/CelebrationRules` (spot availability from the house's and the settlement's tags with plain reasons: a sloping roof, no balcony, a jharokha's low canopy; aerials rule, launch pads, play areas, the player's strands overhead). `PlacementRules`: four new blocks with messages (outside the area, no aerials here, pads only, nothing overhead). `PlacementValidator` gathers them (sky clear 40 m up by raycast and the player's strands). `Gameplay/Neighbourhood/CelebrationService` (choose a spot: the fireworks view and the placement area move there; crackers left at the old spot are cleared; a house change that closes the spot falls back to the courtyard; every session starts at home). Ground markers on the street, open space, empty plot, roof deck and balcony floor. Walk screen: map pins greyed when closed, a card with the reason, Go there and Celebrate here; a Celebrate here button when standing in a spot. Tests: `CelebrationRulesTests` (Mono), `CelebrationSmokeTests` (Play Mode: every spot, every aerial rule, closed spots, celebrate here) |
 | 5. Ambient life and Night Timeline | Done. `Core/Neighbourhood/Ambient`: `NightTimeline` (dusk, evening, night, late over a session's first 24 minutes of play, then holding; sky exposure, ambient light, distant-burst rate and how many people are out; a 6:30 pm to 1 am clock), `AmbientPlan` (bursts on every tier; up to 3 looped neighbours on mid and 6 on high; a 12-person crowd on high only; nothing moving in Quiet mode; low memory keeps 2 neighbours and no crowd), `DistantBursts` (seeded, far beyond the settlement, above every roof), `AmbientAnchors` (a neighbour in each built lot's courtyard; a crowd ring on the open space, clear of every spot's play area). `Gameplay/Neighbourhood/AmbientLife`: street lamps and strings of lights along the street (emissive only), the bursts from one pooled particle system (no allocation), neighbours and crowd as avatars with idle and celebrate loops, the night's sky and ambient on an instance of the sky material. Tests: `AmbientTests` (Mono), `AmbientLifeSmokeTests` (Play Mode: people by tier, Quiet mode through the real setting, the sky darkening) |
+| 6. Environments and browser | Done. `Core/Neighbourhood/EnvironmentFeatures` (riverside: ghat steps, the river, 60 floating diyas, the far bank; hill village: a chautari with a pipal tree and diyas, layered hills; town lane: a chowk platform with diyas), counted by the lint and walked round by the navigator. `EnvironmentPreviews` (painted 512 x 288 cards). `UI/EnvironmentBrowser` (filter chips for festival and region; cards with preview, region and festival, description, size, an "On this phone" badge, a progress bar kept for Phase 9 packs; Choose ends the walk, builds the place and remembers it), opened from the walk map's Neighbourhoods button. By the river the land stops at the ghat and the far landmarks are hidden. `Docs/Phase8/CULTURAL_REVIEW.md`. LICENCE_LOG own-009. Tests: `EnvironmentFeatureTests` (Mono), `EnvironmentBrowserSmokeTests` (Play Mode) |
+| 7. Measure | Done. Analytics: `walk_started` (environment), `walk_ended` (seconds, metres), `fast_travel` (spot), `spot_chosen` (spot, kind, environment), `environment_chosen`, and `environment` and `walk_s` on `session_end`. Never a position or a route (schema test; the privacy policy says so). The metrics report gains a neighbourhood section for the exit gate: share of users who walk, walks and walk length, median session and D1 and D7 return of walkers against everyone else, spots and environments chosen; compare with an R0-only export for the R0 cohort. The BigQuery query has the new columns. Performance: a walking guard (along the whole street on the high tier, chunks changing detail on the way) and the triangle budgets of step 2. Tests: `AnalyticsSchemaTests`, `AnalyticsSmokeTests` (neighbourhood events), `PerformanceGuardTests` (walking), metrics report self-test |
 
 ### Step 1 notes
 
@@ -121,3 +123,24 @@ The fireworks need open sky, so nothing tall stands in front of the fireworks ca
   - The crowd stands in a ring around nothing; a shared fountain in the middle would explain it.
   - Should the night clock show on screen?
   - The crowd and neighbours' look (presets) need the cultural review.
+
+## Phase 8 result
+
+The neighbourhood and celebration locations (F19, F20) are built.
+- **The settlement:**
+  - three environments with their own landmarks, 7 to 11 lots each;
+  - chunked detail within triangle budgets per tier;
+  - walking with tap-to-move, a joystick and the map's fast travel.
+- **Celebration spots and placement:**
+  - celebration spots with plain reasons when closed;
+  - placement that keeps aerials under open sky;
+  - ambient life by tier and Quiet mode, and the Night Timeline.
+- **The environment browser.**
+- **Exit gate data:** the neighbourhood section of the metrics report (walkers' session length and return against
+  everyone else, and against an R0-only export).
+- **Measured in the editor:** walking the whole street on the high tier, with chunks changing detail, allocates 0.26 KB
+  per frame on average (0.90 KB at most); idle stays at 0.01 KB.
+- **Open items** (with the feedback round after all PRD features):
+  - the cultural review (`CULTURAL_REVIEW.md`);
+  - 30 fps while walking on a low-tier phone (measure on the device with the playtest log);
+  - the review lists in the step notes above.

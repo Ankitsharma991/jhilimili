@@ -38,7 +38,14 @@ SELECT
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'point') AS point,
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'module') AS module,
   (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'slot') AS slot,
-  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'lines') AS lines
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'lines') AS lines,
+  -- R2 (Phase 8) neighbourhood events
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'environment') AS environment,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'walk_s') AS walk_s,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'seconds') AS seconds,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'metres') AS metres,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'spot') AS spot,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'kind') AS kind
 FROM `PROJECT.analytics_000000000.events_*`
 WHERE _TABLE_SUFFIX BETWEEN '20261101' AND '20261131'
   AND event_name IN ('app_first_open', 'scene_ready', 'cracker_placed', 'cracker_ignited', 'payoff_complete',
@@ -46,5 +53,6 @@ WHERE _TABLE_SUFFIX BETWEEN '20261101' AND '20261131'
                      'purchase_started', 'purchase_done', 'clip_shared', 'perf_sample',
                      'avatar_creator_opened', 'avatar_saved', 'avatar_skipped',
                      'decor_mode_opened', 'decor_mode_closed', 'decoration_placed', 'house_module_changed',
-                     'layout_saved', 'layout_loaded', 'house_restored')
+                     'layout_saved', 'layout_loaded', 'house_restored',
+                     'walk_started', 'walk_ended', 'fast_travel', 'spot_chosen', 'environment_chosen')
 ORDER BY user, ts

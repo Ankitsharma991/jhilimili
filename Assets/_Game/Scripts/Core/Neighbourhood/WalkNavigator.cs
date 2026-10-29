@@ -68,6 +68,11 @@ namespace UtsavNights.Core.Neighbourhood
         {
             _layout = layout;
             Areas = AreasFor(layout, home);
+            foreach (Box3 b in EnvironmentFeatures.Solids(layout))
+            {
+                // The environment's landmarks (a chautari, a platform) stand on the open space: walk round them.
+                Obstacles.Add(new Box3(b.Min.X - Radius, b.Min.Y - 1f, b.Min.Z - Radius, b.Max.X + Radius, b.Max.Y, b.Max.Z + Radius));
+            }
             foreach (WalkEdge e in layout.edges)
             {
                 Link(e.a, e.b, e.kind == EdgeKinds.Stairs);
@@ -76,6 +81,9 @@ namespace UtsavNights.Core.Neighbourhood
         }
 
         public List<WalkArea> Areas { get; }
+
+        /// <summary>Boxes inside the areas that the avatar walks round (grown by its radius).</summary>
+        public List<Box3> Obstacles { get; } = new List<Box3>();
 
         public static List<WalkArea> AreasFor(SettlementLayout layout, HouseDesign home)
         {
@@ -138,6 +146,14 @@ namespace UtsavNights.Core.Neighbourhood
 
         public bool IsWalkable(V3 p)
         {
+            foreach (Box3 b in Obstacles)
+            {
+                if (p.X > b.Min.X && p.X < b.Max.X && p.Z > b.Min.Z && p.Z < b.Max.Z && p.Y < b.Max.Y && p.Y > b.Min.Y)
+                {
+                    return false;
+                }
+            }
+
             foreach (WalkArea a in Areas)
             {
                 if (a.Contains(p))

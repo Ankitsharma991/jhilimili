@@ -20,7 +20,8 @@ namespace UtsavNights.Tests
             string[] r1 =
             {
                 "avatar_creator_opened", "avatar_saved", "avatar_skipped", "decor_mode_opened", "decor_mode_closed", "decoration_placed",
-                "house_module_changed", "layout_saved", "layout_loaded", "house_restored",
+                "house_module_changed", "layout_saved", "layout_loaded", "house_restored", "walk_started", "walk_ended", "fast_travel",
+                "spot_chosen", "environment_chosen",
             };
             CollectionAssert.AreEquivalent(prd.Concat(r1), AnalyticsSchema.EventNames.ToArray());
         }
@@ -60,6 +61,24 @@ namespace UtsavNights.Tests
             foreach (Core.Home.AttachmentPoint point in Core.Home.HomeCatalog.Points)
             {
                 Assert.IsTrue(AnalyticsSchema.IsSafeId(point.Id), point.Id);
+            }
+        }
+
+        [Test]
+        public void NeighbourhoodEvents_CarryIdsAndCountsOnly()
+        {
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("spot_chosen", new EventParams().Add("spot", "vacant_lot").Add("kind", "vacant_lot").Add("environment", "hill_village")));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("walk_ended", new EventParams().Add("seconds", 95L).Add("metres", 120L)));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("session_end", new EventParams().Add("duration_s", 60L).Add("environment", "riverside").Add("walk_s", 30L)));
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("walk_ended", new EventParams().Add("x", 3.5)), "no positions");
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("fast_travel", new EventParams().Add("spot", "open").Add("route", "a")), "no routes");
+            foreach (Core.Neighbourhood.EnvironmentInfo env in Core.Neighbourhood.Environments.All)
+            {
+                Assert.IsTrue(AnalyticsSchema.IsSafeId(env.Id), env.Id);
+                foreach (Core.Neighbourhood.SpotDef spot in Core.Neighbourhood.SettlementLibrary.For(env.Id).spots)
+                {
+                    Assert.IsTrue(AnalyticsSchema.IsSafeId(spot.id) && AnalyticsSchema.IsSafeId(spot.kind), spot.id);
+                }
             }
         }
 

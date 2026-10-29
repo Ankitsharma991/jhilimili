@@ -20,7 +20,7 @@ namespace UtsavNights.Core.Neighbourhood
         private static readonly float[] SkyElevations = { 18f, 30f };
         private static readonly float[] SkySides = { -12f, 0f, 12f };
 
-        public static List<string> Check(SettlementLayout layout, HouseDesign home = null)
+        public static List<string> Check(SettlementLayout layout, HouseDesign home = null, EnvironmentInfo env = null)
         {
             var problems = new List<string>();
             if (layout == null)
@@ -29,25 +29,32 @@ namespace UtsavNights.Core.Neighbourhood
                 return problems;
             }
 
-            if (Environments.Find(layout.environment) == null)
+            env = env ?? Environments.Find(layout.environment);
+            if (env == null || env.Id != layout.environment)
             {
                 problems.Add($"unknown environment '{layout.environment}'");
+                return problems;
+            }
+
+            if (Array.IndexOf(EnvironmentFeatures.Features.All, layout.feature ?? string.Empty) < 0)
+            {
+                problems.Add($"unknown landmark '{layout.feature}'");
             }
 
             CheckLots(layout, problems);
-            List<Box3> solids = Solids(layout, home);
+            List<Box3> solids = Solids(layout, home, env);
             CheckSpots(layout, solids, problems);
             CheckWalkGraph(layout, solids, problems);
             return problems;
         }
 
         /// <summary>Every solid box of every built lot, in world space.</summary>
-        public static List<Box3> Solids(SettlementLayout layout, HouseDesign home = null)
+        public static List<Box3> Solids(SettlementLayout layout, HouseDesign home = null, EnvironmentInfo env = null)
         {
             var solids = new List<Box3>();
             foreach (LotDef lot in layout.lots)
             {
-                HouseDesign design = SettlementLibrary.DesignFor(layout, lot, home);
+                HouseDesign design = SettlementLibrary.DesignFor(layout, lot, home, env);
                 if (design == null)
                 {
                     continue;
@@ -59,6 +66,7 @@ namespace UtsavNights.Core.Neighbourhood
                 }
             }
 
+            solids.AddRange(EnvironmentFeatures.Solids(layout));
             return solids;
         }
 

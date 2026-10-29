@@ -63,6 +63,52 @@ namespace UtsavNights.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator NeighbourhoodEvents_ReachAnalytics()
+        {
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            Assert.IsTrue(Game.Services.TryGet(out AnalyticsService analytics));
+            Assert.IsTrue(Game.Services.TryGet(out SettingsService settings));
+            Assert.IsTrue(Game.Services.TryGet(out ConsentService consent));
+            var log = (DevAnalyticsBackend)analytics.Backend;
+            var dev = (DevConsentBackend)consent.Backend;
+            bool wasEea = dev.InEea;
+            bool wasSharing = settings.Current.shareUsageStats;
+            try
+            {
+                dev.InEea = false;
+                dev.Reset();
+                consent.Gather();
+                settings.Change(s => s.shareUsageStats = true);
+                var walk = Object.FindFirstObjectByType<UI.WalkMode>();
+                walk.Open();
+                Assert.AreEqual("walk_started", log.LastEvent);
+                Assert.IsTrue(walk.Controller.FastTravel("open"));
+                Assert.AreEqual("fast_travel", log.LastEvent);
+                StringAssert.Contains("\"spot\":\"open\"", System.IO.File.ReadAllLines(DevAnalyticsBackend.FilePath)[^1]);
+                Assert.IsTrue(walk.Celebrate("open"));
+                string[] lines = System.IO.File.ReadAllLines(DevAnalyticsBackend.FilePath);
+                StringAssert.Contains("spot_chosen", lines[^2]);
+                StringAssert.Contains("\"kind\":\"square\"", lines[^2]);
+                Assert.AreEqual("walk_ended", log.LastEvent);
+                StringAssert.DoesNotContain("\"x\"", lines[^1], "no positions");
+
+                analytics.EndSession();
+                string end = System.IO.File.ReadAllLines(DevAnalyticsBackend.FilePath)[^1];
+                StringAssert.Contains("\"environment\":\"town_lane\"", end);
+                StringAssert.Contains("walk_s", end);
+                Assert.IsTrue(Game.Services.TryGet(out CelebrationService celebration));
+                celebration.Choose("courtyard");
+            }
+            finally
+            {
+                dev.InEea = wasEea;
+                settings.Change(s => s.shareUsageStats = wasSharing);
+            }
+        }
+
+        [UnityTest]
         public IEnumerator AvatarEvents_ReachAnalytics_WithoutTheName()
         {
             new ProfileStore().Delete();

@@ -59,9 +59,15 @@ namespace UtsavNights.Gameplay
             Game.Events.Subscribe<DecorationPlacedEvent>(OnDecorationPlaced);
             Game.Events.Subscribe<HouseModuleChangedEvent>(OnModuleChanged);
             Game.Events.Subscribe<HouseLayoutEvent>(OnLayout);
+            Game.Events.Subscribe<WalkStartedEvent>(OnWalkStarted);
+            Game.Events.Subscribe<WalkEndedEvent>(OnWalkEnded);
+            Game.Events.Subscribe<FastTravelEvent>(OnFastTravel);
+            Game.Events.Subscribe<SpotChosenEvent>(OnSpotChosen);
+            Game.Events.Subscribe<EnvironmentChosenEvent>(OnEnvironmentChosen);
         }
 
         private bool _reportedRestore;
+        private int _walkSeconds;
 
         public IAnalyticsBackend Backend { get; }
 
@@ -95,6 +101,11 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<DecorationPlacedEvent>(OnDecorationPlaced);
             Game.Events.Unsubscribe<HouseModuleChangedEvent>(OnModuleChanged);
             Game.Events.Unsubscribe<HouseLayoutEvent>(OnLayout);
+            Game.Events.Unsubscribe<WalkStartedEvent>(OnWalkStarted);
+            Game.Events.Unsubscribe<WalkEndedEvent>(OnWalkEnded);
+            Game.Events.Unsubscribe<FastTravelEvent>(OnFastTravel);
+            Game.Events.Unsubscribe<SpotChosenEvent>(OnSpotChosen);
+            Game.Events.Unsubscribe<EnvironmentChosenEvent>(OnEnvironmentChosen);
         }
 
         /// <summary>app_first_open once per install (PRD 17: install quality).</summary>
@@ -133,8 +144,9 @@ namespace UtsavNights.Gameplay
             FlushSettings();
             bool hasAvatar = Game.Services.TryGet(out ProfileService profiles) && profiles.Current.created;
             long decorations = Game.Services.TryGet(out HomeService home) ? home.Design.decorations.Count : 0L;
+            string environment = Game.Services.TryGet(out SettlementView settlement) ? settlement.Layout.environment : "none";
             Send("session_end", new EventParams().Add("duration_s", (long)(Now - _sessionStart)).Add("ignitions", (long)_ignitions).Add("has_avatar", hasAvatar)
-                .Add("decorations", decorations));
+                .Add("decorations", decorations).Add("environment", environment).Add("walk_s", (long)_walkSeconds));
         }
 
         public void Tick(float deltaSeconds)
@@ -260,6 +272,21 @@ namespace UtsavNights.Gameplay
             Send("decoration_placed", new EventParams().Add("id", e.Item).Add("category", e.Category.ToString().ToLowerInvariant()));
 
         private void OnModuleChanged(HouseModuleChangedEvent e) => Send("house_module_changed", new EventParams().Add("point", e.Point).Add("module", e.Module));
+
+        private void OnWalkStarted(WalkStartedEvent e) => Send("walk_started", new EventParams().Add("environment", e.Environment));
+
+        private void OnWalkEnded(WalkEndedEvent e)
+        {
+            _walkSeconds += e.Seconds;
+            Send("walk_ended", new EventParams().Add("seconds", (long)e.Seconds).Add("metres", (long)e.Metres));
+        }
+
+        private void OnFastTravel(FastTravelEvent e) => Send("fast_travel", new EventParams().Add("spot", e.Spot));
+
+        private void OnSpotChosen(SpotChosenEvent e) =>
+            Send("spot_chosen", new EventParams().Add("spot", e.Spot).Add("kind", e.Kind).Add("environment", e.Environment));
+
+        private void OnEnvironmentChosen(EnvironmentChosenEvent e) => Send("environment_chosen", new EventParams().Add("environment", e.Environment));
 
         private void OnLayout(HouseLayoutEvent e) => Send(e.Saved ? "layout_saved" : "layout_loaded", new EventParams().Add("slot", (long)e.Slot));
 

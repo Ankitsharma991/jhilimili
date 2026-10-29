@@ -21,7 +21,9 @@ namespace UtsavNights.Tests
         // - UI/ExternalLinks.cs opens the privacy policy in the phone's browser (PRD 16); the game itself
         //   stays offline. The SDK assemblies (Scripts/Sdk) use the network only inside Google's and
         //   Unity's libraries, never through these APIs, so they need no entry.
-        private static readonly string[] Allowed = { "/Scripts/UI/ExternalLinks.cs" };
+        // - Gameplay/Packs/PackPlumbing.cs downloads content packs (Phase 9, F21) over HTTPS, only when the player taps
+        //   Download or Update; everything already on the phone, built in or installed, keeps working offline.
+        private static readonly string[] Allowed = { "/Scripts/UI/ExternalLinks.cs", "/Scripts/Gameplay/Packs/PackPlumbing.cs" };
 
         [Test]
         public void GameCodeMakesNoNetworkCalls()
