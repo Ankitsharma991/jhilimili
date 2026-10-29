@@ -279,6 +279,79 @@ namespace UtsavNights.Core.Shows
         public static void Shift(ShowCue cue, float seconds) => cue.at = Math.Max(0f, Math.Min(MaxLength, (float)Math.Round((cue.at + seconds) * 10f) / 10f));
     }
 
+    /// <summary>The show designer's edits (Phase 9 step 5), kept here so they are tested without the screen.</summary>
+    public static class ShowEditing
+    {
+        /// <summary>Seconds between a pad's new cracker and the show's latest cue when the pad is free.</summary>
+        public const float Rhythm = 1.5f;
+
+        /// <summary>
+        /// When a new cracker on a pad should light: on the show's rhythm after the latest cue, and never before the pad's
+        /// last cracker has cleared and a second has passed to set the new one down.
+        /// </summary>
+        public static float NextTime(ShowDef show, int pad, Func<string, CrackerTiming?> lookup)
+        {
+            float t = 0f;
+            bool any = false;
+            foreach (ShowCue c in show.cues)
+            {
+                t = Math.Max(t, c.at);
+                any = true;
+            }
+
+            t = any ? t + Rhythm : 0f;
+            foreach (ShowCue c in show.cues)
+            {
+                CrackerTiming? timing = lookup(c.cracker);
+                if (c.pad == pad && timing != null)
+                {
+                    t = Math.Max(t, c.at + timing.Value.Fuse + timing.Value.Show + ShowRules.Lead);
+                }
+            }
+
+            return (float)Math.Ceiling(t * 10f - 1e-3f) / 10f;
+        }
+
+        /// <summary>Adds a cracker to a pad at its next free time; returns the new cue, or null when the pad doesn't exist or the show is full.</summary>
+        public static ShowCue Add(ShowDef show, string cracker, int pad, Func<string, CrackerTiming?> lookup)
+        {
+            if (pad < 0 || pad >= show.pads.Count || show.cues.Count >= ShowRules.MaxCues)
+            {
+                return null;
+            }
+
+            var cue = new ShowCue { cracker = cracker, pad = pad, at = Math.Min(ShowRules.MaxLength, NextTime(show, pad, lookup)) };
+            show.cues.Add(cue);
+            return cue;
+        }
+
+        /// <summary>One more pad; the pads are laid out again in rows. False at the most pads.</summary>
+        public static bool AddPad(ShowDef show)
+        {
+            if (show.pads.Count >= ShowRules.MaxPads)
+            {
+                return false;
+            }
+
+            show.pads = ShowTemplates.Layout(show.pads.Count + 1);
+            return true;
+        }
+
+        /// <summary>Removes the last pad and the crackers on it. False at one pad.</summary>
+        public static bool RemovePad(ShowDef show)
+        {
+            if (show.pads.Count <= 1)
+            {
+                return false;
+            }
+
+            int last = show.pads.Count - 1;
+            show.cues.RemoveAll(c => c.pad == last);
+            show.pads = ShowTemplates.Layout(last);
+            return true;
+        }
+    }
+
     /// <summary>The built-in template shows (Phase 9 step 4): a starting point to edit and save. Free crackers only.</summary>
     public static class ShowTemplates
     {

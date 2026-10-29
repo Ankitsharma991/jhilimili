@@ -449,6 +449,17 @@ namespace UtsavNights.EditorTools.Main
             finaleRect.offsetMin = Vector2.zero;
             finaleRect.offsetMax = Vector2.zero;
             finaleGo.AddComponent<UI.FinaleButton>();
+
+            // Phase 9: the show designer, from the Shows button left of Finale.
+            var showsGo = new GameObject("ShowDesigner", typeof(RectTransform));
+            showsGo.transform.SetParent(safe.transform, false);
+            var showsRect = (RectTransform)showsGo.transform;
+            showsRect.anchorMin = Vector2.zero;
+            showsRect.anchorMax = Vector2.one;
+            showsRect.offsetMin = Vector2.zero;
+            showsRect.offsetMax = Vector2.zero;
+            showsGo.AddComponent<UI.ShowDesigner>();
+            showsGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
             finaleGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
             canvasGo.AddComponent<UI.ScreenReaderSupport>();
             canvasGo.AddComponent<UI.MeasureTools>();

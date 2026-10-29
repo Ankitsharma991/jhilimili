@@ -159,5 +159,38 @@ namespace UtsavNights.Tests
             Assert.IsTrue(lib.Remove("t"));
             Assert.IsTrue(lib.Put(extra));
         }
+
+        [Test]
+        public void Editing_AddsOnTheRhythm_AndWaitsForABusyPad()
+        {
+            ShowDef s = ShowTemplates.Blank("e", "Edit", 2);
+            ShowCue a = ShowEditing.Add(s, "flowerpot_gold", 0, Lookup);
+            Assert.AreEqual(0f, a.at, "the first cracker lights at the start");
+            ShowCue b = ShowEditing.Add(s, "sparkler_classic", 1, Lookup);
+            Assert.AreEqual(ShowEditing.Rhythm, b.at, 1e-4f, "a free pad follows the rhythm");
+            ShowCue c = ShowEditing.Add(s, "chakri_classic", 0, Lookup);
+            Assert.AreEqual(10f, c.at, 1e-4f, "pad 1 waits for the flowerpot (0 + 2 + 7) and a second to set down");
+            CollectionAssert.IsEmpty(Check(s), "what the designer adds always passes");
+            Assert.IsNull(ShowEditing.Add(s, "chakri_classic", 5, Lookup));
+        }
+
+        [Test]
+        public void Editing_PadsGrowAndShrink_TakingTheirCrackers()
+        {
+            ShowDef s = ShowTemplates.Blank("e", "Edit", 1);
+            Assert.IsFalse(ShowEditing.RemovePad(s), "one pad stays");
+            for (int i = 1; i < ShowRules.MaxPads; i++)
+            {
+                Assert.IsTrue(ShowEditing.AddPad(s));
+            }
+
+            Assert.IsFalse(ShowEditing.AddPad(s), "eight at most");
+            ShowEditing.Add(s, "rocket_basic", 7, Lookup);
+            ShowEditing.Add(s, "flowerpot_gold", 0, Lookup);
+            Assert.IsTrue(ShowEditing.RemovePad(s));
+            Assert.AreEqual(7, s.pads.Count);
+            Assert.AreEqual(1, s.cues.Count, "the removed pad's rocket went with it");
+            CollectionAssert.IsEmpty(Check(s));
+        }
     }
 }
