@@ -131,6 +131,25 @@ namespace UtsavNights.Tests
         }
 
         [Test]
+        public void OpenGates_StayInTheGateVolumeAndClearTheOpening()
+        {
+            PointFrame frame = HouseGeometry.Frame("gate");
+            foreach (ModuleInfo g in HomeCatalog.Modules.Where(m => m.Type == ModuleType.Gate))
+            {
+                HouseMesh open = HouseGenerator.Module("gate", g.Id, open: true);
+                AssertWellFormed(open, g.Id + " open");
+                foreach (V3 p in open.Positions)
+                {
+                    Assert.IsTrue(frame.Volumes.Any(v => v.Contains(p)), $"{g.Id} open: {p}");
+                    bool inOpening = Math.Abs(p.X - HouseGeometry.GateX) < 0.28f && p.Y < 1.9f && Math.Abs(p.Z - HouseGeometry.BackWallZ) < 0.15f;
+                    Assert.IsFalse(inOpening, $"{g.Id} open: a leaf still blocks the way at {p}");
+                }
+
+                Assert.AreNotEqual(HouseGenerator.Module("gate", g.Id).Bounds().ToString(), open.Bounds().ToString());
+            }
+        }
+
+        [Test]
         public void WrongTypeOrUnknown_GivesNoMesh()
         {
             Assert.IsNull(HouseGenerator.Module("door", "window_jali"));

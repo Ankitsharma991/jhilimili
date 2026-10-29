@@ -52,8 +52,11 @@ namespace UtsavNights.Core.Home
             return m;
         }
 
-        /// <summary>The module at a point, in house space. Null for an empty optional point or a module that does not fit.</summary>
-        public static HouseMesh Module(string pointId, string moduleId)
+        /// <summary>
+        /// The module at a point, in house space. Null for an empty optional point or a module that does not fit.
+        /// <paramref name="open"/> swings a gate's leaves open into the courtyard (Phase 8: the player walks out through it).
+        /// </summary>
+        public static HouseMesh Module(string pointId, string moduleId, bool open = false)
         {
             AttachmentPoint point = HomeCatalog.Point(pointId);
             ModuleInfo module = HomeCatalog.Module(moduleId);
@@ -82,7 +85,7 @@ namespace UtsavNights.Core.Home
                     Boundary(m, module.Id);
                     break;
                 case ModuleType.Gate:
-                    Gate(m, module.Id);
+                    Gate(m, module.Id, open);
                     break;
             }
 
@@ -541,7 +544,7 @@ namespace UtsavNights.Core.Home
             m.Box(b.Min.X - ox, height, b.Min.Z - oz, b.Max.X + ox, height + 0.06f, b.Max.Z + oz, top, Faces.Bottom);
         }
 
-        private static void Gate(HouseMesh m, string id)
+        private static void Gate(HouseMesh m, string id, bool open)
         {
             // Pillars either side of a 0.78 m opening, as deep as the wall plus a little.
             const float inner = 0.39f, outer = 0.61f, t = 0.2f;
@@ -561,23 +564,23 @@ namespace UtsavNights.Core.Home
             switch (id)
             {
                 case "gate_iron":
-                    IronLeaves(m, inner, 1.25f, spears: true);
+                    IronLeaves(m, inner, 1.25f, spears: true, open);
                     break;
 
                 case "gate_wooden":
                     foreach (int side in new[] { -1, 1 })
                     {
                         float x0 = side * 0.005f, x1 = side * (inner - 0.005f);
-                        m.Box(x0, 0.05f, -0.03f, x1, 1.35f, 0.03f, HousePaint.Accent);
+                        Leaf(m, open, side, inner, x0, 0.05f, -0.03f, x1, 1.35f, 0.03f, HousePaint.Accent, Faces.None);
                         for (int p = 1; p < 4; p++)
                         {
                             float x = x0 + (x1 - x0) * p / 4f;
-                            m.Box(x - 0.006f, 0.08f, -0.035f, x + 0.006f, 1.32f, 0.035f, HousePaint.Dark, Faces.Top | Faces.Bottom);
+                            Leaf(m, open, side, inner, x - 0.006f, 0.08f, -0.035f, x + 0.006f, 1.32f, 0.035f, HousePaint.Dark, Faces.Top | Faces.Bottom);
                         }
 
                         foreach (float y in new[] { 0.3f, 1.05f })
                         {
-                            m.Box(x0, y - 0.03f, -0.04f, x1, y + 0.03f, 0.04f, HousePaint.Iron);
+                            Leaf(m, open, side, inner, x0, y - 0.03f, -0.04f, x1, y + 0.03f, 0.04f, HousePaint.Iron, Faces.None);
                         }
                     }
 
@@ -586,32 +589,50 @@ namespace UtsavNights.Core.Home
                 case "gate_arch":
                     m.ArchBand(0f, pillar, inner, outer, -t, t, ArchSegments, HousePaint.Wall);
                     m.Box(-0.06f, pillar + inner - 0.02f, -t - 0.02f, 0.06f, pillar + outer, t + 0.02f, HousePaint.Trim); // keystone
-                    IronLeaves(m, inner, 1.2f, spears: false);
+                    IronLeaves(m, inner, 1.2f, spears: false, open);
                     break;
             }
         }
 
-        private static void IronLeaves(HouseMesh m, float inner, float height, bool spears)
+        private static void IronLeaves(HouseMesh m, float inner, float height, bool spears, bool open)
         {
             foreach (int side in new[] { -1, 1 })
             {
                 float x0 = side * 0.005f, x1 = side * (inner - 0.005f);
                 foreach (float y in new[] { 0.06f, height * 0.5f, height })
                 {
-                    m.Box(x0, y - 0.025f, -0.02f, x1, y + 0.025f, 0.02f, HousePaint.Accent);
+                    Leaf(m, open, side, inner, x0, y - 0.025f, -0.02f, x1, y + 0.025f, 0.02f, HousePaint.Accent, Faces.None);
                 }
 
                 for (int b = 0; b <= 4; b++)
                 {
                     float x = x0 + (x1 - x0) * b / 4f;
                     x = side < 0 ? Math.Min(-0.015f, Math.Max(-inner + 0.015f, x)) : Math.Max(0.015f, Math.Min(inner - 0.015f, x));
-                    m.Box(x - 0.012f, 0.06f, -0.012f, x + 0.012f, height + (spears ? 0.12f : 0f), 0.012f, HousePaint.Accent, Faces.Bottom);
+                    Leaf(m, open, side, inner, x - 0.012f, 0.06f, -0.012f, x + 0.012f, height + (spears ? 0.12f : 0f), 0.012f, HousePaint.Accent, Faces.Bottom);
                     if (spears)
                     {
-                        m.Box(x - 0.025f, height + 0.08f, -0.02f, x + 0.025f, height + 0.11f, 0.02f, HousePaint.Accent);
+                        Leaf(m, open, side, inner, x - 0.025f, height + 0.08f, -0.02f, x + 0.025f, height + 0.11f, 0.02f, HousePaint.Accent, Faces.None);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// A box of a gate leaf, given closed (across the opening, hinged at x = side * inner). Open, the leaf is turned 90
+        /// degrees about its hinge into the courtyard (toward -z) and sits just inside the pillar.
+        /// </summary>
+        private static void Leaf(HouseMesh m, bool open, int side, float inner, float x0, float y0, float z0, float x1, float y1, float z1, HousePaint paint, Faces skip)
+        {
+            if (!open)
+            {
+                m.Box(x0, y0, z0, x1, y1, z1, paint, skip);
+                return;
+            }
+
+            float hinge = side * inner;
+            float ax = hinge - side * (z0 + 0.045f), bx = hinge - side * (z1 + 0.045f);
+            float az = side * (x0 - hinge), bz = side * (x1 - hinge);
+            m.Box(ax, y0, az, bx, y1, bz, paint, skip & (Faces.Top | Faces.Bottom));
         }
 
         // ---- Shared parts ----

@@ -54,6 +54,7 @@ The fireworks need open sky, so nothing tall stands in front of the fireworks ca
 |---|---|
 | 1. Settlement model | Done. `Core/Neighbourhood`: `SettlementLayout` (layout JSON: lots, street, open space, spots with tags, aerials rule and launch pads, walk graph; chunks are 16.8 m street segments), `Environments` (town lane for Diwali, hill village for Tihar, riverside ghat; house styles per environment), `NeighbourDesigns` (seeded houses with festival decorations that pass the Phase 7 placement rules), `SettlementLibrary` (the three layouts: 11, 8 and 7 lots), `SettlementLint`. `Gameplay/Neighbourhood/SettlementJson` reads layouts through the lint. Balcony placement solids are now the slab and rails (the floor stays free). Tests: `SettlementTests` (Mono), `SettlementJsonTests` |
 | 2. Chunks and LOD | Done. `Core/Neighbourhood/ChunkPlanner` (full, simple and impostor detail by distance and tier, 2 m hysteresis, low-memory drop to impostors; no allocation per update) and `ImpostorBuilder` (a house as boxes with lit windows, under 160 triangles). `Gameplay/Neighbourhood`: `SettlementView` (street, open space and land; every neighbour lot at its chunk's detail; rebuilds only changed chunks; meshes and materials shared across lots through `HomeShared`; no real lights; colliders for the houses' solid parts), `NeighbourhoodInstaller`. The Main scene's floor is now just the courtyard; the old skyline houses are replaced by the settlement (the temple spire and water tank stay as far landmarks); the camera's far clip is 150 m. Captures: `Utsav/Phase 8/Capture Neighbourhood Shots`. Tests: `ChunkPlannerTests` (Mono, including the whole settlement's triangles per tier at every spot), `SettlementSmokeTests` (Play Mode) |
+| 3. Walking | Done. `Core/Neighbourhood/WalkNavigator` (walkable areas: courtyard, gate opening, street and open space, vacant plot, rooftop and balcony by stairs when the house has them; straight walks inside the areas, otherwise A* over the walk graph; joystick sliding along edges; home availability tags) and `WalkAgent` (walking pace 1.4 m/s, turning, stairs fades). Gates open: the gate module has an open variant (leaves swung into the courtyard) and the gate's solid is split into pillars and leaves. `Gameplay/Neighbourhood/WalkController` (the player's avatar walks; follow camera with drag-to-look and limited zoom, kept in front of walls; tap-to-move; joystick; fast travel with a fade; the settlement's detail follows the avatar). `UI/WalkMode` (walking-figure button; Home, Map and Joystick; a map with a pin per spot and the avatar's dot), `UI/StickInput`. Walk and decoration modes never open together. Tests: `WalkNavigatorTests` (Mono), `WalkModeSmokeTests` (Play Mode) |
 
 ### Step 1 notes
 
@@ -79,3 +80,14 @@ The fireworks need open sky, so nothing tall stands in front of the fireworks ca
 - **Lighting:** the neighbourhood is lit by ambient light, the moon and its own glowing windows and lamps (no real
   lights). The street and open ground are tinted lighter so they read at night. Step 5 adds street lamps and string
   lights.
+
+### Step 3 notes
+
+- **Walkable ground** is a set of flat rectangles, each kept 0.3 m (the avatar's radius) from the walls around it.
+  Straight walks need every point on the line inside the areas; other routes follow the walk graph, which the lint keeps
+  out of walls. A tap on a wall or in a neighbour's yard walks to the nearest walkable point.
+- **Stairs** (courtyard to rooftop, courtyard to balcony) are a short fade, not a walk.
+- **The joystick** is off by default (PRD 10: tap-to-move is the default); the Joystick button turns it on and the choice
+  is remembered.
+- **Review list:** whether the gate leaves should swing with an animation, the walk speed, the camera distance on a phone
+  screen, and the map's look.

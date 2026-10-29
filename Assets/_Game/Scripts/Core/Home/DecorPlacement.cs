@@ -220,7 +220,10 @@ namespace UtsavNights.Core.Home
                 solids.Add(new Box3(x0, 0f, back, x1, top, HouseGeometry.BackWallZ + HouseGeometry.BoundaryThickness / 2f));
             }
 
-            solids.Add(new Box3(gateL, 0f, back - 0.03f, gateR, 2.2f, HouseGeometry.BackWallZ + 0.2f));
+            // The gate: its pillars, and its leaves across the opening (open while the avatar walks out).
+            solids.Add(new Box3(gateL, 0f, back - 0.03f, gateL + 0.22f, 2.2f, HouseGeometry.BackWallZ + 0.2f));
+            solids.Add(new Box3(gateR - 0.22f, 0f, back - 0.03f, gateR, 2.2f, HouseGeometry.BackWallZ + 0.2f));
+            solids.Add(HouseGeometry.GateLeaves);
 
             // Balcony: its rail top is a ledge; the balcony itself is solid.
             string balcony = design.ModuleAt("balcony")?.module ?? string.Empty;

@@ -106,6 +106,12 @@ namespace UtsavNights.Gameplay
                 return false;
             }
 
+            WalkController walking = FindFirstObjectByType<WalkController>();
+            if (walking != null && walking.IsOpen)
+            {
+                return false;
+            }
+
             if (_camera == null)
             {
                 _camera = Camera.main;

@@ -106,6 +106,9 @@ namespace UtsavNights.Core.Home
 
         public const float CourtyardStepTop = 0.08f;
 
+        /// <summary>The gate's leaves across its opening (house space). They swing open for the walking avatar.</summary>
+        public static Box3 GateLeaves => new Box3(GateX - 0.39f, 0f, BackWallZ - 0.2f, GateX + 0.39f, 2.2f, BackWallZ + 0.2f);
+
         public static PointFrame Frame(string pointId) => Array.Find(Frames, f => f.PointId == pointId);
 
         /// <summary>The openings cut in the front wall: every door and window point, and the upper door.</summary>

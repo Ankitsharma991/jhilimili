@@ -19,6 +19,7 @@ namespace UtsavNights.Gameplay
         private HomeMaterials _materials = new HomeMaterials();
         private HomeShared _shared;
         private bool _withLights = true;
+        private bool _gateOpen;
         private Piece _shell;
         private HouseDesign _shown;
         private Light[] _lights;
@@ -31,6 +32,7 @@ namespace UtsavNights.Gameplay
             public string Module;
             public HousePaint[] Paints;
             public bool SharedMesh;
+            public bool Open;
         }
 
         /// <summary>The design on screen (a copy), or null before the first <see cref="Show"/>.</summary>
@@ -82,7 +84,8 @@ namespace UtsavNights.Gameplay
             foreach (ModuleChoice choice in design.modules)
             {
                 _pieces.TryGetValue(choice.point, out Piece piece);
-                if (piece != null && piece.Module == choice.module)
+                bool open = _gateOpen && choice.point == "gate";
+                if (piece != null && piece.Module == choice.module && piece.Open == open)
                 {
                     continue;
                 }
@@ -92,9 +95,11 @@ namespace UtsavNights.Gameplay
                 if (!string.IsNullOrEmpty(choice.module))
                 {
                     string point = choice.point, module = choice.module;
-                    Piece built = Build(point, module, () => HouseGenerator.Module(point, module));
+                    Piece built = Build(point, open ? module + ":open" : module, () => HouseGenerator.Module(point, module, open));
                     if (built != null)
                     {
+                        built.Module = module;
+                        built.Open = open;
                         _pieces[point] = built;
                     }
                 }
@@ -111,6 +116,23 @@ namespace UtsavNights.Gameplay
 
             _shown = design.Clone();
         }
+
+        /// <summary>Swings the gate's leaves open (the player walks out) or shut.</summary>
+        public void SetGateOpen(bool open)
+        {
+            if (_gateOpen == open)
+            {
+                return;
+            }
+
+            _gateOpen = open;
+            if (_shown != null)
+            {
+                Show(_shown);
+            }
+        }
+
+        public bool GateOpen => _gateOpen;
 
         /// <summary>The house's own lights; decoration mode keeps them on, the fireworks view may turn them off.</summary>
         public void SetLightsEnabled(bool on)

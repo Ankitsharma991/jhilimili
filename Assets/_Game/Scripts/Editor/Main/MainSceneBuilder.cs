@@ -166,6 +166,7 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<MonetisationInstaller>();
             systems.AddComponent<AvatarInstaller>();
             systems.AddComponent<DecorationController>().Configure(camera, rig);
+            systems.AddComponent<WalkController>().Configure(camera, rig);
             systems.AddComponent<AnalyticsInstaller>();
             systems.AddComponent<PlaytestRecorder>();
             systems.AddComponent<DevOverlay>();
@@ -397,6 +398,16 @@ namespace UtsavNights.EditorTools.Main
             decorRect.offsetMin = Vector2.zero;
             decorRect.offsetMax = Vector2.zero;
             decorGo.AddComponent<UI.DecorationMode>();
+
+            // Phase 8: walking in the neighbourhood, from the walking-figure button next to the house button.
+            var walkGo = new GameObject("WalkMode", typeof(RectTransform));
+            walkGo.transform.SetParent(safe.transform, false);
+            var walkRect = (RectTransform)walkGo.transform;
+            walkRect.anchorMin = Vector2.zero;
+            walkRect.anchorMax = Vector2.one;
+            walkRect.offsetMin = Vector2.zero;
+            walkRect.offsetMax = Vector2.zero;
+            walkGo.AddComponent<UI.WalkMode>();
             var finaleGo = new GameObject("Finale", typeof(RectTransform));
             finaleGo.transform.SetParent(safe.transform, false);
             var finaleRect = (RectTransform)finaleGo.transform;
