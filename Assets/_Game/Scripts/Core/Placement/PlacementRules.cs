@@ -12,6 +12,25 @@ namespace UtsavNights.Core.Placement
         FootprintBlocked = 6,
         TooCloseToItem = 7,
         NoRoomForEffect = 8,
+
+        // Phase 8: celebration spots (PRD 10).
+        OutsideArea = 9,
+        AerialNotHere = 10,
+        AerialPadsOnly = 11,
+        NoSky = 12,
+    }
+
+    /// <summary>Where aerials may go up at the current celebration spot (PRD 10).</summary>
+    public enum AerialRule
+    {
+        /// <summary>Anywhere in the area with clear sky above.</summary>
+        Open = 0,
+
+        /// <summary>Only from the spot's launch pads.</summary>
+        Pads = 1,
+
+        /// <summary>Not at all (a balcony).</summary>
+        None = 2,
     }
 
     /// <summary>Facts about one candidate spot, gathered by the Unity-side validator (raycasts, overlaps).</summary>
@@ -36,6 +55,20 @@ namespace UtsavNights.Core.Placement
 
         public float MinimumSpacing;
         public bool EffectVolumeClear;
+
+        /// <summary>Outside the current celebration spot's play area.</summary>
+        public bool OutsideArea;
+
+        /// <summary>The cracker goes up into the sky (rockets, sky shots, cakes).</summary>
+        public bool IsAerial;
+
+        public AerialRule AerialRule;
+
+        /// <summary>Within reach of one of the spot's launch pads.</summary>
+        public bool OnPad;
+
+        /// <summary>Nothing overhead: no roof, eave, balcony or strung lights above the point.</summary>
+        public bool SkyClear;
     }
 
     /// <summary>
@@ -67,6 +100,29 @@ namespace UtsavNights.Core.Placement
             if (!f.InReach)
             {
                 return PlacementBlock.OutOfReach;
+            }
+
+            if (f.OutsideArea)
+            {
+                return PlacementBlock.OutsideArea;
+            }
+
+            if (f.IsAerial)
+            {
+                if (f.AerialRule == AerialRule.None)
+                {
+                    return PlacementBlock.AerialNotHere;
+                }
+
+                if (f.AerialRule == AerialRule.Pads && !f.OnPad)
+                {
+                    return PlacementBlock.AerialPadsOnly;
+                }
+
+                if (!f.SkyClear)
+                {
+                    return PlacementBlock.NoSky;
+                }
             }
 
             if (f.ItemLimit > 0 && f.ItemsPlaced >= f.ItemLimit)
@@ -106,6 +162,10 @@ namespace UtsavNights.Core.Placement
                 case PlacementBlock.FootprintBlocked: return "Something is in the way";
                 case PlacementBlock.TooCloseToItem: return "Too close to another cracker";
                 case PlacementBlock.NoRoomForEffect: return "Not enough room for the sparks";
+                case PlacementBlock.OutsideArea: return "Stay inside the celebration area";
+                case PlacementBlock.AerialNotHere: return "Rockets and sky shots can't go up from here";
+                case PlacementBlock.AerialPadsOnly: return "Rockets go on the launch pads here";
+                case PlacementBlock.NoSky: return "Something is overhead. Rockets need open sky";
                 default: return "Can't place here";
             }
         }

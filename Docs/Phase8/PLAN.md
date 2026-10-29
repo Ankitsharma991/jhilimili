@@ -55,6 +55,7 @@ The fireworks need open sky, so nothing tall stands in front of the fireworks ca
 | 1. Settlement model | Done. `Core/Neighbourhood`: `SettlementLayout` (layout JSON: lots, street, open space, spots with tags, aerials rule and launch pads, walk graph; chunks are 16.8 m street segments), `Environments` (town lane for Diwali, hill village for Tihar, riverside ghat; house styles per environment), `NeighbourDesigns` (seeded houses with festival decorations that pass the Phase 7 placement rules), `SettlementLibrary` (the three layouts: 11, 8 and 7 lots), `SettlementLint`. `Gameplay/Neighbourhood/SettlementJson` reads layouts through the lint. Balcony placement solids are now the slab and rails (the floor stays free). Tests: `SettlementTests` (Mono), `SettlementJsonTests` |
 | 2. Chunks and LOD | Done. `Core/Neighbourhood/ChunkPlanner` (full, simple and impostor detail by distance and tier, 2 m hysteresis, low-memory drop to impostors; no allocation per update) and `ImpostorBuilder` (a house as boxes with lit windows, under 160 triangles). `Gameplay/Neighbourhood`: `SettlementView` (street, open space and land; every neighbour lot at its chunk's detail; rebuilds only changed chunks; meshes and materials shared across lots through `HomeShared`; no real lights; colliders for the houses' solid parts), `NeighbourhoodInstaller`. The Main scene's floor is now just the courtyard; the old skyline houses are replaced by the settlement (the temple spire and water tank stay as far landmarks); the camera's far clip is 150 m. Captures: `Utsav/Phase 8/Capture Neighbourhood Shots`. Tests: `ChunkPlannerTests` (Mono, including the whole settlement's triangles per tier at every spot), `SettlementSmokeTests` (Play Mode) |
 | 3. Walking | Done. `Core/Neighbourhood/WalkNavigator` (walkable areas: courtyard, gate opening, street and open space, vacant plot, rooftop and balcony by stairs when the house has them; straight walks inside the areas, otherwise A* over the walk graph; joystick sliding along edges; home availability tags) and `WalkAgent` (walking pace 1.4 m/s, turning, stairs fades). Gates open: the gate module has an open variant (leaves swung into the courtyard) and the gate's solid is split into pillars and leaves. `Gameplay/Neighbourhood/WalkController` (the player's avatar walks; follow camera with drag-to-look and limited zoom, kept in front of walls; tap-to-move; joystick; fast travel with a fade; the settlement's detail follows the avatar). `UI/WalkMode` (walking-figure button; Home, Map and Joystick; a map with a pin per spot and the avatar's dot), `UI/StickInput`. Walk and decoration modes never open together. Tests: `WalkNavigatorTests` (Mono), `WalkModeSmokeTests` (Play Mode) |
+| 4. Celebration locations | Done. `Core/Neighbourhood/CelebrationRules` (spot availability from the house's and the settlement's tags with plain reasons: a sloping roof, no balcony, a jharokha's low canopy; aerials rule, launch pads, play areas, the player's strands overhead). `PlacementRules`: four new blocks with messages (outside the area, no aerials here, pads only, nothing overhead). `PlacementValidator` gathers them (sky clear 40 m up by raycast and the player's strands). `Gameplay/Neighbourhood/CelebrationService` (choose a spot: the fireworks view and the placement area move there; crackers left at the old spot are cleared; a house change that closes the spot falls back to the courtyard; every session starts at home). Ground markers on the street, open space, empty plot, roof deck and balcony floor. Walk screen: map pins greyed when closed, a card with the reason, Go there and Celebrate here; a Celebrate here button when standing in a spot. Tests: `CelebrationRulesTests` (Mono), `CelebrationSmokeTests` (Play Mode: every spot, every aerial rule, closed spots, celebrate here) |
 
 ### Step 1 notes
 
@@ -91,3 +92,20 @@ The fireworks need open sky, so nothing tall stands in front of the fireworks ca
   is remembered.
 - **Review list:** whether the gate leaves should swing with an animation, the walk speed, the camera distance on a phone
   screen, and the map's look.
+
+### Step 4 notes
+
+- **Rules by spot:**
+  - Courtyard: bounded by its walls.
+  - Rooftop and balcony: bounded by their parapet and rails.
+  - Everywhere else: a circle around the spot (the play area).
+- **Aerials (rockets, sky shots, cakes):**
+  - The street allows them only from its two launch pads (string lights and eaves overhead).
+  - The balcony allows none.
+  - Everywhere else they need 40 m of clear sky and no strand of the player's own lights within 0.5 m above.
+- **The balcony is a sparkler spot.** A fountain's spray (1.2 m wide) does not fit between its rails, and the effect
+  volume check refuses it with "Not enough room for the sparks".
+- **Review list:**
+  - Should the courtyard avatar stand at the chosen spot?
+  - Should each spot get a starting cracker?
+  - Do the launch pads need a visible marker on the ground?

@@ -7,6 +7,7 @@ using UnityEngine.UI;
 using UtsavNights.Core.Avatar;
 using UtsavNights.Core.Home;
 using UtsavNights.Core.Neighbourhood;
+using UtsavNights.Core.Runtime;
 using UtsavNights.Gameplay;
 
 namespace UtsavNights.UI
@@ -37,6 +38,13 @@ namespace UtsavNights.UI
         private Image _fade;
         private TextMeshProUGUI _message;
         private TextMeshProUGUI _stickLabel;
+        private Button _celebrateHere;
+        private RectTransform _card;
+        private TextMeshProUGUI _cardTitle;
+        private TextMeshProUGUI _cardReason;
+        private Button _cardGo;
+        private Button _cardCelebrate;
+        private string _cardSpot;
         private WalkController _controller;
         private float _x0;
         private float _z0;
@@ -51,6 +59,9 @@ namespace UtsavNights.UI
         public RectTransform OpenButton => _openButton;
 
         public WalkController Controller => _controller;
+
+        /// <summary>The spot under the avatar that the "Celebrate here" button would choose, or null.</summary>
+        public string HereSpot { get; private set; }
 
         /// <summary>The spot pins on the map (tests and the screen reader).</summary>
         public int PinCount { get; private set; }
@@ -131,6 +142,7 @@ namespace UtsavNights.UI
                 BuildMap();
             }
 
+            _card.gameObject.SetActive(false);
             _map.gameObject.SetActive(show);
         }
 
@@ -148,6 +160,40 @@ namespace UtsavNights.UI
                 _map.gameObject.SetActive(false);
             }
         }
+
+        /// <summary>Moves the celebration to a spot and ends the walk there (the fireworks view turns to it).</summary>
+        public bool Celebrate(string spotId)
+        {
+            if (!Game.Services.TryGet(out CelebrationService celebration) || !celebration.Choose(spotId))
+            {
+                return false;
+            }
+
+            Home();
+            return true;
+        }
+
+        /// <summary>The card for a map pin: the spot's name, the reason it is closed (if it is), Go there and Celebrate here.</summary>
+        public void ShowCard(string spotId)
+        {
+            SpotDef spot = _controller.Layout?.Spot(spotId);
+            if (spot == null)
+            {
+                return;
+            }
+
+            SpotAvailability a = Game.Services.TryGet(out CelebrationService celebration)
+                ? celebration.Availability(spotId)
+                : new SpotAvailability(true, string.Empty);
+            _cardSpot = spotId;
+            _cardTitle.text = spot.name;
+            _cardReason.text = a.Open ? AerialNote(spot) : a.Reason;
+            _cardGo.interactable = a.Open;
+            _cardCelebrate.interactable = a.Open;
+            _card.gameObject.SetActive(true);
+        }
+
+        public string CardReason => _card != null && _card.gameObject.activeSelf ? _cardReason.text : string.Empty;
 
         private void Update()
         {
@@ -170,6 +216,15 @@ namespace UtsavNights.UI
             }
 
             _fade.color = new Color(0f, 0f, 0f, _controller.Fade);
+            HereSpot = null;
+            if (_controller.Agent != null && Game.Services.TryGet(out CelebrationService celebration))
+            {
+                var at = new Vector3(_controller.Agent.Position.X, _controller.Agent.Position.Y, _controller.Agent.Position.Z);
+                SpotDef here = celebration.SpotAt(at);
+                HereSpot = here != null && celebration.Availability(here.id).Open ? here.id : null;
+            }
+
+            _celebrateHere.interactable = HereSpot != null;
             if (MapOpen && _controller.Agent != null)
             {
                 _marker.anchoredPosition = MapPoint(_controller.Agent.Position.X, _controller.Agent.Position.Z);
@@ -238,7 +293,14 @@ namespace UtsavNights.UI
             row.spacing = 14f;
             row.childControlWidth = row.childControlHeight = true;
             row.childForceExpandWidth = row.childForceExpandHeight = true;
-            BarButton(bar, "Home", UiTheme.Saffron, UiTheme.Indigo, Home);
+            BarButton(bar, "Fireworks", UiTheme.IndigoLight, UiTheme.OffWhite, Home);
+            _celebrateHere = BarButton(bar, "Celebrate here", UiTheme.Saffron, UiTheme.Indigo, () =>
+            {
+                if (HereSpot != null)
+                {
+                    Celebrate(HereSpot);
+                }
+            });
             BarButton(bar, "Map", UiTheme.IndigoLight, UiTheme.OffWhite, ToggleMap);
             _stickLabel = BarButton(bar, "Joystick off", UiTheme.IndigoLight, UiTheme.OffWhite, ToggleJoystick).GetComponentInChildren<TextMeshProUGUI>();
 
@@ -302,6 +364,39 @@ namespace UtsavNights.UI
             _mapPlan.anchorMin = _mapPlan.anchorMax = new Vector2(0.5f, 0.5f);
             _mapPlan.sizeDelta = new Vector2(MapWidth, MapHeight);
             _mapPlan.anchoredPosition = new Vector2(0f, -30f);
+
+            _card = UiKit.Rect("SpotCard", _map);
+            _card.anchorMin = new Vector2(0.05f, 0f);
+            _card.anchorMax = new Vector2(0.95f, 0f);
+            _card.pivot = new Vector2(0.5f, 0f);
+            _card.sizeDelta = new Vector2(0f, 300f);
+            _card.anchoredPosition = new Vector2(0f, 20f);
+            UiKit.Panel(_card, new Color(0.16f, 0.11f, 0.33f, 0.98f));
+            RectTransform cardTitle = UiKit.Rect("Title", _card);
+            cardTitle.anchorMin = new Vector2(0f, 1f);
+            cardTitle.anchorMax = new Vector2(1f, 1f);
+            cardTitle.pivot = new Vector2(0.5f, 1f);
+            cardTitle.sizeDelta = new Vector2(-40f, 64f);
+            _cardTitle = UiKit.Text(cardTitle, string.Empty, UiTheme.BodyText, TextAlignmentOptions.Center, UiTheme.Marigold);
+            RectTransform reason = UiKit.Rect("Reason", _card);
+            reason.anchorMin = new Vector2(0f, 0.42f);
+            reason.anchorMax = new Vector2(1f, 0.78f);
+            reason.offsetMin = new Vector2(24f, 0f);
+            reason.offsetMax = new Vector2(-24f, 0f);
+            _cardReason = UiKit.Text(reason, string.Empty, UiTheme.SmallText, TextAlignmentOptions.Center, UiTheme.OffWhite);
+            _cardReason.textWrappingMode = TextWrappingModes.Normal;
+            RectTransform buttons = UiKit.Rect("Buttons", _card);
+            buttons.anchorMin = new Vector2(0f, 0f);
+            buttons.anchorMax = new Vector2(1f, 0.4f);
+            buttons.offsetMin = new Vector2(20f, 16f);
+            buttons.offsetMax = new Vector2(-20f, -4f);
+            var h = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.spacing = 14f;
+            h.childControlWidth = h.childControlHeight = true;
+            h.childForceExpandWidth = h.childForceExpandHeight = true;
+            _cardGo = BarButton(buttons, "Go there", UiTheme.IndigoLight, UiTheme.OffWhite, () => GoTo(_cardSpot));
+            _cardCelebrate = BarButton(buttons, "Celebrate here", UiTheme.Saffron, UiTheme.Indigo, () => Celebrate(_cardSpot));
+            _card.gameObject.SetActive(false);
             _map.gameObject.SetActive(false);
         }
 
@@ -365,7 +460,9 @@ namespace UtsavNights.UI
             var button = r.gameObject.AddComponent<Button>();
             button.targetGraphic = dot;
             string id = spot.id;
-            button.onClick.AddListener(() => GoTo(id));
+            button.onClick.AddListener(() => ShowCard(id));
+            bool open = !Game.Services.TryGet(out CelebrationService celebration) || celebration.Availability(id).Open;
+            dot.color = open ? UiTheme.Marigold : new Color(0.5f, 0.45f, 0.5f, 1f);
             RectTransform label = UiKit.Rect("Label", r);
             label.anchorMin = label.anchorMax = new Vector2(0.5f, 0f);
             label.pivot = new Vector2(0.5f, 1f);
@@ -375,6 +472,13 @@ namespace UtsavNights.UI
             _mapItems.Add(r.gameObject);
             PinCount++;
         }
+
+        private static string AerialNote(SpotDef spot) => CelebrationRules.RuleOf(spot) switch
+        {
+            Core.Placement.AerialRule.Pads => "Rockets and sky shots go up from the launch pads here.",
+            Core.Placement.AerialRule.None => "Small crackers only here: sparklers fit, rockets and big fountains don't.",
+            _ => "Open sky for rockets.",
+        };
 
         private Vector2 MapPoint(float x, float z) => new Vector2((x - _x0) * _scale, (z - _z0) * _scale);
 

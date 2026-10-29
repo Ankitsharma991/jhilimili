@@ -1,5 +1,7 @@
 using UnityEngine;
 using UtsavNights.Content;
+using UtsavNights.Core.Avatar;
+using UtsavNights.Core.Neighbourhood;
 using UtsavNights.Core.Placement;
 
 namespace UtsavNights.Gameplay
@@ -37,6 +39,23 @@ namespace UtsavNights.Gameplay
 
         public float MinimumSpacing { get; set; }
 
+        /// <summary>
+        /// The celebration spot (Phase 8): its play area bounds placement unless <see cref="Bounded"/> is false (the
+        /// courtyard, bounded by its walls), and its aerials rule and pads apply. Null behaves as the open courtyard.
+        /// </summary>
+        public SpotDef Spot { get; set; }
+
+        public bool Bounded { get; set; }
+
+        /// <summary>True when the player's strung lights or garlands pass above a world point (aerials would hit them).</summary>
+        public System.Func<Vector3, bool> StrandAbove { get; set; }
+
+        /// <summary>How high the sky above an aerial must be clear, in metres.</summary>
+        public const float SkyHeight = 40f;
+
+        public static bool IsAerial(CrackerDefinition d) =>
+            d.Category == CrackerCategory.Rocket || d.Category == CrackerCategory.Skyshot || d.Category == CrackerCategory.MultiShotCake;
+
         public PlacementCheck Check(CrackerDefinition definition, Ray ray, int itemsPlaced, int itemLimit)
         {
             var check = new PlacementCheck();
@@ -66,6 +85,16 @@ namespace UtsavNights.Gameplay
                 facts.EffectVolumeClear = IsClear(hit.point + Vector3.up * (FootprintHeight + volume.y * 0.5f),
                     new Vector3(volume.x * 0.5f, volume.y * 0.5f, volume.z * 0.5f), hit.collider);
                 facts.NearestItemDistance = NearestFuseDistance(hit.point);
+                var p = new V3(hit.point.x, hit.point.y, hit.point.z);
+                facts.OutsideArea = Spot != null && Bounded && !CelebrationRules.InArea(Spot, p);
+                facts.IsAerial = IsAerial(definition);
+                facts.AerialRule = CelebrationRules.RuleOf(Spot);
+                facts.OnPad = Spot != null && CelebrationRules.OnPad(Spot, p.X, p.Z);
+                if (facts.IsAerial)
+                {
+                    bool roof = Physics.Raycast(hit.point + Vector3.up * 0.3f, Vector3.up, SkyHeight, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                    facts.SkyClear = !roof && (StrandAbove == null || !StrandAbove(hit.point));
+                }
             }
 
             check.Block = PlacementRules.Evaluate(facts);

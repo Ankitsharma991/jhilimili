@@ -18,6 +18,7 @@ namespace UtsavNights.Gameplay
         [SerializeField] private Texture2D groundTexture;
 
         private bool _owner;
+        private SettlementView _view;
 
         public void Configure(Texture2D[] walls, Texture2D ground)
         {
@@ -35,8 +36,18 @@ namespace UtsavNights.Gameplay
             _owner = true;
             QualityManager quality = FindFirstObjectByType<QualityManager>();
             string environment = PlayerPrefs.GetString(EnvironmentPrefKey, Environments.TownLane);
-            SettlementView view = SettlementView.Create(transform, environment, wallTextures, groundTexture, () => quality != null ? quality.Tier : 1);
-            Game.Services.Register(view);
+            _view = SettlementView.Create(transform, environment, wallTextures, groundTexture, () => quality != null ? quality.Tier : 1);
+            Game.Services.Register(_view);
+        }
+
+        private void Start()
+        {
+            // After every Awake: the placement controller and the camera rig exist by now.
+            if (_owner && !Game.Services.IsRegistered<CelebrationService>())
+            {
+                Game.Services.TryGet(out HomeService home);
+                Game.Services.Register(new CelebrationService(_view, home));
+            }
         }
 
         private void OnDestroy()
@@ -44,6 +55,10 @@ namespace UtsavNights.Gameplay
             if (_owner)
             {
                 Game.Services.Unregister<SettlementView>();
+                if (Game.Services.IsRegistered<CelebrationService>())
+                {
+                    Game.Services.Unregister<CelebrationService>();
+                }
             }
         }
     }

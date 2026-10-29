@@ -37,6 +37,9 @@ namespace UtsavNights.Gameplay
             public GameObject Root;
         }
 
+        /// <summary>A settlement was built (an environment chosen); celebration spots re-apply their poses.</summary>
+        public event Action Loaded;
+
         public SettlementLayout Layout { get; private set; }
 
         public EnvironmentInfo Environment { get; private set; }
@@ -89,6 +92,7 @@ namespace UtsavNights.Gameplay
 
             BuildGround();
             Plan(force: true);
+            Loaded?.Invoke();
         }
 
         /// <summary>The detail a lot is shown at (tests).</summary>
@@ -256,6 +260,14 @@ namespace UtsavNights.Gameplay
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             Rgb tint = lot.Lot.vacant ? Scale(Environment.Ground, 0.85f) : Environment.Ground;
             r.sharedMaterial = _shared.Materials.Get(HousePaint.Stone, tint, _ground, 2.5f);
+            if (lot.Lot.vacant)
+            {
+                // The empty plot is a celebration spot: ground for crackers.
+                var box = go.AddComponent<BoxCollider>();
+                box.center = new Vector3(0f, -0.05f, (front + back) / 2f);
+                box.size = new Vector3(2f * inner, 0.1f, back - front);
+                go.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);
+            }
         }
 
         /// <summary>The street, the open space and the land around the settlement.</summary>
@@ -290,6 +302,7 @@ namespace UtsavNights.Gameplay
                 var box = go.AddComponent<BoxCollider>();
                 box.center = new Vector3((a.x0 + a.x1) / 2f, y - 0.05f, (a.z0 + a.z1) / 2f);
                 box.size = new Vector3(a.x1 - a.x0, 0.1f, a.z1 - a.z0);
+                go.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);
             }
         }
 

@@ -161,6 +161,17 @@ namespace UtsavNights.Gameplay
         }
 
         /// <summary>Ease up toward an aerial burst, hold, then return (rockets, skyshots, cakes).</summary>
+        /// <summary>Moves the fireworks view (Phase 8: the celebration spot). Ease-free: the caller fades or is overridden.</summary>
+        public void SetGroundShot(Vector3 position, Quaternion rotation)
+        {
+            if (groundShot != null)
+            {
+                groundShot.SetPositionAndRotation(position, rotation);
+            }
+        }
+
+        public Transform GroundShot => groundShot;
+
         public void FollowAerial(Vector3 focus)
         {
             _aerialFocus = focus;

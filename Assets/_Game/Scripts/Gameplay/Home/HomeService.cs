@@ -191,11 +191,35 @@ namespace UtsavNights.Gameplay
 
             foreach (Box3 b in DecorPlacement.For(Design, Tier).Solids)
             {
-                var go = new GameObject("Solid");
-                go.transform.SetParent(_colliders, false);
-                var box = go.AddComponent<BoxCollider>();
-                box.center = new Vector3((b.Min.X + b.Max.X) / 2f, (b.Min.Y + b.Max.Y) / 2f, (b.Min.Z + b.Max.Z) / 2f);
-                box.size = new Vector3(b.Max.X - b.Min.X, b.Max.Y - b.Min.Y, b.Max.Z - b.Min.Z);
+                Collider("Solid", b, Content.PlacementSurface.None);
+            }
+
+            // Phase 8: the roof deck and the balcony floor are celebration spots, ground for crackers (2 cm proud of the
+            // solids below, so a placement ray finds the marked surface first).
+            System.Collections.Generic.HashSet<string> tags = Core.Neighbourhood.WalkNavigator.HomeTags(Design);
+            if (tags.Contains(Core.Neighbourhood.SpotTags.HasRooftop))
+            {
+                const float w = HouseGeometry.HalfWidth - 0.15f;
+                Collider("RoofDeck", new Box3(-w, HouseGeometry.Eaves, -HouseGeometry.Depth + 0.15f, w, HouseGeometry.Eaves + 0.02f, -0.15f),
+                    Content.PlacementSurface.Ground | Content.PlacementSurface.Rooftop);
+            }
+
+            if (tags.Contains(Core.Neighbourhood.SpotTags.HasBalcony))
+            {
+                Collider("BalconyFloor", new Box3(-0.95f, HouseGeometry.UpperFloor, 0f, 0.95f, HouseGeometry.UpperFloor + 0.02f, 0.75f), Content.PlacementSurface.Ground);
+            }
+        }
+
+        private void Collider(string name, Box3 b, Content.PlacementSurface surface)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(_colliders, false);
+            var box = go.AddComponent<BoxCollider>();
+            box.center = new Vector3((b.Min.X + b.Max.X) / 2f, (b.Min.Y + b.Max.Y) / 2f, (b.Min.Z + b.Max.Z) / 2f);
+            box.size = new Vector3(b.Max.X - b.Min.X, b.Max.Y - b.Min.Y, b.Max.Z - b.Min.Z);
+            if (surface != Content.PlacementSurface.None)
+            {
+                go.AddComponent<PlacementSurfaceMarker>().Configure(surface);
             }
         }
 

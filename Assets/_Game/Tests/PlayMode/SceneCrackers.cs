@@ -20,6 +20,13 @@ namespace UtsavNights.Tests.PlayMode
             return null;
         }
 
+        /// <summary>A catalog cracker's definition, without spawning it.</summary>
+        public static CrackerDefinition Definition(string id)
+        {
+            CrackerCatalog catalog = FindCatalog();
+            return catalog != null ? catalog.FindById(id) : null;
+        }
+
         /// <summary>Spawns a catalog cracker through the scene's spawner.</summary>
         public static CrackerRuntime Spawn(string id, Vector3 position)
         {
