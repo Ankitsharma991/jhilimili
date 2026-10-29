@@ -14,7 +14,10 @@ namespace UtsavNights.Gameplay
     {
         private readonly Dictionary<int, Entry> _entries = new Dictionary<int, Entry>();
         private readonly Dictionary<string, (Mesh mesh, HousePaint[] paints)> _shared = new Dictionary<string, (Mesh, HousePaint[])>();
-        private readonly HomeMaterials _materials = new HomeMaterials();
+        private HomeMaterials _materials = new HomeMaterials();
+        private HomeShared _common;
+        private System.Func<DecorInfo, bool> _filter;
+        private bool _colliders = true;
 
         private sealed class Entry
         {
@@ -37,13 +40,28 @@ namespace UtsavNights.Gameplay
             return go.AddComponent<DecorView>();
         }
 
+        /// <summary>
+        /// For neighbour lots: the settlement's shared meshes and materials, which items to show (simple detail keeps only
+        /// the ones that glow), and whether items get colliders (only where the player can place crackers nearby).
+        /// </summary>
+        public void Configure(HomeShared common, System.Func<DecorInfo, bool> filter = null, bool colliders = true)
+        {
+            _common = common;
+            _filter = filter;
+            _colliders = colliders;
+            if (common != null)
+            {
+                _materials = common.Materials;
+            }
+        }
+
         public void Show(IReadOnlyList<PlacedDecor> decorations)
         {
             var keep = new HashSet<int>();
             foreach (PlacedDecor d in decorations)
             {
                 DecorInfo info = HomeCatalog.Decoration(d?.item);
-                if (info == null)
+                if (info == null || (_filter != null && !_filter(info)))
                 {
                     continue;
                 }
@@ -105,7 +123,10 @@ namespace UtsavNights.Gameplay
 
             _entries.Clear();
             _shared.Clear();
-            _materials.Clear();
+            if (_common == null)
+            {
+                _materials.Clear();
+            }
         }
 
         private Entry Build(PlacedDecor d, DecorInfo info)
@@ -123,6 +144,11 @@ namespace UtsavNights.Gameplay
 
                 mesh = own = HouseMeshes.ToMesh(data, "Decor_" + d.item + "_" + d.uid, out paints);
             }
+            else if (_common != null)
+            {
+                string item = d.item;
+                mesh = _common.Mesh("decor:" + item, () => DecorGenerator.Item(item), out paints);
+            }
             else if (_shared.TryGetValue(d.item, out (Mesh mesh, HousePaint[] paints) cached))
             {
                 (mesh, paints) = cached;
@@ -136,7 +162,7 @@ namespace UtsavNights.Gameplay
             var go = new GameObject(Name(d));
             go.transform.SetParent(transform, false);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            if (info.Mode == PlacementMode.Free)
+            if (info.Mode == PlacementMode.Free && _colliders)
             {
                 // Standing and hung items block crackers like any other object; rangoli and strands do not.
                 var box = go.AddComponent<BoxCollider>();

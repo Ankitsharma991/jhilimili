@@ -142,3 +142,51 @@ namespace UtsavNights.Gameplay
         };
     }
 }
+
+namespace UtsavNights.Gameplay
+{
+    /// <summary>
+    /// Meshes and materials shared by many house and decoration views (Phase 8: every neighbour's door module of a kind is
+    /// one mesh, every paint colour one material), so a street of houses costs memory once and batches together.
+    /// </summary>
+    public sealed class HomeShared
+    {
+        private readonly System.Collections.Generic.Dictionary<string, (UnityEngine.Mesh mesh, UtsavNights.Core.Home.HousePaint[] paints)> _meshes =
+            new System.Collections.Generic.Dictionary<string, (UnityEngine.Mesh, UtsavNights.Core.Home.HousePaint[])>();
+
+        public HomeMaterials Materials { get; } = new HomeMaterials();
+
+        public int MeshCount => _meshes.Count;
+
+        /// <summary>The mesh for a key, built once by <paramref name="build"/>.</summary>
+        public UnityEngine.Mesh Mesh(string key, System.Func<UtsavNights.Core.Home.HouseMesh> build, out UtsavNights.Core.Home.HousePaint[] paints)
+        {
+            if (!_meshes.TryGetValue(key, out (UnityEngine.Mesh mesh, UtsavNights.Core.Home.HousePaint[] paints) entry))
+            {
+                UtsavNights.Core.Home.HouseMesh data = build();
+                if (data == null)
+                {
+                    paints = new UtsavNights.Core.Home.HousePaint[0];
+                    return null;
+                }
+
+                entry.mesh = HouseMeshes.ToMesh(data, "Shared_" + key, out entry.paints);
+                _meshes[key] = entry;
+            }
+
+            paints = entry.paints;
+            return entry.mesh;
+        }
+
+        public void Clear()
+        {
+            foreach ((UnityEngine.Mesh mesh, UtsavNights.Core.Home.HousePaint[] _) in _meshes.Values)
+            {
+                HouseMeshes.Destroy(mesh);
+            }
+
+            _meshes.Clear();
+            Materials.Clear();
+        }
+    }
+}

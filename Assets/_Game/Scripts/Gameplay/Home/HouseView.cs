@@ -16,7 +16,9 @@ namespace UtsavNights.Gameplay
         [SerializeField] private Texture2D[] wallTextures = new Texture2D[0];
 
         private readonly Dictionary<string, Piece> _pieces = new Dictionary<string, Piece>();
-        private readonly HomeMaterials _materials = new HomeMaterials();
+        private HomeMaterials _materials = new HomeMaterials();
+        private HomeShared _shared;
+        private bool _withLights = true;
         private Piece _shell;
         private HouseDesign _shown;
         private Light[] _lights;
@@ -28,6 +30,7 @@ namespace UtsavNights.Gameplay
             public Mesh Mesh;
             public string Module;
             public HousePaint[] Paints;
+            public bool SharedMesh;
         }
 
         /// <summary>The design on screen (a copy), or null before the first <see cref="Show"/>.</summary>
@@ -45,18 +48,35 @@ namespace UtsavNights.Gameplay
             return view;
         }
 
-        /// <summary>Wall textures by <see cref="HomeCatalog.Materials"/> index (plaster, brick, stone, wood).</summary>
-        public void Configure(Texture2D[] textures) => wallTextures = textures ?? new Texture2D[0];
+        /// <summary>
+        /// Wall textures by <see cref="HomeCatalog.Materials"/> index (plaster, brick, stone, wood). Neighbour houses pass the
+        /// settlement's <paramref name="shared"/> meshes and materials, and no lights (PRD 10: no real lights in the
+        /// neighbourhood; windows glow).
+        /// </summary>
+        public void Configure(Texture2D[] textures, HomeShared shared = null, bool lights = true)
+        {
+            wallTextures = textures ?? new Texture2D[0];
+            _shared = shared;
+            _withLights = lights;
+            if (shared != null)
+            {
+                _materials = shared.Materials;
+            }
+        }
 
         public void Show(HouseDesign design)
         {
-            EnsureLights();
+            if (_withLights)
+            {
+                EnsureLights();
+            }
+
             bool balconyEmpty = string.IsNullOrEmpty(design.ModuleAt("balcony")?.module);
             bool shellChanged = _shell == null || _shown == null || balconyEmpty != string.IsNullOrEmpty(_shown.ModuleAt("balcony")?.module);
             if (shellChanged)
             {
                 Release(_shell);
-                _shell = Build("Shell", null, HouseGenerator.Shell(balconyEmpty));
+                _shell = Build("Shell", balconyEmpty ? "juliet" : null, () => HouseGenerator.Shell(balconyEmpty));
             }
 
             foreach (ModuleChoice choice in design.modules)
@@ -69,10 +89,14 @@ namespace UtsavNights.Gameplay
 
                 Release(piece);
                 _pieces.Remove(choice.point);
-                HouseMesh mesh = string.IsNullOrEmpty(choice.module) ? null : HouseGenerator.Module(choice.point, choice.module);
-                if (mesh != null)
+                if (!string.IsNullOrEmpty(choice.module))
                 {
-                    _pieces[choice.point] = Build(choice.point, choice.module, mesh);
+                    string point = choice.point, module = choice.module;
+                    Piece built = Build(point, module, () => HouseGenerator.Module(point, module));
+                    if (built != null)
+                    {
+                        _pieces[point] = built;
+                    }
                 }
             }
 
@@ -91,6 +115,11 @@ namespace UtsavNights.Gameplay
         /// <summary>The house's own lights; decoration mode keeps them on, the fireworks view may turn them off.</summary>
         public void SetLightsEnabled(bool on)
         {
+            if (!_withLights)
+            {
+                return;
+            }
+
             EnsureLights();
             foreach (Light l in _lights)
             {
@@ -115,7 +144,10 @@ namespace UtsavNights.Gameplay
             }
 
             _pieces.Clear();
-            _materials.Clear();
+            if (_shared == null)
+            {
+                _materials.Clear();
+            }
         }
 
         /// <summary>
@@ -152,15 +184,37 @@ namespace UtsavNights.Gameplay
             return light;
         }
 
-        private Piece Build(string name, string module, HouseMesh data)
+        private Piece Build(string name, string module, System.Func<HouseMesh> data)
         {
-            var go = new GameObject(module != null ? name + ":" + module : name);
+            Mesh mesh;
+            HousePaint[] paints;
+            bool shared = _shared != null;
+            if (shared)
+            {
+                mesh = _shared.Mesh(name + ":" + (module ?? "plain"), data, out paints);
+            }
+            else
+            {
+                HouseMesh built = data();
+                if (built == null)
+                {
+                    return null;
+                }
+
+                mesh = HouseMeshes.ToMesh(built, "House_" + name, out paints);
+            }
+
+            if (mesh == null)
+            {
+                return null;
+            }
+
+            var go = new GameObject(module != null && module != "juliet" ? name + ":" + module : name);
             go.transform.SetParent(transform, false);
-            Mesh mesh = HouseMeshes.ToMesh(data, "House_" + name, out HousePaint[] paints);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             MeshRenderer renderer = go.AddComponent<MeshRenderer>();
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            return new Piece { Go = go, Renderer = renderer, Mesh = mesh, Module = module, Paints = paints };
+            return new Piece { Go = go, Renderer = renderer, Mesh = mesh, Module = module, Paints = paints, SharedMesh = shared };
         }
 
         private void ApplyMaterials(Piece piece, HouseDesign design, ModuleChoice choice)
@@ -188,7 +242,11 @@ namespace UtsavNights.Gameplay
                 return;
             }
 
-            HouseMeshes.Destroy(piece.Mesh);
+            if (!piece.SharedMesh)
+            {
+                HouseMeshes.Destroy(piece.Mesh);
+            }
+
             HouseMeshes.Destroy(piece.Go);
         }
 

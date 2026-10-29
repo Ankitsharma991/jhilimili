@@ -1017,8 +1017,9 @@ namespace UtsavNights.Gameplay
             }
             else
             {
-                eye = new Vector3(Pan, Height + 1.6f, 0.6f);
-                target = new Vector3(Pan, 0f, 0.6f + Distance);
+                // In front of the balcony (it reaches 0.9 m out), so its rail is never between the eye and the floor.
+                eye = new Vector3(Pan, Height + 1.6f, 1.3f);
+                target = new Vector3(Pan, 0f, 1.3f + Distance);
             }
 
             position = ToWorld(eye);

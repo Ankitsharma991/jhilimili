@@ -547,6 +547,58 @@ namespace UtsavNights.EditorTools.Main
             EditorApplication.Exit(0);
         }
 
+        /// <summary>Phase 8 step 2: the settlement from the courtyard, from above, along the street and from the open space.</summary>
+        [MenuItem("Utsav/Phase 8/Capture Neighbourhood Shots", priority = 92)]
+        public static void CaptureNeighbourhood()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+            {
+                Debug.LogWarning("[SceneShots] No GPU (-nographics); nothing rendered.");
+                return;
+            }
+
+            EditorSceneManager.OpenScene(MainSceneBuilder.MainScenePath, OpenSceneMode.Single);
+            GameObject.Find("PlacementGhost")?.SetActive(false);
+            Camera camera = Camera.main;
+            Directory.CreateDirectory(Folder);
+            Gameplay.HouseView home = Gameplay.HouseView.Create(null, HouseArt.Ensure());
+            home.Show(Core.Home.HouseDesign.Default());
+            home.SetLightsEnabled(false);
+            Texture2D stone = AssetDatabase.LoadAssetAtPath<Texture2D>(EnvironmentArt.StonePath);
+            foreach (Core.Neighbourhood.EnvironmentInfo env in Core.Neighbourhood.Environments.All)
+            {
+                Vector3 focus = Vector3.zero;
+                Gameplay.SettlementView view = Gameplay.SettlementView.Create(null, env.Id, HouseArt.Ensure(), stone, () => 2);
+                view.Focus = () => focus;
+                view.Load(env.Id);
+                camera.transform.SetPositionAndRotation(new Vector3(0f, 1.05f, -2.0f), Quaternion.Euler(7f, 0f, 0f));
+                camera.fieldOfView = 60f;
+                Render(camera, $"neighbourhood-{env.Id}-courtyard");
+                // Raised over the open space, looking back at the home row (house backs are never modelled).
+                camera.transform.SetPositionAndRotation(new Vector3(0f, 11f, 24f), Quaternion.Euler(16f, 180f, 0f));
+                camera.fieldOfView = 55f;
+                camera.farClipPlane = 200f;
+                Render(camera, $"neighbourhood-{env.Id}-above", 1920, 1080);
+                focus = new Vector3(-12.6f, 0f, 6.8f);
+                view.Load(env.Id);
+                camera.transform.SetPositionAndRotation(new Vector3(-16.2f, 1.6f, 6.8f), Quaternion.Euler(4f, 90f, 0f));
+                camera.fieldOfView = 60f;
+                Render(camera, $"neighbourhood-{env.Id}-street", 1920, 1080);
+                camera.transform.SetPositionAndRotation(new Vector3(4f, 1.6f, 18f), Quaternion.Euler(2f, 200f, 0f));
+                Render(camera, $"neighbourhood-{env.Id}-open", 1920, 1080);
+                Object.DestroyImmediate(view.gameObject);
+            }
+
+            Object.DestroyImmediate(home.gameObject);
+            Debug.Log($"[SceneShots] saved to {Folder}");
+        }
+
+        public static void CiCaptureNeighbourhood()
+        {
+            CaptureNeighbourhood();
+            EditorApplication.Exit(0);
+        }
+
         public static void CiCaptureHouse()
         {
             CaptureHouse();

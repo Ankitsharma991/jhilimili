@@ -138,7 +138,7 @@ namespace UtsavNights.EditorTools.Main
             camera.backgroundColor = NightSky;
             camera.fieldOfView = 60f;
             camera.nearClipPlane = 0.05f;
-            camera.farClipPlane = 50f;
+            camera.farClipPlane = 150f; // Phase 8: the street, the far lots and the landmarks beyond the open space
             cameraGo.AddComponent<AudioListener>();
             cameraGo.AddComponent<AdaptiveCameraFov>().Configure(60f, 36f, 74f);
             UniversalAdditionalCameraData cameraData = camera.GetUniversalAdditionalCameraData();
@@ -230,7 +230,7 @@ namespace UtsavNights.EditorTools.Main
         /// </summary>
         private static void CreateCourtyard(EnvironmentArt.Result art)
         {
-            Material stone = SceneKit.TexturedMaterial("Courtyard_Floor", art.Stone, new Vector2(8f, 8f), 0.25f);
+            Material stone = SceneKit.TexturedMaterial("Courtyard_Floor", art.Stone, new Vector2(2.88f, 2.4f), 0.25f);
             Material border = SceneKit.LitMaterial("Courtyard_Border", new Color(0.36f, 0.26f, 0.2f), 0.15f);
             Material wood = SceneKit.LitMaterial("Courtyard_Wood", new Color(0.14f, 0.09f, 0.06f), 0.25f);
             Material diyaClay = SceneKit.LitMaterial("Diya_Clay", new Color(0.55f, 0.27f, 0.12f), 0.2f);
@@ -241,12 +241,17 @@ namespace UtsavNights.EditorTools.Main
 
             Transform env = new GameObject("Environment").transform;
             // Floor and step are ground for placement; the lamp post, diyas and the house's walls and gate (HomeInstaller) block it.
-            GameObject floor = SceneKit.Primitive(PrimitiveType.Plane, "Floor", env, Vector3.zero, new Vector3(2f, 1f, 2f), stone, keepCollider: true);
+            // The courtyard's own floor (inside the boundary walls); the settlement draws the street and the land beyond.
+            GameObject floor = SceneKit.Primitive(PrimitiveType.Plane, "Floor", env, new Vector3(0f, 0f, 0.6f), new Vector3(0.72f, 1f, 0.6f), stone, keepCollider: true);
             floor.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);
             Static(floor);
             // Phase 7: the courtyard walls and the gate are the player's house's boundary and gate modules, built at runtime
             // by the HomeInstaller with the house behind the camera (Core/Home/HouseGeometry).
-            new GameObject("Home").AddComponent<HomeInstaller>().Configure(HouseArt.Ensure());
+            Texture2D[] walls = HouseArt.Ensure();
+            new GameObject("Home").AddComponent<HomeInstaller>().Configure(walls);
+
+            // Phase 8: the settlement around the home lot (street, open space, neighbour lots), built at runtime.
+            new GameObject("Neighbourhood").AddComponent<NeighbourhoodInstaller>().Configure(walls, art.Stone);
 
             GameObject step = SceneKit.Primitive(PrimitiveType.Cube, "Step", env, new Vector3(0f, 0.04f, 2.8f), new Vector3(6f, 0.08f, 1.1f), border, true);
             step.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);
@@ -295,70 +300,21 @@ namespace UtsavNights.EditorTools.Main
         }
 
         /// <summary>
-        /// Dark neighbouring houses beyond the wall, low enough to leave the sky open: lit windows, a few with
-        /// their own string lights, a temple spire with a saffron flag, a water tank on legs. Batching-static only:
-        /// far away, so they stay out of the lightmap bake.
+        /// Distant landmarks beyond the settlement (Phase 8: the neighbour houses are the settlement's lots now): a temple
+        /// spire with a saffron flag and a water tank on legs, far enough to stay low on screen and leave the sky open.
+        /// Batching-static only: far away, so they stay out of the lightmap bake.
         /// </summary>
         private static void CreateSkyline(Transform env)
         {
             Material house = SceneKit.LitMaterial("Skyline_House", new Color(0.075f, 0.06f, 0.1f), 0.05f);
-            Material houseB = SceneKit.LitMaterial("Skyline_House_B", new Color(0.1f, 0.07f, 0.09f), 0.05f);
-            Material window = SceneKit.EmissiveMaterial("Skyline_Window", new Color(1f, 0.72f, 0.38f), 1.4f);
-            Material windowCool = SceneKit.EmissiveMaterial("Skyline_Window_Cool", new Color(0.75f, 0.8f, 1f), 0.7f);
             Material temple = SceneKit.LitMaterial("Skyline_Temple", new Color(0.16f, 0.1f, 0.08f), 0.05f);
             Material flag = SceneKit.EmissiveMaterial("Skyline_Flag", Saffron, 0.8f);
-            Material lights = SceneKit.EmissiveMaterial("String_Light_Marigold", Marigold, 3f);
 
             Transform root = new GameObject("Skyline").transform;
             root.SetParent(env, false);
-            var random = new System.Random(2026);
-
-            // x centre, width, height, depth (z of the front face).
-            // The camera looks 7 degrees down at the play area, so the houses stay low and far: their roofs peek
-            // just over the wall and leave the sky above for the aerial bursts.
-            var houses = new[]
-            {
-                (-10.5f, 4.4f, 3.4f, 15f), (-6.2f, 3.8f, 2.6f, 13f), (-2.6f, 3.2f, 3.8f, 17f), (1.0f, 3.6f, 2.9f, 14f),
-                (5.0f, 4.2f, 4.2f, 18f), (9.4f, 4.6f, 2.8f, 13.5f), (13.6f, 3.8f, 3.6f, 16f), (-14.6f, 4.0f, 3.0f, 16.5f),
-            };
-            for (int h = 0; h < houses.Length; h++)
-            {
-                (float x, float w, float height, float z) = houses[h];
-                GameObject body = SceneKit.Primitive(PrimitiveType.Cube, "House", root, new Vector3(x, height / 2f, z + 2f), new Vector3(w, height, 4f), h % 2 == 0 ? house : houseB, false);
-                Skyline(body);
-                // Parapet lip on the flat roof.
-                Skyline(SceneKit.Primitive(PrimitiveType.Cube, "Parapet", root, new Vector3(x, height + 0.12f, z + 0.1f), new Vector3(w + 0.1f, 0.24f, 0.2f), h % 2 == 0 ? house : houseB, false));
-
-                int floors = Mathf.Max(1, Mathf.FloorToInt(height / 1.4f));
-                int columns = Mathf.Max(1, Mathf.FloorToInt(w / 1.1f));
-                for (int f = 0; f < floors; f++)
-                {
-                    for (int c = 0; c < columns; c++)
-                    {
-                        if (random.NextDouble() < 0.45)
-                        {
-                            continue; // dark room
-                        }
-
-                        float wx = x - w / 2f + (c + 0.5f) * w / columns;
-                        float wy = height - 0.85f - f * 1.4f; // from the roofline down, so they show above the wall
-                        Skyline(SceneKit.Primitive(PrimitiveType.Quad, "Window", root, new Vector3(wx, wy, z - 0.01f), new Vector3(0.34f, 0.44f, 1f),
-                            random.NextDouble() < 0.8 ? window : windowCool, false));
-                    }
-                }
-
-                if (h % 3 == 0)
-                {
-                    // Festival lights along this roof edge.
-                    for (float lx = x - w / 2f + 0.15f; lx < x + w / 2f; lx += 0.35f)
-                    {
-                        Skyline(SceneKit.Primitive(PrimitiveType.Sphere, "RoofLight", root, new Vector3(lx, height - 0.05f, z - 0.05f), Vector3.one * 0.09f, lights, false));
-                    }
-                }
-            }
 
             // Temple spire (shikhara): stacked, narrowing blocks with a finial and a flag.
-            Vector3 templeBase = new Vector3(7.2f, 0f, 22f);
+            Vector3 templeBase = new Vector3(16f, 0f, 58f);
             float y = 0f;
             for (int i = 0; i < 6; i++)
             {
@@ -374,8 +330,8 @@ namespace UtsavNights.EditorTools.Main
             flagQuad.transform.localRotation = Quaternion.Euler(0f, 0f, -8f);
             Skyline(flagQuad);
 
-            // Water tank on legs over the left houses.
-            Vector3 tank = new Vector3(-6.2f, 2.6f, 15f);
+            // Water tank on legs, far to the left.
+            Vector3 tank = new Vector3(-15f, 2.6f, 54f);
             Skyline(SceneKit.Primitive(PrimitiveType.Cylinder, "WaterTank", root, tank + new Vector3(0f, 1.6f, 0f), new Vector3(1.3f, 0.55f, 1.3f), house, false));
             foreach (Vector2 leg in new[] { new Vector2(-0.45f, -0.45f), new Vector2(0.45f, -0.45f), new Vector2(-0.45f, 0.45f), new Vector2(0.45f, 0.45f) })
             {

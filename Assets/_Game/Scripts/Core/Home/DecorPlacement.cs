@@ -229,16 +229,16 @@ namespace UtsavNights.Core.Home
             {
                 case "balcony_iron_rail":
                     surfaces.Add(new SurfacePatch("balcony rail", Surface.Railing, new V3(-1f, 4.3f, 0.84f), new V3(2f, 0, 0), new V3(0, 0, 0.06f), front, ledge: true));
-                    solids.Add(new Box3(-1.05f, 2.97f, 0f, 1.05f, 4.3f, 0.9f));
+                    BalconySolids(solids, 4.3f, 0.84f, 0.9f, 0.1f);
                     break;
                 case "balcony_jharokha":
                     surfaces.Add(new SurfacePatch("jharokha parapet", Surface.Railing, new V3(-1f, 4.1f, 0.75f), new V3(2f, 0, 0), new V3(0, 0, 0.15f), front, ledge: true));
-                    solids.Add(new Box3(-1.05f, 2.97f, 0f, 1.05f, 4.1f, 0.92f));
+                    BalconySolids(solids, 4.1f, 0.75f, 0.92f, 0.17f);
                     solids.Add(new Box3(-1.05f, 5.45f, 0f, 1.05f, 5.95f, 1.0f));
                     break;
                 case "balcony_wood_lattice":
                     surfaces.Add(new SurfacePatch("balcony rail", Surface.Railing, new V3(-1f, 4.2f, 0.83f), new V3(2f, 0, 0), new V3(0, 0, 0.07f), front, ledge: true));
-                    solids.Add(new Box3(-1.05f, 2.97f, 0f, 1.05f, 4.2f, 0.9f));
+                    BalconySolids(solids, 4.2f, 0.83f, 0.9f, 0.1f);
                     break;
                 default:
                     surfaces.Add(new SurfacePatch("window railing", Surface.Railing, new V3(-0.66f, 4.25f, 0.04f), new V3(1.32f, 0, 0), new V3(0, 0, 0.04f), front, ledge: true));
@@ -274,6 +274,16 @@ namespace UtsavNights.Core.Home
             var door = new Box3(-0.6f, 0f, 0.5f, 0.6f, 2.4f, 1.4f);
             var gate = new Box3(gateL + 0.2f, 0f, back - 1.0f, gateR - 0.2f, 2.2f, back);
             return new PlacementContext(design, tier, surfaces, solids, door, gate);
+        }
+
+        /// <summary>A balcony's slab and its front and side rails (the air above the slab stays free for a celebration spot).</summary>
+        private static void BalconySolids(List<Box3> solids, float railTop, float frontZ, float outer, float side)
+        {
+            const float floor = 3.3f;
+            solids.Add(new Box3(-1.05f, 2.97f, 0f, 1.05f, floor, outer));
+            solids.Add(new Box3(-1.05f, floor, frontZ, 1.05f, railTop, outer));
+            solids.Add(new Box3(-1.05f, floor, 0f, -1.05f + side, railTop, frontZ));
+            solids.Add(new Box3(1.05f - side, floor, 0f, 1.05f, railTop, frontZ));
         }
 
         /// <summary>The nearest surface a ray hits, or null.</summary>
