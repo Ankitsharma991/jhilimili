@@ -252,7 +252,8 @@ namespace UtsavNights.EditorTools.Main
             new GameObject("Home").AddComponent<HomeInstaller>().Configure(walls);
 
             // Phase 8: the settlement around the home lot (street, open space, neighbour lots), built at runtime.
-            new GameObject("Neighbourhood").AddComponent<NeighbourhoodInstaller>().Configure(walls, art.Stone);
+            new GameObject("Neighbourhood").AddComponent<NeighbourhoodInstaller>().Configure(walls, art.Stone,
+                AssetDatabase.LoadAssetAtPath<Material>("Assets/_Game/Materials/Crackers/Rocket_Spark_Additive.mat"));
 
             GameObject step = SceneKit.Primitive(PrimitiveType.Cube, "Step", env, new Vector3(0f, 0.04f, 2.8f), new Vector3(6f, 0.08f, 1.1f), border, true);
             step.AddComponent<PlacementSurfaceMarker>().Configure(Content.PlacementSurface.Ground);

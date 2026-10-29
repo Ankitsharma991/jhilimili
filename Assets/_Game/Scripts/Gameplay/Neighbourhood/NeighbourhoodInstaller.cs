@@ -16,14 +16,16 @@ namespace UtsavNights.Gameplay
 
         [SerializeField] private Texture2D[] wallTextures = new Texture2D[0];
         [SerializeField] private Texture2D groundTexture;
+        [SerializeField] private Material sparkMaterial;
 
         private bool _owner;
         private SettlementView _view;
 
-        public void Configure(Texture2D[] walls, Texture2D ground)
+        public void Configure(Texture2D[] walls, Texture2D ground, Material spark)
         {
             wallTextures = walls;
             groundTexture = ground;
+            sparkMaterial = spark;
         }
 
         private void Awake()
@@ -38,6 +40,9 @@ namespace UtsavNights.Gameplay
             string environment = PlayerPrefs.GetString(EnvironmentPrefKey, Environments.TownLane);
             _view = SettlementView.Create(transform, environment, wallTextures, groundTexture, () => quality != null ? quality.Tier : 1);
             Game.Services.Register(_view);
+            AmbientLife life = _view.gameObject.AddComponent<AmbientLife>();
+            life.Configure(_view, sparkMaterial, () => quality != null ? quality.Tier : 1);
+            Game.Services.Register(life);
         }
 
         private void Start()
@@ -55,6 +60,11 @@ namespace UtsavNights.Gameplay
             if (_owner)
             {
                 Game.Services.Unregister<SettlementView>();
+                if (Game.Services.IsRegistered<AmbientLife>())
+                {
+                    Game.Services.Unregister<AmbientLife>();
+                }
+
                 if (Game.Services.IsRegistered<CelebrationService>())
                 {
                     Game.Services.Unregister<CelebrationService>();
