@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 9 step 6 (F14): clips are written to the app's cache and shared through this FileProvider, so no storage
+     permission is needed. The queries let the share buttons see whether WhatsApp or Instagram is installed (Android 11+). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <queries>
+    <package android:name="com.whatsapp" />
+    <package android:name="com.whatsapp.w4b" />
+    <package android:name="com.instagram.android" />
+  </queries>
+  <application>
+    <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="${applicationId}.clips"
+        android:exported="false"
+        android:grantUriPermissions="true">
+      <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/utsav_clip_paths" />
+    </provider>
+  </application>
+</manifest>

@@ -302,6 +302,33 @@ namespace UtsavNights.UI
             return true;
         }
 
+        /// <summary>
+        /// Plays the show and records it (F22 "export clip"): 10 to 20 seconds, the show's length plus a moment. The clip's
+        /// share sheet opens when it is ready.
+        /// </summary>
+        public bool RecordClip()
+        {
+            if (!Game.Services.TryGet(out ClipRecorder recorder) || recorder.State != ClipRecorder.RecorderState.Idle)
+            {
+                SetMessage("A clip is already recording.");
+                return false;
+            }
+
+            if (!Preview())
+            {
+                return false;
+            }
+
+            if (!recorder.StartRecording(Core.Clips.ClipRules.ShowClipSeconds(Draft.Length(_player.Timing)), "show"))
+            {
+                StopPreview();
+                SetMessage(recorder.Last.Error);
+                return false;
+            }
+
+            return true;
+        }
+
         public void StopPreview()
         {
             if (_player != null && _player.State == ShowPlayer.PlayerState.Running)
@@ -625,11 +652,12 @@ namespace UtsavNights.UI
             UiKit.Panel(_panel, new Color(0.09f, 0.06f, 0.2f, 0.97f));
 
             RectTransform header = Area(_panel, "Header", 0f, 1f, 1f, 1f, new Vector2(0f, -UiTheme.MinTouch - 12f), new Vector2(0f, -12f));
-            HeaderButton(header, "Close", 0.01f, 0.15f, UiTheme.IndigoLight, UiTheme.OffWhite, Close);
-            HeaderButton(header, "Shows", 0.16f, 0.32f, UiTheme.IndigoLight, UiTheme.OffWhite, OpenList);
-            BuildName(header, 0.33f, 0.63f);
-            HeaderButton(header, "Save", 0.64f, 0.8f, UiTheme.IndigoLight, UiTheme.Marigold, () => Save());
-            HeaderButton(header, "Play", 0.81f, 0.99f, UiTheme.Saffron, UiTheme.Indigo, () => Preview());
+            HeaderButton(header, "Close", 0.01f, 0.13f, UiTheme.IndigoLight, UiTheme.OffWhite, Close);
+            HeaderButton(header, "Shows", 0.14f, 0.28f, UiTheme.IndigoLight, UiTheme.OffWhite, OpenList);
+            BuildName(header, 0.29f, 0.55f);
+            HeaderButton(header, "Save", 0.56f, 0.69f, UiTheme.IndigoLight, UiTheme.Marigold, () => Save());
+            HeaderButton(header, "Clip", 0.7f, 0.83f, UiTheme.Magenta, UiTheme.OffWhite, () => RecordClip());
+            HeaderButton(header, "Play", 0.84f, 0.99f, UiTheme.Saffron, UiTheme.Indigo, () => Preview());
 
             // Pad map on the left, palette on the right.
             float top = -UiTheme.MinTouch - 24f;

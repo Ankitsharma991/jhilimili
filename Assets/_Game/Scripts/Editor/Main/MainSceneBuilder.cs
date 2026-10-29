@@ -182,6 +182,7 @@ namespace UtsavNights.EditorTools.Main
             new GameObject("WaveController").AddComponent<WaveController>().Configure(camera);
             new GameObject("FinaleController").AddComponent<FinaleController>();
             new GameObject("ShowPlayer").AddComponent<ShowPlayer>().Configure(catalog);
+            new GameObject("ClipRecorder").AddComponent<ClipRecorder>().Configure(AssetDatabase.LoadAssetAtPath<Shader>("Assets/_Game/Shaders/ClipYuv.shader"));
             CreatePlacement(camera);
 
             // PRD 6.1: one cracker already stands ready; everything else comes from the tray.
@@ -460,6 +461,17 @@ namespace UtsavNights.EditorTools.Main
             showsRect.offsetMax = Vector2.zero;
             showsGo.AddComponent<UI.ShowDesigner>();
             showsGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
+
+            // Phase 9: clips, from the Record button above Finale.
+            var clipGo = new GameObject("Clips", typeof(RectTransform));
+            clipGo.transform.SetParent(safe.transform, false);
+            var clipRect = (RectTransform)clipGo.transform;
+            clipRect.anchorMin = Vector2.zero;
+            clipRect.anchorMax = Vector2.one;
+            clipRect.offsetMin = Vector2.zero;
+            clipRect.offsetMax = Vector2.zero;
+            clipGo.AddComponent<UI.ClipButton>();
+            clipGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
             finaleGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
             canvasGo.AddComponent<UI.ScreenReaderSupport>();
             canvasGo.AddComponent<UI.MeasureTools>();
