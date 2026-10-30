@@ -47,8 +47,10 @@ The APK declares `com.google.android.gms.permission.AD_ID` (added by the Google 
 - **Violence:** No. Fireworks are celebratory, with no people or creatures harmed and no weapons.
 - **Fear, sexuality, language, controlled substances, crude humour:** No.
 - **Gambling:** No. No real-money or simulated gambling, and no loot boxes.
-- **Users can interact or exchange content:** No. Clip sharing (PRD 17 `clip_shared`) is not in this
-  build. Revisit when it ships.
+- **Users can interact or exchange content:** No in-app interaction. Since Phase 9 the player can record a
+  clip of the game's own screen and send it to another app (WhatsApp, Instagram or the share sheet). Nothing
+  is posted or received inside the game. If the questionnaire asks about sharing content outside the app,
+  answer Yes for that. [Verify]
 - **Shares location:** No.
 - **Digital purchases:** Yes (Remove ads and unlock all).
 - **Ads:** Yes.
@@ -68,8 +70,11 @@ Expected result: PEGI 3 / ESRB Everyone, with "In-app purchases" shown. [Verify]
 
 ### Data types
 
-"Collected" means sent off the phone. Settings, progress and the local playtest and analytics logs never
-leave the phone, so they are not declared.
+"Collected" means sent off the phone. Settings, progress, saved shows and the local playtest and analytics
+logs never leave the phone, so they are not declared. Clips leave the phone only when the player shares one
+to an app they pick, which Google treats as user-initiated transfer, not collection or sharing. Pack
+downloads come from static file hosting that receives the IP address like any web request; no identifier
+is sent with them. [Verify both against the current Play help.]
 
 | Data type | Collected | Shared | Optional | Purposes | Comes from |
 |---|---|---|---|---|---|

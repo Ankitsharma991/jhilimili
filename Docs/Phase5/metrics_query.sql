@@ -45,7 +45,19 @@ SELECT
   (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'seconds') AS seconds,
   (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'metres') AS metres,
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'spot') AS spot,
-  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'kind') AS kind
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'kind') AS kind,
+  -- R3 (Phase 9) packs, shows and clips
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'pack') AS pack,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'version') AS version,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'type') AS type,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'reason') AS reason,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'pads') AS pads,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'cues') AS cues,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'replay') AS replay,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'frames') AS frames,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'source') AS source,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'target') AS target,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'fell_back') AS fell_back
 FROM `PROJECT.analytics_000000000.events_*`
 WHERE _TABLE_SUFFIX BETWEEN '20261101' AND '20261131'
   AND event_name IN ('app_first_open', 'scene_ready', 'cracker_placed', 'cracker_ignited', 'payoff_complete',
@@ -54,5 +66,7 @@ WHERE _TABLE_SUFFIX BETWEEN '20261101' AND '20261131'
                      'avatar_creator_opened', 'avatar_saved', 'avatar_skipped',
                      'decor_mode_opened', 'decor_mode_closed', 'decoration_placed', 'house_module_changed',
                      'layout_saved', 'layout_loaded', 'house_restored',
-                     'walk_started', 'walk_ended', 'fast_travel', 'spot_chosen', 'environment_chosen')
+                     'walk_started', 'walk_ended', 'fast_travel', 'spot_chosen', 'environment_chosen',
+                     'pack_installed', 'pack_failed', 'pack_deleted', 'show_saved', 'show_played',
+                     'clip_recorded', 'clip_failed')
 ORDER BY user, ts

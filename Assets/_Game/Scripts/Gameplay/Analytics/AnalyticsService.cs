@@ -64,6 +64,13 @@ namespace UtsavNights.Gameplay
             Game.Events.Subscribe<FastTravelEvent>(OnFastTravel);
             Game.Events.Subscribe<SpotChosenEvent>(OnSpotChosen);
             Game.Events.Subscribe<EnvironmentChosenEvent>(OnEnvironmentChosen);
+            Game.Events.Subscribe<PackInstalledEvent>(OnPackInstalled);
+            Game.Events.Subscribe<PackFailedEvent>(OnPackFailed);
+            Game.Events.Subscribe<PackDeletedEvent>(OnPackDeleted);
+            Game.Events.Subscribe<ShowSavedEvent>(OnShowSaved);
+            Game.Events.Subscribe<ShowPlayedEvent>(OnShowPlayed);
+            Game.Events.Subscribe<ClipRecordedEvent>(OnClipRecorded);
+            Game.Events.Subscribe<ClipSharedEvent>(OnClipShared);
         }
 
         private bool _reportedRestore;
@@ -106,6 +113,13 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<FastTravelEvent>(OnFastTravel);
             Game.Events.Unsubscribe<SpotChosenEvent>(OnSpotChosen);
             Game.Events.Unsubscribe<EnvironmentChosenEvent>(OnEnvironmentChosen);
+            Game.Events.Unsubscribe<PackInstalledEvent>(OnPackInstalled);
+            Game.Events.Unsubscribe<PackFailedEvent>(OnPackFailed);
+            Game.Events.Unsubscribe<PackDeletedEvent>(OnPackDeleted);
+            Game.Events.Unsubscribe<ShowSavedEvent>(OnShowSaved);
+            Game.Events.Unsubscribe<ShowPlayedEvent>(OnShowPlayed);
+            Game.Events.Unsubscribe<ClipRecordedEvent>(OnClipRecorded);
+            Game.Events.Unsubscribe<ClipSharedEvent>(OnClipShared);
         }
 
         /// <summary>app_first_open once per install (PRD 17: install quality).</summary>
@@ -287,6 +301,34 @@ namespace UtsavNights.Gameplay
             Send("spot_chosen", new EventParams().Add("spot", e.Spot).Add("kind", e.Kind).Add("environment", e.Environment));
 
         private void OnEnvironmentChosen(EnvironmentChosenEvent e) => Send("environment_chosen", new EventParams().Add("environment", e.Environment));
+
+        private void OnPackInstalled(PackInstalledEvent e) =>
+            Send("pack_installed", new EventParams().Add("pack", e.PackId).Add("version", e.Version).Add("type", e.Type));
+
+        private void OnPackFailed(PackFailedEvent e) => Send("pack_failed", new EventParams().Add("pack", e.PackId).Add("reason", e.Reason));
+
+        private void OnPackDeleted(PackDeletedEvent e) => Send("pack_deleted", new EventParams().Add("pack", e.PackId));
+
+        private void OnShowSaved(ShowSavedEvent e) =>
+            Send("show_saved", new EventParams().Add("pads", (long)e.Pads).Add("cues", (long)e.Cues).Add("seconds", (long)e.Seconds));
+
+        private void OnShowPlayed(ShowPlayedEvent e) =>
+            Send("show_played", new EventParams().Add("cues", (long)e.Cues).Add("seconds", (long)e.Seconds).Add("replay", e.Replay));
+
+        private void OnClipRecorded(ClipRecordedEvent e)
+        {
+            if (e.Ok)
+            {
+                Send("clip_recorded", new EventParams().Add("seconds", (long)e.Seconds).Add("source", e.Source).Add("frames", (long)e.Frames));
+            }
+            else
+            {
+                Send("clip_failed", new EventParams().Add("reason", e.Reason).Add("source", e.Source));
+            }
+        }
+
+        private void OnClipShared(ClipSharedEvent e) => Send("clip_shared", new EventParams().Add("target", e.Target.ToString().ToLowerInvariant())
+            .Add("seconds", (long)e.Seconds).Add("source", e.Source).Add("fell_back", e.FellBack));
 
         private void OnLayout(HouseLayoutEvent e) => Send(e.Saved ? "layout_saved" : "layout_loaded", new EventParams().Add("slot", (long)e.Slot));
 

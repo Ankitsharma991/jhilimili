@@ -35,6 +35,10 @@ namespace UtsavNights.Gameplay
     {
         private AndroidJavaObject _encoder;
         private IntPtr _addVideo;
+        private IntPtr _addAudio;
+        private readonly jvalue[] _videoArgs = new jvalue[2];
+        private readonly jvalue[] _audioArgs = new jvalue[3];
+        private NativeArray<byte> _pcm;
         private string _beginError = string.Empty;
 
         public bool IsFinished => _encoder == null || _encoder.Call<bool>("isFinished");
@@ -49,6 +53,7 @@ namespace UtsavNights.Gameplay
             {
                 _encoder = new AndroidJavaObject("com.ankitsharma.utsavnights.clips.ClipEncoder", path, format.Width, format.Height, format.Fps, format.Bitrate, sampleRate, channels);
                 _addVideo = AndroidJNIHelper.GetMethodID(_encoder.GetRawClass(), "addVideo", "(Ljava/nio/ByteBuffer;J)Z");
+                _addAudio = AndroidJNIHelper.GetMethodID(_encoder.GetRawClass(), "addAudioBuffer", "(Ljava/nio/ByteBuffer;IJ)V");
                 string error = _encoder.Call<string>("error");
                 return string.IsNullOrEmpty(error);
             }
@@ -71,10 +76,9 @@ namespace UtsavNights.Gameplay
             IntPtr buffer = AndroidJNI.NewDirectByteBuffer(frame);
             try
             {
-                var args = new jvalue[2];
-                args[0].l = buffer;
-                args[1].j = ptsUs;
-                return AndroidJNI.CallBooleanMethod(_encoder.GetRawObject(), _addVideo, args);
+                _videoArgs[0].l = buffer;
+                _videoArgs[1].j = ptsUs;
+                return AndroidJNI.CallBooleanMethod(_encoder.GetRawObject(), _addVideo, _videoArgs);
             }
             finally
             {
@@ -82,11 +86,58 @@ namespace UtsavNights.Gameplay
             }
         }
 
-        public void AddAudio(byte[] pcm, int length, long ptsUs) => _encoder?.Call("addAudio", pcm, length, ptsUs);
+        /// <summary>Through a reused native buffer, like the video: no managed garbage per block.</summary>
+        public void AddAudio(byte[] pcm, int length, long ptsUs)
+        {
+            if (_encoder == null || length <= 0)
+            {
+                return;
+            }
 
-        public void Finish() => _encoder?.Call("finish");
+            if (!_pcm.IsCreated || _pcm.Length < length)
+            {
+                if (_pcm.IsCreated)
+                {
+                    _pcm.Dispose();
+                }
 
-        public void Cancel() => _encoder?.Call("cancel");
+                _pcm = new NativeArray<byte>(Math.Max(length, pcm.Length), Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            }
+
+            NativeArray<byte>.Copy(pcm, _pcm, length);
+            IntPtr buffer = AndroidJNI.NewDirectByteBuffer(_pcm);
+            try
+            {
+                _audioArgs[0].l = buffer;
+                _audioArgs[1].i = length;
+                _audioArgs[2].j = ptsUs;
+                AndroidJNI.CallVoidMethod(_encoder.GetRawObject(), _addAudio, _audioArgs);
+            }
+            finally
+            {
+                AndroidJNI.DeleteLocalRef(buffer);
+            }
+        }
+
+        public void Finish()
+        {
+            _encoder?.Call("finish");
+            ReleasePcm();
+        }
+
+        public void Cancel()
+        {
+            _encoder?.Call("cancel");
+            ReleasePcm();
+        }
+
+        private void ReleasePcm()
+        {
+            if (_pcm.IsCreated)
+            {
+                _pcm.Dispose();
+            }
+        }
     }
 
     /// <summary>

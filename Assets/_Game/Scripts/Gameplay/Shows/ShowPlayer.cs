@@ -10,6 +10,40 @@ using UtsavNights.Core.Shows;
 
 namespace UtsavNights.Gameplay
 {
+    /// <summary>A show was saved (counts only: never its name).</summary>
+    public readonly struct ShowSavedEvent
+    {
+        public ShowSavedEvent(int pads, int cues, int seconds)
+        {
+            Pads = pads;
+            Cues = cues;
+            Seconds = seconds;
+        }
+
+        public int Pads { get; }
+
+        public int Cues { get; }
+
+        public int Seconds { get; }
+    }
+
+    /// <summary>A show started playing, or replaying.</summary>
+    public readonly struct ShowPlayedEvent
+    {
+        public ShowPlayedEvent(int cues, int seconds, bool replay)
+        {
+            Cues = cues;
+            Seconds = seconds;
+            Replay = replay;
+        }
+
+        public int Cues { get; }
+
+        public int Seconds { get; }
+
+        public bool Replay { get; }
+    }
+
     /// <summary>
     /// Plays a show at the current celebration spot (Phase 9 step 4, F22): each cracker is set on its pad a second before
     /// its cue and lit on the cue, and the same show can be replayed. Also keeps the saved shows (shows.json).
@@ -173,7 +207,11 @@ namespace UtsavNights.Gameplay
             return new Vector3(spot.x, spot.y, spot.z) + yaw * new Vector3(pad.dx, 0f, pad.dz);
         }
 
-        public bool Play(ShowDef show)
+        public bool Play(ShowDef show) => Play(show, false);
+
+        public bool Replay() => CanReplay && Play(_show, true);
+
+        private bool Play(ShowDef show, bool replay)
         {
             if (State != PlayerState.Idle || Check(show).Count > 0)
             {
@@ -202,11 +240,10 @@ namespace UtsavNights.Gameplay
             _nextLight = 0;
             Missed = 0;
             SetState(PlayerState.Running);
+            Game.Events.Publish(new ShowPlayedEvent(_order.Count, (int)_show.Length(Timing), replay));
             Tick(0f);
             return true;
         }
-
-        public bool Replay() => CanReplay && Play(_show);
 
         /// <summary>Ends the show now: unlit crackers are taken away, burning ones finish.</summary>
         public void Stop()
@@ -279,7 +316,13 @@ namespace UtsavNights.Gameplay
                 return false;
             }
 
-            return Store.Save(Library);
+            if (!Store.Save(Library))
+            {
+                return false;
+            }
+
+            Game.Events.Publish(new ShowSavedEvent(show.pads.Count, show.cues.Count, (int)show.Length(Timing)));
+            return true;
         }
 
         public bool Delete(string id) => Library.Remove(id) && Store.Save(Library);

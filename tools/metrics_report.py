@@ -199,6 +199,31 @@ def compute(events, crashes=None, ecpm=None):
     m["environments"] = Counter(e.get("environment") for e in ends if e.get("environment")).most_common(5)
     m["fast_travels"] = sum(1 for e in events if e["event"] == "fast_travel")
 
+    # R3 (Phase 9): content packs, shows and clips (F21, F22, F14). Pack failures by reason show whether downloads
+    # hold up in the field; show and clip use say whether the designer and sharing earn their place.
+    installs = [e for e in events if e["event"] == "pack_installed"]
+    failures = [e for e in events if e["event"] == "pack_failed"]
+    m["pack_installs"] = len(installs)
+    m["pack_failures"] = len(failures)
+    m["pack_failure_rate"] = len(failures) / (len(installs) + len(failures)) if installs or failures else None
+    m["pack_failure_reasons"] = Counter(e.get("reason") for e in failures if e.get("reason")).most_common(4)
+    m["top_packs"] = Counter(e.get("pack") for e in installs if e.get("pack")).most_common(5)
+    designers = {e["user"] for e in events if e["event"] == "show_saved"}
+    m["show_designers"] = len(designers)
+    m["show_designer_share"] = len(designers) / len(by_user) if by_user else None
+    m["shows_played"] = sum(1 for e in events if e["event"] == "show_played")
+    m["show_replays"] = sum(1 for e in events if e["event"] == "show_played" and num(e, "replay"))
+    cues = [num(e, "cues") for e in events if e["event"] == "show_saved" and num(e, "cues") is not None]
+    m["median_show_cues"] = statistics.median(cues) if cues else None
+    recorded = sum(1 for e in events if e["event"] == "clip_recorded")
+    failed_clips = sum(1 for e in events if e["event"] == "clip_failed")
+    shared = [e for e in events if e["event"] == "clip_shared"]
+    m["clips_recorded"] = recorded
+    m["clip_failure_rate"] = failed_clips / (recorded + failed_clips) if recorded or failed_clips else None
+    m["clips_shared"] = len(shared)
+    m["clip_share_rate"] = len(shared) / recorded if recorded else None
+    m["share_targets"] = Counter(e.get("target") for e in shared if e.get("target")).most_common(3)
+
     # PRD 15.3: sessions per user x impressions per session x eCPM / 1000.
     if ecpm is not None and m["sessions_per_user"] is not None and m["ads_per_session"] is not None:
         m["ad_revenue_per_user_usd"] = m["sessions_per_user"] * m["ads_per_session"] * ecpm / 1000
@@ -304,6 +329,18 @@ def report(m, since, days, installs=None):
     if m["environments"]:
         lines.append(f"| Environments at session end | {', '.join(f'{k} ({n})' for k, n in m['environments'])} |")
     lines.append("| Against the R0 cohort | Compare the median session and D1/D7 above with an R0-only export of the same length |")
+    lines += ["", "## Packs, shows and clips (R3, Phase 9)", "", "| Metric | Value |", "|---|---|"]
+    lines.append(f"| Pack installs / failures | {m['pack_installs']} / {m['pack_failures']} ({fmt(m['pack_failure_rate'], 'pct')} failed) |")
+    if m["pack_failure_reasons"]:
+        lines.append(f"| Failure reasons | {', '.join(f'{k} ({n})' for k, n in m['pack_failure_reasons'])} |")
+    if m["top_packs"]:
+        lines.append(f"| Most installed | {', '.join(f'{k} ({n})' for k, n in m['top_packs'])} |")
+    lines.append(f"| Users who saved a show | {m['show_designers']} ({fmt(m['show_designer_share'], 'pct')} of users) |")
+    lines.append(f"| Shows played / replays / median crackers per show | {m['shows_played']} / {m['show_replays']} / {fmt(m['median_show_cues'], 'n')} |")
+    lines.append(f"| Clips recorded / failed | {m['clips_recorded']} / {fmt(m['clip_failure_rate'], 'pct')} |")
+    lines.append(f"| Clips shared | {m['clips_shared']} ({fmt(m['clip_share_rate'], 'pct')} of clips) |")
+    if m["share_targets"]:
+        lines.append(f"| Shared to | {', '.join(f'{k} ({n})' for k, n in m['share_targets'])} |")
     lines += ["", "Small tests (20 to 50 users) can judge feel, time to ignition, completion and crashes. "
               "Retention, conversion and ad revenue need hundreds to thousands of users (PRD 17)."]
     return "\n".join(lines)
@@ -364,6 +401,16 @@ def self_test():
     add("u2", t0 + timedelta(minutes=2), "walk_started", environment="town_lane")
     add("u2", t0 + timedelta(minutes=2, seconds=20), "walk_ended", seconds=20, metres=12)
 
+    # u1 installs a pack after one network failure, saves a show, plays it twice and shares one of two clips.
+    add("u1", t0 + timedelta(minutes=5), "pack_failed", pack="env_blue_city_lane", reason="network")
+    add("u1", t0 + timedelta(minutes=6), "pack_installed", pack="env_blue_city_lane", version="1.0.0", type="environment")
+    add("u1", t0 + timedelta(minutes=7), "show_saved", pads=4, cues=6, seconds=20)
+    add("u1", t0 + timedelta(minutes=7, seconds=5), "show_played", cues=6, seconds=20, replay=0)
+    add("u1", t0 + timedelta(minutes=7, seconds=40), "show_played", cues=6, seconds=20, replay=1)
+    add("u1", t0 + timedelta(minutes=8), "clip_recorded", seconds=14, source="show", frames=410)
+    add("u1", t0 + timedelta(minutes=8, seconds=30), "clip_recorded", seconds=12, source="free", frames=350)
+    add("u1", t0 + timedelta(minutes=8, seconds=40), "clip_shared", target="whatsapp", seconds=12, source="free", fell_back=0)
+
     events = load_events(rows, t0.date(), 8)
     m = compute(events, crashes=1, ecpm=2.0)
     checks = {
@@ -399,6 +446,11 @@ def self_test():
         "d1_retention_walkers": (m["d1_retention_walkers"], 1.0),
         "d1_retention_others": (m["d1_retention_others"], 0.0),
         "top_spot_kind": (m["spot_kinds"][0][0] if m["spot_kinds"] else None, "square"),
+        "pack_failure_rate": (m["pack_failure_rate"], 0.5),
+        "show_designers": (m["show_designers"], 1),
+        "show_replays": (m["show_replays"], 1),
+        "clip_share_rate": (m["clip_share_rate"], 0.5),
+        "top_share_target": (m["share_targets"][0][0] if m["share_targets"] else None, "whatsapp"),
         # 7 sessions / 4 users x 2 ads / 7 sessions x $2 / 1000.
         "ad_revenue_per_user_usd": (round(m["ad_revenue_per_user_usd"], 6), round(7 / 4 * 2 / 7 * 2 / 1000, 6)),
     }

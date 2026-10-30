@@ -121,6 +121,91 @@ namespace UtsavNights.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator RecordingAClip_AllocatesAlmostNothingPerFrame()
+        {
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            Assert.IsTrue(Core.Runtime.Game.Services.TryGet(out Gameplay.ClipRecorder recorder));
+            var encoder = new NullClipEncoder();
+            Gameplay.ClipRecorder.EncoderFactory = () => encoder;
+            Gameplay.ClipRecorder.TestSource = Texture2D.grayTexture;
+            try
+            {
+                Assert.IsTrue(recorder.StartRecording(Core.Clips.ClipRules.MaxSeconds), recorder.Last.Error);
+                yield return WaitSeconds(0.5f);
+                var result = new float[2];
+                yield return Measure(90, result);
+                Debug.Log($"[UTSAV_PERF] recording gc_kb_per_frame avg={result[0]:0.00} max={result[1]:0.00} frames={encoder.Frames}");
+                Assert.Greater(encoder.Frames, 20, "frames reached the encoder");
+                Assert.Less(result[0], IdleLimitKb, "capturing, packing and reading back each frame adds no garbage");
+            }
+            finally
+            {
+                recorder.Cancel();
+                Gameplay.ClipRecorder.TestSource = null;
+                Gameplay.ClipRecorder.EncoderFactory = Gameplay.ClipRecorder.DefaultEncoder;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayingAShow_AllocationsStaySmall()
+        {
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            Assert.IsTrue(Core.Runtime.Game.Services.TryGet(out Gameplay.ShowPlayer player));
+            // Diwali night (with aerials) where the spot allows it, else Gentle start.
+            Core.Shows.ShowDef[] templates = Core.Shows.ShowTemplates.All;
+            Core.Shows.ShowDef show = (player.Check(templates[1]).Count == 0 ? templates[1] : templates[0]).Clone();
+            Assert.IsTrue(player.Play(show), string.Join("; ", player.Check(show)));
+            try
+            {
+                yield return WaitSeconds(2f);
+                var result = new float[2];
+                yield return Measure(120, result);
+                Debug.Log($"[UTSAV_PERF] show gc_kb_per_frame avg={result[0]:0.00} max={result[1]:0.00}");
+                Assert.Less(result[0], ShowLimitKb, "a show stays within the finale's limit");
+            }
+            finally
+            {
+                player.Stop();
+            }
+        }
+
+        /// <summary>Takes frames and throws them away, so only the recorder's own garbage is measured.</summary>
+        private sealed class NullClipEncoder : Gameplay.IClipEncoder
+        {
+            public int Frames;
+
+            public bool IsFinished => true;
+
+            public string Error => string.Empty;
+
+            public int FramesWritten => Frames;
+
+            public bool Begin(string path, Core.Clips.ClipFormat format, int sampleRate, int channels) => true;
+
+            public bool AddVideo(Unity.Collections.NativeArray<byte> frame, long ptsUs)
+            {
+                Frames++;
+                return true;
+            }
+
+            public void AddAudio(byte[] pcm, int length, long ptsUs)
+            {
+            }
+
+            public void Finish()
+            {
+            }
+
+            public void Cancel()
+            {
+            }
+        }
+
         private static IEnumerator WaitSeconds(float seconds)
         {
             float end = Time.realtimeSinceStartup + seconds;

@@ -33,6 +33,30 @@ namespace UtsavNights.Gameplay
         public string Error { get; }
     }
 
+    /// <summary>A clip was finished or failed (analytics: a short reason id, never the error text or the file's path).</summary>
+    public readonly struct ClipRecordedEvent
+    {
+        public ClipRecordedEvent(bool ok, int seconds, string source, int frames, string reason)
+        {
+            Ok = ok;
+            Seconds = seconds;
+            Source = source;
+            Frames = frames;
+            Reason = reason;
+        }
+
+        public bool Ok { get; }
+
+        public int Seconds { get; }
+
+        public string Source { get; }
+
+        public int Frames { get; }
+
+        /// <summary>"unsupported", "start" or "encoder" when the clip failed; empty when it worked.</summary>
+        public string Reason { get; }
+    }
+
     /// <summary>
     /// Records 10 to 20 seconds of the screen and the game's sound to an MP4 (Phase 9 step 6, F14). Each frame the screen
     /// is copied once rendering ends, packed into I420 on the GPU (ClipYuv.shader) and read back asynchronously; the encoder (MediaCodec on the
@@ -72,6 +96,9 @@ namespace UtsavNights.Gameplay
         private bool _registered;
         private int _lastFrame;
         private byte[] _firstFrame;
+        private readonly System.Collections.Generic.Queue<(int clip, long pts)> _pending = new System.Collections.Generic.Queue<(int, long)>();
+        private Action<AsyncGPUReadbackRequest> _onFrame;
+        private int _clip;
 
         /// <summary>
         /// Tests only: frames come from this texture (first row at the bottom, as Unity's textures are) instead of the
@@ -181,7 +208,7 @@ namespace UtsavNights.Gameplay
 
             if (yuvShader == null || !yuvShader.isSupported || !SystemInfo.supportsAsyncGPUReadback)
             {
-                return Fail("Clips aren't supported on this phone.", source);
+                return Fail("Clips aren't supported on this phone.", source, "unsupported");
             }
 
             _screenW = Screen.width;
@@ -194,7 +221,7 @@ namespace UtsavNights.Gameplay
             {
                 string why = _encoder.Error;
                 _encoder = null;
-                return Fail(string.IsNullOrEmpty(why) ? "The clip couldn't start." : why, source);
+                return Fail(string.IsNullOrEmpty(why) ? "The clip couldn't start." : why, source, "start");
             }
 
             if (_material == null)
@@ -228,6 +255,7 @@ namespace UtsavNights.Gameplay
             FramesCaptured = 0;
             ReadbackErrors = 0;
             _lastFrame = -1;
+            _clip++;
             SetState(RecorderState.Recording);
             RenderPipelineManager.endContextRendering += OnRendered;
             return true;
@@ -300,6 +328,7 @@ namespace UtsavNights.Gameplay
                 Release();
                 Tidy();
                 SetState(RecorderState.Idle);
+                Game.Events.Publish(new ClipRecordedEvent(ok, (int)Last.Seconds, _source, FramesCaptured, ok ? string.Empty : "encoder"));
                 Finished?.Invoke(Last);
             }
         }
@@ -341,21 +370,30 @@ namespace UtsavNights.Gameplay
 
             _material.SetVector(ClipSizeId, new Vector4(_format.Width, _format.Height, source == null && SystemInfo.graphicsUVStartsAtTop ? 1f : 0f, 0f));
             Graphics.Blit(source != null ? source : _screen, _yuv, _material);
-            long pts = (long)(t * 1_000_000.0);
-            IClipEncoder encoder = _encoder;
-            AsyncGPUReadback.Request(_yuv, 0, request => OnFrame(request, encoder, pts));
+            // Readbacks complete in the order they were asked for, so each frame's time waits in a queue: one cached
+            // callback and no closure per frame (the GC guard measures this).
+            _pending.Enqueue((_clip, (long)(t * 1_000_000.0)));
+            _onFrame ??= OnFrame;
+            AsyncGPUReadback.Request(_yuv, 0, _onFrame);
             FramesCaptured++;
         }
 
-        private void OnFrame(AsyncGPUReadbackRequest request, IClipEncoder encoder, long pts)
+        private void OnFrame(AsyncGPUReadbackRequest request)
         {
+            if (_pending.Count == 0)
+            {
+                return;
+            }
+
+            (int clip, long pts) = _pending.Dequeue();
             if (request.hasError)
             {
                 ReadbackErrors++;
                 return;
             }
 
-            if (encoder == null || encoder != _encoder || State == RecorderState.Idle)
+            IClipEncoder encoder = _encoder;
+            if (encoder == null || clip != _clip || State == RecorderState.Idle)
             {
                 return;
             }
@@ -442,9 +480,10 @@ namespace UtsavNights.Gameplay
             }
         }
 
-        private bool Fail(string why, string source)
+        private bool Fail(string why, string source, string reason)
         {
             Last = new ClipResult(false, null, 0f, source, why);
+            Game.Events.Publish(new ClipRecordedEvent(false, 0, source, 0, reason));
             Finished?.Invoke(Last);
             return false;
         }

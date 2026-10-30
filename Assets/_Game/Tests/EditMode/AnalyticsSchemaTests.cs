@@ -23,7 +23,8 @@ namespace UtsavNights.Tests
                 "house_module_changed", "layout_saved", "layout_loaded", "house_restored", "walk_started", "walk_ended", "fast_travel",
                 "spot_chosen", "environment_chosen",
             };
-            CollectionAssert.AreEquivalent(prd.Concat(r1), AnalyticsSchema.EventNames.ToArray());
+            string[] r3 = { "pack_installed", "pack_failed", "pack_deleted", "show_saved", "show_played", "clip_recorded", "clip_failed" };
+            CollectionAssert.AreEquivalent(prd.Concat(r1).Concat(r3), AnalyticsSchema.EventNames.ToArray());
         }
 
         [Test]
@@ -79,6 +80,30 @@ namespace UtsavNights.Tests
                 {
                     Assert.IsTrue(AnalyticsSchema.IsSafeId(spot.id) && AnalyticsSchema.IsSafeId(spot.kind), spot.id);
                 }
+            }
+        }
+
+        [Test]
+        public void PackShowAndClipEvents_CarryIdsAndCountsOnly()
+        {
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("pack_installed", new EventParams().Add("pack", Core.Packs.SamplePacks.BlueCityPack).Add("version", "1.2.0").Add("type", "environment")));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("pack_failed", new EventParams().Add("pack", "env_blue_city_lane").Add("reason", "network")));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("show_saved", new EventParams().Add("pads", 3L).Add("cues", 9L).Add("seconds", 28L)));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("show_played", new EventParams().Add("cues", 9L).Add("seconds", 28L).Add("replay", true)));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("clip_recorded", new EventParams().Add("seconds", 14L).Add("source", "show").Add("frames", 410L)));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("clip_failed", new EventParams().Add("reason", "encoder").Add("source", "free")));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("clip_shared", new EventParams().Add("target", "whatsapp").Add("seconds", 12L).Add("source", "free").Add("fell_back", false)));
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("show_saved", new EventParams().Add("name", "dadi")), "show names stay on the phone");
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("clip_recorded", new EventParams().Add("path", "x")), "no file paths");
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("pack_failed", new EventParams().Add("pack", "env_a").Add("reason", "HTTP 404 at https://cdn")), "no messages or URLs");
+            foreach (Core.Clips.ShareTarget target in System.Enum.GetValues(typeof(Core.Clips.ShareTarget)))
+            {
+                Assert.IsTrue(AnalyticsSchema.IsSafeId(target.ToString().ToLowerInvariant()), target.ToString());
+            }
+
+            foreach (string type in new[] { Core.Packs.PackTypes.Environment, Core.Packs.PackTypes.Wardrobe, Core.Packs.PackTypes.Shows })
+            {
+                Assert.IsTrue(AnalyticsSchema.IsSafeId(type), type);
             }
         }
 

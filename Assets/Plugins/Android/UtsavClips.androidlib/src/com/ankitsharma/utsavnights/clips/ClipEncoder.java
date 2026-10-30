@@ -173,6 +173,18 @@ public final class ClipEncoder {
         queue.add(new Packet(false, copy, length, ptsUs, false));
     }
 
+    /** The same from a direct buffer (no Java array made on the game's side). */
+    public void addAudioBuffer(ByteBuffer pcm, int length, long ptsUs) {
+        if (finished || !error.isEmpty() || length <= 0 || pcm.capacity() < length) {
+            return;
+        }
+
+        byte[] copy = new byte[length];
+        pcm.position(0);
+        pcm.get(copy, 0, length);
+        queue.add(new Packet(false, copy, length, ptsUs, false));
+    }
+
     /** Ends both streams; the file is complete when isFinished() turns true. */
     public void finish() {
         queue.add(new Packet(true, null, 0, 0, true));

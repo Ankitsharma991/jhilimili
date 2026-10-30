@@ -25,7 +25,7 @@ namespace UtsavNights.Core.Analytics
             { "ad_reward", new[] { "placement", "ms_since_payoff" } },
             { "purchase_started", new[] { "sku" } },
             { "purchase_done", new[] { "sku" } },
-            { "clip_shared", new[] { "target" } },
+            { "clip_shared", new[] { "target", "seconds", "source", "fell_back" } },
             { "perf_sample", new[] { "avg_fps", "tier", "downgrades" } },
 
             // R1, Phase 6 (avatar exit gate: do players keep an avatar?). Never the name, body shape or skin tone.
@@ -50,6 +50,16 @@ namespace UtsavNights.Core.Analytics
             { "fast_travel", new[] { "spot" } },
             { "spot_chosen", new[] { "spot", "kind", "environment" } },
             { "environment_chosen", new[] { "environment" } },
+
+            // R3, Phase 9 (packs, shows and clips). Catalogue ids, counts and short reason ids: never a show's name, a file
+            // path, a URL or an error message.
+            { "pack_installed", new[] { "pack", "version", "type" } },
+            { "pack_failed", new[] { "pack", "reason" } },
+            { "pack_deleted", new[] { "pack" } },
+            { "show_saved", new[] { "pads", "cues", "seconds" } },
+            { "show_played", new[] { "cues", "seconds", "replay" } },
+            { "clip_recorded", new[] { "seconds", "source", "frames" } },
+            { "clip_failed", new[] { "reason", "source" } },
         };
 
         public static IEnumerable<string> EventNames => Events.Keys;
