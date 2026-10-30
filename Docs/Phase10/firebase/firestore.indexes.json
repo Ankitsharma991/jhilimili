@@ -1,0 +1,12 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "shares",
+      "queryScope": "COLLECTION",
+      "fields": [ { "fieldPath": "owner", "order": "ASCENDING" }, { "fieldPath": "createdUnix", "order": "DESCENDING" } ]
+    }
+  ],
+  "fieldOverrides": [
+    { "collectionGroup": "shares", "fieldPath": "payload", "indexes": [] }
+  ]
+}

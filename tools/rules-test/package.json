@@ -1,0 +1,13 @@
+{
+  "name": "utsav-rules-test",
+  "private": true,
+  "description": "Phase 10: tests for Docs/Phase10/firebase/*.rules on the Firebase emulators",
+  "type": "module",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore,storage --project demo-utsav --config ../../Docs/Phase10/firebase/firebase.json 'node --test rules.test.mjs'"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "6.0.0",
+    "firebase": "13.0.0"
+  }
+}

@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// Utsav Nights, Phase 10 (F24). Backups are sealed (AES-256 + HMAC) on the phone with a key kept in the account's
+// Firestore document, so this bucket only ever holds ciphertext. Each account reads and writes only its own folder.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /backups/{uid}/{file} {
+      allow read, delete: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.uid == uid;
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.uid == uid
+        && file.matches('^[0-9]{12}_[0-9]{3}[.]utsav$')
+        && request.resource.size <= 8 * 1024 * 1024
+        && request.resource.contentType == 'application/octet-stream';
+    }
+
+    match /{everything=**} {
+      allow read, write: if false;
+    }
+  }
+}

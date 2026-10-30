@@ -50,7 +50,7 @@ the owner's decision; feedback and changes come after all PRD features are built
 | # | Step | Main pieces | Tests |
 |---|------|-------------|-------|
 | 1 | Backup bundle and file | The bundle (versioned, each part checked), encryption with integrity, restore with undo; export to a file through the share sheet and import from a file picker; Settings → Backup and restore | Round trip; a wrong password, a damaged or altered file and a newer version are refused; purchases never restored; undo |
-| 2 | Cloud model and rules | `ICloud` (account, documents, files), share codes (format, check character, no lookalikes, no rude words), moderation rules, snapshot and show lint, quotas; the in-memory cloud enforcing the rules; the Firebase rules files | Codes, rules, quotas; one player can't read or change another's data |
+| 2 | Cloud model and rules | `ICloud` (account, backups, shares), share codes (format, check character, no lookalikes, no rude words), moderation rules, quotas; the in-memory cloud enforcing the rules; the Firebase rules files and their emulator tests | Codes, rules, quotas; one player can't read or change another's data |
 | 3 | Account and cloud backup | Sign in and out; back up now, keep the newest three; restore on a new phone; delete my cloud data | Back up on one "phone", restore on another; signed out or offline explains itself |
 | 4 | Home visits | Publish a snapshot and get a code; visit by code (download, check, keep for offline); view-only visit of the house in its neighbourhood; recent visits; report; withdraw | Play Mode: publish, visit, leave; a hidden or withdrawn code; offline revisit |
 | 5 | Shared shows | Share a show by code; a friend plays it at their own spot (checked against their phone's limits) and can keep a copy | Share, play, keep; a show too big for the friend's phone explains itself |
@@ -63,6 +63,10 @@ the owner's decision; feedback and changes come after all PRD features are built
 |---|---|
 | 1. Backup bundle and file | Done. `Core/Backup`: `BackupArchive` (named parts, versioned, read by name so newer games can add parts), `BackupCrypto` (AES-256-CBC with HMAC-SHA256 over header and ciphertext; a password through PBKDF2-SHA256 at 120,000 rounds, or a 32-byte account key; a fresh salt and IV each time), `BackupRules` (the parts; never the purchase; passwords of at least 8 characters; file names; plain reasons). `Gameplay/Backup`: `BackupService` (collects the save files after writing pending changes; checks every part as the game loads it, refusing newer versions and damaged text before writing anything; sets the current files aside, writes the backup, merges the timed unlocks into this phone's progress and keeps its purchase as it is; the quality tier goes back to automatic; the old house's edit journal is dropped; Undo puts everything back), `BackupFiles` and `BackupFileReceiver` over the `UtsavBackup.androidlib` library (`BackupFileActivity`: Android's own "save as" and "open" pickers, no storage permission, 8 MB cap). `UI/BackupScreen` (Settings → Backup and restore: a password, Save backup file, Restore from file, a confirm step with what the backup holds, Undo last restore; the password work runs off the main thread). A restore reloads the scene so every service reads the new files. Tests: `BackupTests` (Mono: round trips, a wrong password or key, any changed byte, cut short, other files, newer versions, rules), `BackupSmokeTests` (Play Mode: back up one phone and restore on another, purchase kept out, unlocks merged, undo; damaged and empty backups; the screen from Settings: save, wrong password, confirm, restore, undo) |
 
+| 2. Cloud model and rules | Done (the rules' emulator run waits for Java 21, see notes). `Core/Cloud`: `ICloud` (Google or anonymous sign-in, the account's backup key, put, list, get and delete backups, publish, open, visit, report, withdraw, my shares, delete my data), `ShareCodes` (8 characters from 25 digits and consonants: no vowels or Y so no words, no 0/O, 1/I/L, S or Z; a weighted check character that catches every single wrong character and every swapped pair; shown as BCDF-2345), `CloudRules` (hidden at 3 reports from different accounts until reviewed, 10 shares a day per account, a year without visits expires a code, the newest 3 backups, 200,000-character payloads, 8 MB backups; plain words for every error). `MemoryCloud` and `MemoryCloudServer` (one server, many phones; the checks of the rules files, the moderation review). `Docs/Phase10/firebase`: `firestore.rules` (accounts and backups their owner's only; shares opened by code and never listed; a share's content in a separate document readable only while visible, so the game can still say why a code is closed; visits and reports change only their counters, one report per account; publishing within the day's count, which only moves by publishing; withdraw and delete by the owner), `storage.rules` (each account's own backups folder, sealed files under 8 MB, backup names only), `firebase.json`, `firestore.indexes.json`. `tools/rules-test` (the same cases on the Firestore and Storage emulators: `npm test`). The Mono test runner now honours SetUp and TearDown. Tests: `CloudModelTests` (Mono), `tools/rules-test/rules.test.mjs` |
+
+| 3. Account and cloud backup | Done. `Gameplay/Cloud`: `CloudInstaller` (Firebase through `MonetisationProviders.Cloud` once installed; otherwise the memory cloud in the editor and development builds, one server for the whole run so sign-in outlives a restore's reload; in a release build `UnconfiguredCloud`, which says the online service isn't switched on yet rather than pretending), `CloudService` (sign in with Google, a visitor's anonymous account making way; sign out; Back up now: the same archive as a backup file, sealed with the account's own key on a worker thread, the newest three kept; list; fetch, open and check a backup before anything is written; restore with the same undo as a file; Delete my cloud data: backups, key and shares, then sign out, the phone's own saves untouched). `UI/BackupScreen` is now a scrolling page: Cloud backup (the account line, Sign in with Google or Sign out, Back up now, the backups with their date and counts and Restore, Delete my cloud data with a confirm step) and Backup file (as in step 1); one confirm step for both. Backups are made only when the player asks (PRD 13.5). Tests: `CloudBackupSmokeTests` (Play Mode: four backups on one phone, three kept; the same Google account on a new phone restores the newest; another account sees and fetches none; signed out and offline explain themselves; deleting cloud data keeps the phone's saves; the screen: sign in, back up, restore, undo, delete) |
+
 ### Step 1 notes
 
 - **Restoring replaces, part by part.** A part the backup has replaces this phone's file; a part it doesn't have
@@ -71,3 +75,27 @@ the owner's decision; feedback and changes come after all PRD features are built
   can't unlock anything. Timed unlocks from rewarded ads do travel, never longer than 24 hours from now.
 - **A forgotten password can't be recovered.** The screen says so when the file is saved. The cloud backup (step 3)
   needs no password.
+
+### Step 2 notes
+
+- **Rules tests need Java 21.** `firebase-tools` 15 refuses older Java, and this machine has Java 17 (Unity's bundled
+  JDK is 17 too). With Java 21 installed: `cd tools/rules-test && npm test`. Until then the same cases run against
+  the memory cloud.
+- **What a visitor can see of a share:** its kind, counts, dates and the owner's Firebase account id (a random id that
+  opens nothing: accounts and backups are owner-only). Never a name or email. The game itself doesn't show it.
+- **Moderation review** is done in the Firebase console: open a hidden share's reports, then reset its count to keep it
+  or delete it. A review tool can come with the feedback round.
+- **Known limits without a server function:** deleting and recreating an account restarts its day count, and nothing
+  stops a script from using many anonymous accounts to report. Turn on Firebase App Check (Play Integrity) before
+  launch, and add a Cloud Function for reports if abuse shows up.
+- **Expiry:** set a TTL policy on `shares.expireAt` in the Firestore console, so expired shares are deleted, not only
+  refused.
+
+### Step 3 notes
+
+- **On the tablet nothing works online yet:** the release APK has no Firebase, so the Cloud backup section says the
+  online service isn't switched on yet. The backup file works. Step 6 connects Firebase.
+- **Signing in asks Google for the account only.** No name, email or profile picture is read or kept; the game uses
+  the account id to find the player's backups.
+- **Losing the account means losing the cloud backups.** Their key lives in the account. Backup files are the
+  fallback that needs no account.

@@ -165,6 +165,7 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<SettingsInstaller>();
             systems.AddComponent<MonetisationInstaller>();
             systems.AddComponent<PacksInstaller>();
+            systems.AddComponent<CloudInstaller>();
             EnsurePacksConfig();
             systems.AddComponent<AvatarInstaller>();
             systems.AddComponent<DecorationController>().Configure(camera, rig);

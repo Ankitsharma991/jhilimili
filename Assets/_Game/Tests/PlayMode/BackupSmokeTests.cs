@@ -165,11 +165,11 @@ namespace UtsavNights.Tests.PlayMode
             yield return WaitWhileBusy(screen);
             Assert.IsTrue(screen.ConfirmVisible, screen.Status);
             StringAssert.Contains("settings", screen.Summary);
-            screen.CancelRestore();
+            screen.CancelConfirm();
 
             screen.RestoreFromFile();
             yield return WaitWhileBusy(screen);
-            Assert.IsTrue(screen.ConfirmRestore());
+            Assert.IsTrue(screen.Confirm());
             yield return null;
             yield return null;
             screen = Object.FindFirstObjectByType<BackupScreen>();

@@ -58,3 +58,6 @@ Thumbs.db
 
 # Unity/IL2CPP build temp
 /.utmp/
+
+# Phase 10 rules tests
+/tools/rules-test/node_modules/

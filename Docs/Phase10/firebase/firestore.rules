@@ -1,0 +1,112 @@
+rules_version = '2';
+
+// Utsav Nights, Phase 10 (F23, F24). Mirrors Core/Cloud/MemoryCloud.cs and CloudRules; change both together.
+//
+// users/{uid}                  { backupKey: string, day: int, sharesToday: int }          the account's own
+// users/{uid}/backups/{id}     { createdUnix, bytes, decorations, shows, avatar }         the account's own
+// shares/{code}                { kind, owner, createdUnix, lastVisitUnix, visits, reports,
+//                                withdrawn, version, expireAt }                           by code, never listed
+// shares/{code}/content/main   { payload }                                                only while visible
+// shares/{code}/reports/{uid}  { reason, unix }                                           one per reporter
+//
+// The share document says whether a code is open, hidden, withdrawn or expired (so the game can say which); its
+// content is a separate document that only opens while the share is visible.
+//
+// expireAt (a timestamp a year after the last visit) drives a Firestore TTL policy, so unvisited shares go away.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function google() { return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com'; }
+    function isOwner(uid) { return google() && request.auth.uid == uid; }
+    function today() { return int(math.floor(request.time.toMillis() / 86400000)); }
+    function nowUnix() { return int(math.floor(request.time.toMillis() / 1000)); }
+    function changedOnly(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+    // The share counter only moves by publishing: +1 on the same day, or back to 1 on a new day. Never down.
+    function counted(before, after) {
+      return after.day == today() && after.sharesToday <= 10
+        && ((before.get('day', -1) == today() && after.sharesToday == before.get('sharesToday', 0) + 1)
+            || (before.get('day', -1) != today() && after.sharesToday == 1));
+    }
+    function visible(s) {
+      return s.withdrawn == false && s.reports < 3 && s.expireAt > request.time;
+    }
+
+    match /users/{uid} {
+      allow read, delete: if isOwner(uid);
+      // The key never changes once made; the day counter only counts up within a day or restarts at 1 on a new day.
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['backupKey', 'day', 'sharesToday'])
+        && request.resource.data.backupKey is string && request.resource.data.backupKey.size() == 44;
+      allow update: if isOwner(uid)
+        && request.resource.data.backupKey == resource.data.backupKey
+        && request.resource.data.keys().hasOnly(['backupKey', 'day', 'sharesToday'])
+        && counted(resource.data, request.resource.data);
+
+      match /backups/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['createdUnix', 'bytes', 'decorations', 'shows', 'avatar'])
+          && request.resource.data.bytes is int && request.resource.data.bytes <= 8388608;
+      }
+    }
+
+    match /shares/{code} {
+      // get, not list: a code opens one share; nobody can page through them. The owner can list their own.
+      allow get: if signedIn();
+      allow list: if google() && resource.data.owner == request.auth.uid;
+
+      // Publishing: a new code (create only, so a taken one fails), owned by the caller, within today's quota, which the
+      // same batch raises in users/{uid} (the account document exists: the game makes it, with the backup key, first).
+      allow create: if google()
+        && code.matches('^[23456789BCDFGHJKMNPQRTVWX]{8}$')
+        && request.resource.data.owner == request.auth.uid
+        && request.resource.data.kind in ['home', 'show']
+        && existsAfter(/databases/$(database)/documents/shares/$(code)/content/main)
+        && request.resource.data.expireAt is timestamp && request.resource.data.expireAt > request.time
+        && request.resource.data.visits == 0 && request.resource.data.reports == 0 && request.resource.data.withdrawn == false
+        && request.resource.data.createdUnix is int
+        && request.resource.data.createdUnix > nowUnix() - 300 && request.resource.data.createdUnix < nowUnix() + 300
+        && counted(get(/databases/$(database)/documents/users/$(request.auth.uid)).data,
+                   getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data);
+
+      // A visit: someone else raises visits by one and moves lastVisitUnix and expireAt on.
+      allow update: if signedIn() && resource.data.owner != request.auth.uid && visible(resource.data)
+        && changedOnly(['visits', 'lastVisitUnix', 'expireAt'])
+        && request.resource.data.visits == resource.data.visits + 1;
+
+      // A report: someone else raises reports by one, in the same batch as creating their own report document.
+      allow update: if signedIn() && resource.data.owner != request.auth.uid && resource.data.withdrawn == false
+        && changedOnly(['reports'])
+        && request.resource.data.reports == resource.data.reports + 1
+        && !exists(/databases/$(database)/documents/shares/$(code)/reports/$(request.auth.uid))
+        && existsAfter(/databases/$(database)/documents/shares/$(code)/reports/$(request.auth.uid));
+
+      // Withdrawing: the owner marks it withdrawn (and deletes its content in the same batch). Deleting (Delete my data)
+      // is the owner's too.
+      allow update: if google() && resource.data.owner == request.auth.uid
+        && changedOnly(['withdrawn']) && request.resource.data.withdrawn == true;
+      allow delete: if google() && resource.data.owner == request.auth.uid;
+
+      match /content/{doc} {
+        function share() { return get(/databases/$(database)/documents/shares/$(code)).data; }
+        allow get: if signedIn() && doc == 'main' && (visible(share()) || share().owner == request.auth.uid);
+        allow create: if google() && doc == 'main'
+          && getAfter(/databases/$(database)/documents/shares/$(code)).data.owner == request.auth.uid
+          && !exists(/databases/$(database)/documents/shares/$(code))
+          && request.resource.data.keys().hasOnly(['payload'])
+          && request.resource.data.payload is string && request.resource.data.payload.size() <= 200000;
+        allow delete: if google() && share().owner == request.auth.uid;
+        allow list, update: if false;
+      }
+
+      match /reports/{reporter} {
+        allow create: if signedIn() && reporter == request.auth.uid
+          && request.resource.data.keys().hasOnly(['reason', 'unix'])
+          && request.resource.data.reason in ['offensive', 'inappropriate', 'spam', 'other'];
+        // Read only by the moderation review (the Firebase console), never by players.
+        allow read, update, delete: if false;
+      }
+    }
+  }
+}

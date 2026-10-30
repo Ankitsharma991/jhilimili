@@ -53,7 +53,25 @@ public static class CoreTestRunner
                     string name = type.Name + "." + m.Name + (args.Length > 0 ? "(" + string.Join(",", args) + ")" : string.Empty);
                     try
                     {
-                        m.Invoke(Activator.CreateInstance(type), args);
+                        object fixture = Activator.CreateInstance(type);
+                        MethodInfo[] all = type.GetMethods();
+                        foreach (MethodInfo setUp in all.Where(x => x.GetCustomAttributes(typeof(SetUpAttribute), false).Any()))
+                        {
+                            setUp.Invoke(fixture, null);
+                        }
+
+                        try
+                        {
+                            m.Invoke(fixture, args);
+                        }
+                        finally
+                        {
+                            foreach (MethodInfo tearDown in all.Where(x => x.GetCustomAttributes(typeof(TearDownAttribute), false).Any()))
+                            {
+                                tearDown.Invoke(fixture, null);
+                            }
+                        }
+
                         pass++;
                     }
                     catch (TargetInvocationException e)

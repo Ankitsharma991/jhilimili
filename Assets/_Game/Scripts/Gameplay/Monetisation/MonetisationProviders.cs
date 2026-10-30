@@ -17,6 +17,9 @@ namespace UtsavNights.Gameplay
         public static Func<IAnalyticsBackend> Analytics;
         public static Func<ICrashReporter> Crashes;
 
+        /// <summary>Phase 10: Firebase Auth, Firestore and Storage (step 6) once the Firebase packages are installed.</summary>
+        public static Func<Core.Cloud.ICloud> Cloud;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
@@ -25,6 +28,7 @@ namespace UtsavNights.Gameplay
             Purchases = null;
             Analytics = null;
             Crashes = null;
+            Cloud = null;
         }
     }
 }
