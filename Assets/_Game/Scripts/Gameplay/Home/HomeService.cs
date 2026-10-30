@@ -109,6 +109,14 @@ namespace UtsavNights.Gameplay
 
         public HouseDesign Design => Editor.Design;
 
+        /// <summary>A friend's house shown during a visit (Phase 10 step 4), or null. The player's own design is untouched.</summary>
+        public HouseDesign Visit { get; private set; }
+
+        public bool Visiting => Visit != null;
+
+        /// <summary>What the scene shows: the visited house, else the player's own.</summary>
+        public HouseDesign Shown => Visit ?? Design;
+
         /// <summary>Journal lines replayed at start: above zero means an interrupted edit was restored.</summary>
         public int Recovered { get; }
 
@@ -132,7 +140,7 @@ namespace UtsavNights.Gameplay
 
         public bool Do(IHouseCommand command)
         {
-            if (!Editor.Do(command))
+            if (Visiting || !Editor.Do(command))
             {
                 return false;
             }
@@ -152,16 +160,32 @@ namespace UtsavNights.Gameplay
 
         public bool Save() => Store.Save(Editor);
 
+        /// <summary>Shows a friend's house in place of the player's own, view only, until <see cref="EndVisit"/>.</summary>
+        public void ShowVisit(HouseDesign design)
+        {
+            Visit = design;
+            Refresh();
+        }
+
+        public void EndVisit()
+        {
+            if (Visit != null)
+            {
+                Visit = null;
+                Refresh();
+            }
+        }
+
         public void Refresh()
         {
             if (House != null)
             {
-                House.Show(Design);
+                House.Show(Shown);
             }
 
             if (Decor != null)
             {
-                Decor.Show(Design.decorations);
+                Decor.Show(Shown.decorations);
             }
 
             RebuildColliders();
@@ -177,7 +201,7 @@ namespace UtsavNights.Gameplay
                 return;
             }
 
-            string key = ModulesKey(Design);
+            string key = ModulesKey(Shown);
             if (key == _collidersKey)
             {
                 return;
@@ -189,14 +213,14 @@ namespace UtsavNights.Gameplay
                 HouseMeshes.Destroy(_colliders.GetChild(i).gameObject);
             }
 
-            foreach (Box3 b in DecorPlacement.For(Design, Tier).Solids)
+            foreach (Box3 b in DecorPlacement.For(Shown, Tier).Solids)
             {
                 Collider("Solid", b, Content.PlacementSurface.None);
             }
 
             // Phase 8: the roof deck and the balcony floor are celebration spots, ground for crackers (2 cm proud of the
             // solids below, so a placement ray finds the marked surface first).
-            System.Collections.Generic.HashSet<string> tags = Core.Neighbourhood.WalkNavigator.HomeTags(Design);
+            System.Collections.Generic.HashSet<string> tags = Core.Neighbourhood.WalkNavigator.HomeTags(Shown);
             if (tags.Contains(Core.Neighbourhood.SpotTags.HasRooftop))
             {
                 const float w = HouseGeometry.HalfWidth - 0.15f;

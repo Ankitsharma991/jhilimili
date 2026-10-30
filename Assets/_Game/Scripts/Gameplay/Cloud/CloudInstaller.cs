@@ -34,7 +34,9 @@ namespace UtsavNights.Gameplay
 
             _owner = true;
             _shared ??= Create();
-            Game.Services.Register(new CloudService(_shared, new BackupService()));
+            var service = new CloudService(_shared, new BackupService());
+            Game.Services.Register(service);
+            Game.Services.Register(new HomeVisits(service));
             Debug.Log($"[Cloud] backend={_shared.Name}");
         }
 
@@ -42,6 +44,12 @@ namespace UtsavNights.Gameplay
         {
             if (_owner)
             {
+                if (Game.Services.TryGet(out HomeVisits visits))
+                {
+                    visits.Leave();
+                }
+
+                Game.Services.Unregister<HomeVisits>();
                 Game.Services.Unregister<CloudService>();
             }
         }

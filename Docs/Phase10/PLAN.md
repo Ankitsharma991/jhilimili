@@ -67,6 +67,8 @@ the owner's decision; feedback and changes come after all PRD features are built
 
 | 3. Account and cloud backup | Done. `Gameplay/Cloud`: `CloudInstaller` (Firebase through `MonetisationProviders.Cloud` once installed; otherwise the memory cloud in the editor and development builds, one server for the whole run so sign-in outlives a restore's reload; in a release build `UnconfiguredCloud`, which says the online service isn't switched on yet rather than pretending), `CloudService` (sign in with Google, a visitor's anonymous account making way; sign out; Back up now: the same archive as a backup file, sealed with the account's own key on a worker thread, the newest three kept; list; fetch, open and check a backup before anything is written; restore with the same undo as a file; Delete my cloud data: backups, key and shares, then sign out, the phone's own saves untouched). `UI/BackupScreen` is now a scrolling page: Cloud backup (the account line, Sign in with Google or Sign out, Back up now, the backups with their date and counts and Restore, Delete my cloud data with a confirm step) and Backup file (as in step 1); one confirm step for both. Backups are made only when the player asks (PRD 13.5). Tests: `CloudBackupSmokeTests` (Play Mode: four backups on one phone, three kept; the same Google account on a new phone restores the newest; another account sees and fetches none; signed out and offline explain themselves; deleting cloud data keeps the phone's saves; the screen: sign in, back up, restore, undo, delete) |
 
+| 4. Home visits | Done. `Core/Cloud/HomeSnapshot` (the house design, its neighbourhood, and the avatar's look only when the player turns on "Show my avatar"; never the avatar's name or the layouts' names; repaired like a save file; newer versions refused; `ForTier` shows the owner's decorations in their order while they fit the visitor's decoration budget), `VisitHistory` (the newest ten visits kept with their snapshot, for offline). `Gameplay/Cloud/HomeVisits` (share my home: Google sign-in needed, the account document made first; visit by code: no account needed, a silent anonymous one; the friend's house shown in place of the player's own, view only, in their neighbourhood when this phone has it, their avatar when they chose it, crackers cleared and walks ended; offline or server trouble falls back to the copy on the phone; hidden, taken down, expired or missing codes are forgotten; report; take down; my homes), `TextShare` (the share sheet with a line of text, also copied). `HomeService` shows a visited design without touching the player's own and refuses edits while visiting; decoration mode won't open; `CourtyardAvatar` shows the friend's look or nobody. `UI/HomeVisitScreen` (the Visit button above Shows; Visit a home: a code and recent visits with Visit again; Share my home: Show my avatar, Share, the new code with Send, your codes with their visits, Send and Take down; during a visit a see-through cover with a bar: whose code, notes such as fewer decorations on this phone, Report with four reasons, Leave). Tests: `HomeSnapshotTests` (Mono), `HomeVisitSmokeTests` (Play Mode: a friend's riverside home with their avatar, view only, the player's house untouched, back home after; offline copy; hidden after three reports and forgotten; taken down; the screen: sign-in needed to share, a bad code, share, send, visit with the bar, report, leave, take down) |
+
 ### Step 1 notes
 
 - **Restoring replaces, part by part.** A part the backup has replaces this phone's file; a part it doesn't have
@@ -99,3 +101,14 @@ the owner's decision; feedback and changes come after all PRD features are built
   the account id to find the player's backups.
 - **Losing the account means losing the cloud backups.** Their key lives in the account. Backup files are the
   fallback that needs no account.
+
+### Step 4 notes
+
+- **A visit is view only.** Nothing can be placed, lit or decorated while visiting, and the player's own house and
+  saves are never touched. Leaving brings back their house, avatar and neighbourhood.
+- **Neighbourhoods:** a friend's home stands in their neighbourhood when this phone has it (built in or downloaded);
+  otherwise in the visitor's own, and the bar says so.
+- **Review list:**
+  - Should a visitor be able to light a cracker in a friend's courtyard (on their own phone only)?
+  - Should a visit let the visitor walk round the friend's neighbourhood?
+  - A "copy this decoration idea" button?

@@ -101,7 +101,7 @@ namespace UtsavNights.Gameplay
 
         public bool Open()
         {
-            if (IsOpen || !Game.Services.TryGet(out _home))
+            if (IsOpen || !Game.Services.TryGet(out _home) || _home.Visiting)
             {
                 return false;
             }

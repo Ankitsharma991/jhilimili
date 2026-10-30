@@ -473,6 +473,17 @@ namespace UtsavNights.EditorTools.Main
             showsGo.AddComponent<UI.ShowDesigner>();
             showsGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
 
+            // Phase 10: home visits, from the Visit button above Shows.
+            var visitsGo = new GameObject("HomeVisits", typeof(RectTransform));
+            visitsGo.transform.SetParent(safe.transform, false);
+            var visitsRect = (RectTransform)visitsGo.transform;
+            visitsRect.anchorMin = Vector2.zero;
+            visitsRect.anchorMax = Vector2.one;
+            visitsRect.offsetMin = Vector2.zero;
+            visitsRect.offsetMax = Vector2.zero;
+            visitsGo.AddComponent<UI.HomeVisitScreen>();
+            visitsGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
+
             // Phase 9: clips, from the Record button above Finale.
             var clipGo = new GameObject("Clips", typeof(RectTransform));
             clipGo.transform.SetParent(safe.transform, false);

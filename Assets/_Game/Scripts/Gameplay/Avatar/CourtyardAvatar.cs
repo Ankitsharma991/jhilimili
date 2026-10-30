@@ -67,9 +67,29 @@ namespace UtsavNights.Gameplay
         }
 
         /// <summary>Shows, updates or hides the avatar to match the saved profile.</summary>
+        /// <summary>During a home visit (Phase 10): the friend's look, or null for nobody; <see cref="EndVisit"/> brings back the player's own.</summary>
+        public void ShowVisit(AvatarProfile friendOrNull)
+        {
+            _visiting = true;
+            _visit = friendOrNull;
+            Refresh();
+        }
+
+        public void EndVisit()
+        {
+            _visiting = false;
+            _visit = null;
+            Refresh();
+        }
+
+        public bool ShowingVisitor => _visiting && _visit != null && Visible;
+
+        private bool _visiting;
+        private AvatarProfile _visit;
+
         public void Refresh()
         {
-            AvatarProfile profile = _profiles?.Current;
+            AvatarProfile profile = _visiting ? _visit : _profiles?.Current;
             if (profile == null || !profile.created)
             {
                 if (View != null)
