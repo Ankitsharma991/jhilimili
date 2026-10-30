@@ -112,6 +112,16 @@ namespace UtsavNights.UI
             }
         }
 
+        /// <summary>Opens Backup and restore over the settings (Phase 10).</summary>
+        public void OpenBackup()
+        {
+            BackupScreen backup = FindFirstObjectByType<BackupScreen>();
+            if (backup != null)
+            {
+                backup.Open();
+            }
+        }
+
         public void OpenPrivacyPolicy()
         {
             if (_links != null && _links.HasPrivacyPolicy)
@@ -420,6 +430,10 @@ namespace UtsavNights.UI
             // Phase 9: content packs on the phone (PRD 12 storage manager).
             Section(rows, "Downloads");
             Row(rows, "Downloads and storage", "Neighbourhood packs, sizes, updates, Wi-Fi only", RowButton(rows, "Open", OpenStorage));
+
+            // Phase 10: backup file (and, from step 3, the cloud backup).
+            Section(rows, "Backup");
+            Row(rows, "Backup and restore", "Your avatar, house, shows and settings, for a new phone", RowButton(rows, "Open", OpenBackup));
 
             // PRD 15.2 and 16: a Privacy options entry, and analytics the player can switch off.
             Section(rows, "Privacy");

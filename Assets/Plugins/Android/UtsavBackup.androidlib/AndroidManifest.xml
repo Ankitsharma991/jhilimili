@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 10 step 1 (F24): backup files are saved and opened through Android's own file picker (the Storage Access
+     Framework), so the game needs no storage permission and only sees the one file the player picks. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <activity
+        android:name="com.ankitsharma.utsavnights.backup.BackupFileActivity"
+        android:exported="false"
+        android:theme="@android:style/Theme.Translucent.NoTitleBar"
+        android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" />
+  </application>
+</manifest>

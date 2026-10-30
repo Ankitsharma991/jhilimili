@@ -442,6 +442,16 @@ namespace UtsavNights.EditorTools.Main
             storageRect.offsetMin = Vector2.zero;
             storageRect.offsetMax = Vector2.zero;
             storageGo.AddComponent<UI.StorageManager>();
+
+            // Phase 10: Backup and restore, opened from Settings.
+            var backupGo = new GameObject("BackupScreen", typeof(RectTransform));
+            backupGo.transform.SetParent(safe.transform, false);
+            var backupRect = (RectTransform)backupGo.transform;
+            backupRect.anchorMin = Vector2.zero;
+            backupRect.anchorMax = Vector2.one;
+            backupRect.offsetMin = Vector2.zero;
+            backupRect.offsetMax = Vector2.zero;
+            backupGo.AddComponent<UI.BackupScreen>();
             var finaleGo = new GameObject("Finale", typeof(RectTransform));
             finaleGo.transform.SetParent(safe.transform, false);
             var finaleRect = (RectTransform)finaleGo.transform;

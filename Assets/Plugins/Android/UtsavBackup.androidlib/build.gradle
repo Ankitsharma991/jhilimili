@@ -1,0 +1,17 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'com.ankitsharma.utsavnights.backup'
+    compileSdk 36
+    defaultConfig {
+        minSdk 26
+    }
+
+    // Unity's .androidlib keeps the manifest and sources at the library root.
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+        }
+    }
+}

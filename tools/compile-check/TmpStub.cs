@@ -40,6 +40,8 @@ namespace TMPro
     {
         public enum LineType { SingleLine, MultiLineSubmit, MultiLineNewline }
 
+        public enum ContentType { Standard, Autocorrected, IntegerNumber, DecimalNumber, Alphanumeric, Name, EmailAddress, Password, Pin, Custom }
+
         public class SubmitEvent : UnityEngine.Events.UnityEvent<string> { }
 
         public RectTransform textViewport { get; set; }
@@ -47,6 +49,7 @@ namespace TMPro
         public Graphic placeholder { get; set; }
         public int characterLimit { get; set; }
         public LineType lineType { get; set; }
+        public ContentType contentType { get; set; }
         public string text { get; set; }
         public SubmitEvent onEndEdit { get; } = new SubmitEvent();
         public void SetTextWithoutNotify(string input) { }
