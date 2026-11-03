@@ -224,6 +224,37 @@ namespace UtsavNights.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator ExploringTheBazaar_AllocationsStaySmall()
+        {
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            Gameplay.QualityManager quality = Object.FindFirstObjectByType<Gameplay.QualityManager>();
+            quality.SetTierManually(2);
+            var mode = Object.FindFirstObjectByType<ExploreMode>();
+            try
+            {
+                Assert.IsTrue(mode.Open());
+                yield return null;
+                mode.Controller.Teleport(new Vector3(60f, 0f, 6.8f), 90f);
+                Object.FindFirstObjectByType<Gameplay.DistrictView>().Refresh();
+                mode.SetSprint(true);
+                mode.Stick.Set(new Vector2(0f, 1f));
+                yield return WaitSeconds(1f);
+                var result = new float[2];
+                yield return Measure(120, result);
+                Debug.Log($"[UTSAV_PERF] bazaar gc_kb_per_frame avg={result[0]:0.00} max={result[1]:0.00} x={mode.Controller.Player.position.x:0}");
+                Assert.Less(result[0], ShowLimitKb, "sprinting down the bazaar road, tiles streaming, stays within the show limit");
+            }
+            finally
+            {
+                mode.Stick.Set(Vector2.zero);
+                mode.Exit();
+                quality.UseAutomaticTier();
+            }
+        }
+
         /// <summary>Takes frames and throws them away, so only the recorder's own garbage is measured.</summary>
         private sealed class NullClipEncoder : Gameplay.IClipEncoder
         {

@@ -52,6 +52,8 @@ namespace UtsavNights.Gameplay
         private SettlementView _settlement;
         private HomeService _home;
         private WalkNavigator _nav;
+        private DistrictView _district;
+        private (bool on, Color colour, FogMode mode, float density) _fog;
         private GameObject _world;
         private AvatarView _avatar;
         private AvatarAnimator _animator;
@@ -128,6 +130,7 @@ namespace UtsavNights.Gameplay
 
             TouchInput.EnsureEnabled();
             _nav = new WalkNavigator(_settlement.Layout, _home.Design);
+            Game.Services.TryGet(out _district);
             BuildWorld();
             AvatarProfile profile = Game.Services.TryGet(out ProfileService profiles) && profiles.Current.created ? profiles.Current : AvatarPresets.Default;
             _avatar = AvatarView.Create(transform, profile, "ExplorePlayer");
@@ -155,6 +158,7 @@ namespace UtsavNights.Gameplay
             }
 
             _settlement.Focus = () => Player != null ? Player.position : Vector3.zero;
+            Haze(true);
             if (Game.Services.TryGet(out SettingsService settings))
             {
                 ApplySettings(settings.Current);
@@ -215,6 +219,7 @@ namespace UtsavNights.Gameplay
             }
 
             _rig?.EndOverride();
+            Haze(false);
             Landscape(false);
             Stick = Vector2.zero;
             Sprint = false;
@@ -310,11 +315,19 @@ namespace UtsavNights.Gameplay
             Vector3 after = _avatar.transform.position;
 
             // Stay on the neighbourhood's walkable ground (its edges are open, not walled).
-            var v = new V3(after.x, 0f, after.z);
-            if (!_nav.IsWalkable(v))
+            if (!Walkable(after))
             {
-                V3 near = _nav.Nearest(v);
-                Move(new Vector3(near.X, after.y, near.Z));
+                // Back to where it was if that was fine (the river's edge, the end of the town); else onto the lane.
+                if (Walkable(before))
+                {
+                    Move(new Vector3(before.x, after.y, before.z));
+                }
+                else
+                {
+                    V3 near = _nav.Nearest(new V3(after.x, 0f, after.z));
+                    Move(new Vector3(near.X, after.y, near.Z));
+                }
+
                 after = _avatar.transform.position;
                 _state.Velocity = new V3(0f, _state.Velocity.Y, 0f);
             }
@@ -377,6 +390,8 @@ namespace UtsavNights.Gameplay
             rotation = Quaternion.LookRotation(from - position, Vector3.up);
         }
 
+        private bool Walkable(Vector3 world) => _nav.IsWalkable(new V3(world.x, 0f, world.z)) || (_district != null && _district.IsWalkable(world));
+
         private void Move(Vector3 world)
         {
             _body.enabled = false;
@@ -434,8 +449,8 @@ namespace UtsavNights.Gameplay
             _world = new GameObject("ExploreWorld");
             _world.transform.SetParent(transform, false);
             var ground = _world.AddComponent<BoxCollider>();
-            ground.center = new Vector3(0f, -0.5f, 0f);
-            ground.size = new Vector3(600f, 1f, 600f);
+            ground.center = new Vector3(140f, -0.5f, 0f);
+            ground.size = new Vector3(800f, 1f, 800f); // the lane and the district beside it
             foreach (Box3 b in _nav.Obstacles)
             {
                 // The navigator widens obstacles by the walker's radius; the body has its own.
@@ -472,6 +487,26 @@ namespace UtsavNights.Gameplay
             }
 
             audio.Play(_steps[i], Gait == Gait.Sprint ? 0.42f : 0.3f, SoundPriority.Effect);
+        }
+
+        /// <summary>A night haze while exploring, so the far town fades into the dark instead of stopping at a tile's edge.</summary>
+        private void Haze(bool on)
+        {
+            if (on)
+            {
+                _fog = (RenderSettings.fog, RenderSettings.fogColor, RenderSettings.fogMode, RenderSettings.fogDensity);
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.Exponential;
+                RenderSettings.fogColor = new Color(0.06f, 0.05f, 0.12f);
+                RenderSettings.fogDensity = 0.012f;
+            }
+            else
+            {
+                RenderSettings.fog = _fog.on;
+                RenderSettings.fogColor = _fog.colour;
+                RenderSettings.fogMode = _fog.mode;
+                RenderSettings.fogDensity = _fog.density;
+            }
         }
 
         /// <summary>Explore plays in landscape; the rest of the game keeps its own orientation.</summary>
