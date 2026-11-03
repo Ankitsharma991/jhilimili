@@ -1,0 +1,59 @@
+# Phase 12 plan: the open-world slice
+
+The first phase of the open-world plan ([Docs/OpenWorld/PLAN.md](../OpenWorld/PLAN.md)). The owner asked on 2026-11-03
+for the feel of an open-world city game, "character feel, surrounding communities, settings, profile and handlers,
+everything", at that level of product. This phase builds one district that plays like that on the tablet. Started
+2026-11-03.
+
+## Working assumptions (the plan's recommended defaults, until the owner says otherwise)
+
+- **Slice first:** one district made properly, judged on the tablet, before the whole town.
+- **Family-safe, 13 and up:** no crime, weapons or harm; an original festival town, not any other game's map,
+  characters or story.
+- **Fireworks stay at the heart:** the town is the stage for them.
+- **A light festival story** with jobs, not a pure sandbox.
+- **Stylised and warm** art that budget phones can draw.
+- **The town needs a 4 GB phone;** lower-tier phones keep today's neighbourhood.
+
+## Definition of done
+
+- The avatar moves like a game character: walk, jog, sprint, jump, land, turn, with a camera that follows and can
+  be turned, on a thumbstick, in landscape.
+- One district (about 300 x 300 m) to roam, with roads, lanes, buildings and landmarks, streamed in tiles.
+- People with routines who react to the player and to fireworks; traffic on the roads.
+- A scooter to ride.
+- A minimap, a phone with jobs, and three jobs to do.
+- Fireworks lit anywhere it's safe.
+- A player profile (name, coins, reputation, stats) and settings for controls and camera.
+- 30 fps or better on a mid-range phone; the GC guards hold.
+
+## Build order
+
+| # | Step | Main pieces | Tests |
+|---|------|-------------|-------|
+| 1 | **The character** | Explore mode in landscape; a locomotion model (walk, jog, sprint, jump with coyote time and a jump buffer, landing, turning, acceleration); a follow camera (orbit, shoulder offset, zoom, collision, recentre); run and fall animation matched to speed; footsteps; a thumbstick, look-drag, Sprint, Jump and an Interact prompt; the neighbourhood as solid ground and walls | Locomotion and camera maths; Play Mode: run across the lane, jump, collide, interact |
+| 2 | **Player profile and settings** | A profile (name, coins, reputation, play stats), save and load; settings for camera sensitivity, invert, auto-recentre, sprint toggle, HUD size, left-handed layout; a pause menu | Profile round trip; settings apply live |
+| 3 | **The district** | A grey-box bazaar district joined to the player's lane: a road network, lanes, a square, a river front; buildings from a district kit; tile streaming around the player | District lint (reachable, no holes); streaming budgets |
+| 4 | **People** | Residents with homes and routines, walking the lanes on a navigation graph; reactions (cheer, cover ears, step back, wave, gather at shows); level of detail for crowds | Routine and reaction logic; crowd GC guard |
+| 5 | **Traffic and the scooter** | Scooters, rickshaws and cyclists on the road graph; the player's scooter (get on, ride, park), people stepping aside | Vehicle handling maths; Play Mode: ride and park |
+| 6 | **Map, phone and jobs** | Minimap and map with a route line; the phone (map, messages, jobs, camera, home, settings); three jobs (deliver diyas, light up the lane, a rooftop show) paid in coins and reputation | Job state machine; Play Mode: take and finish a job |
+| 7 | **Fireworks in the town** | Light crackers anywhere safe (away from people, roads in use, wires and doors), the crowd gathering, the district's own shows | Safety rules; Play Mode: light one in the square |
+| 8 | **Measure** | Device runs, budgets, analytics, docs | GC guards, frame budgets |
+
+## Status
+
+| Step | Status |
+|---|---|
+| 1. The character | Done (to be felt on the tablet). `Core/Explore/Locomotion` (walk to 1.7 m/s and jog at 3.8 by how far the stick is pushed, sprint at 6.2; acceleration 11 m/s², stopping at 20 (a sprint stops in about 0.3 s); turning at 720°/s, 330 when sprinting; a 0.6 m jump with 0.12 s of coyote time and a 0.15 s jump buffer; a third of the control in the air; half speed for a moment after a hard landing), `OrbitCamera` (over the right shoulder, pitch from -35° to 65°, zoom 1.8 to 6 m, eases back behind a moving character 1.4 s after the player stops turning it, pulls in at walls at once and eases out, critically damped), `Footsteps` (a synthesised step in four variations). `AvatarMotion` gains a run (high knee, pumping arms, lean, bounce) and an in-air pose; `AvatarAnimator.SetLocomotion` picks idle, walk, run or fall from the speed and plays the walk and run at the pace of the feet, with a foot-down beat for the steps. `Gameplay/Explore/ExploreController` (the avatar on a CharacterController in the neighbourhood, its walls and houses as colliders, kept on walkable ground; stick input turned by the camera; the camera's sphere-cast against walls; footsteps; an Interact prompt for celebration spots and the front door; landscape on the phone while exploring; `ExploreEvent`). `UI/ExploreMode` (the Explore button bottom left; a floating thumbstick, drag to look and pinch to zoom anywhere else, Jump, Sprint, the Interact button with its label, Exit; WASD, Shift, Space, E and Esc on a keyboard), `VirtualStick`, `LookPad`. Tests: `LocomotionTests` (Mono: speeds, start and stop, turning, jump height, coyote time and the buffer, air control and landing, the camera's limits, recentring, wall pull-in and smoothing, footsteps), `ExploreSmokeTests` (Play Mode: jog, sprint, stop, jump and land, always on walkable ground, exit; walking up to a spot offers Celebrate) |
+
+### Step 1 notes
+
+- **It needs feeling on the tablet.** The numbers above are a first tuning, from what makes mobile third-person games
+  feel responsive. Speeds, acceleration, the camera's lag and recentring are all constants in two files, so feedback
+  turns into quick changes.
+- **Animation is still procedural.** The run and fall are hand-built poses on the avatar's skeleton. Bought or
+  commissioned motion capture (open-world plan, section 3.A.5) is the step up; the animator already chooses clips
+  by speed, so captured clips can replace these one by one.
+- **The world is still the lane.** Step 3 builds the district to roam; until then, Explore covers today's
+  neighbourhood.
+- **Walk mode stays for now** (tap-to-move and the map's fast travel). It retires once Explore has the map (step 6).

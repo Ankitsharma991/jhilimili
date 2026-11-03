@@ -12,6 +12,12 @@ namespace UtsavNights.Core.Avatar
 
         /// <summary>Arms up with a hop, after a burst (one-shot).</summary>
         Celebrate,
+
+        /// <summary>Phase 12: a jog to sprint, played faster with speed (loops).</summary>
+        Run,
+
+        /// <summary>Phase 12: in the air after a jump or a drop (loops).</summary>
+        Fall,
     }
 
     /// <summary>
@@ -68,13 +74,22 @@ namespace UtsavNights.Core.Avatar
         public const float CelebrateLength = 1.7f;
         public const float IdleCycle = 8f;
 
+        /// <summary>Phase 12: one stride pair of the run, at <see cref="RunCycleSpeed"/>.</summary>
+        public const float RunCycle = 0.68f;
+
+        /// <summary>The speeds (m/s) at which the walk and run cycles play at their natural rate (the feet don't slide).</summary>
+        public const float WalkCycleSpeed = 1.45f;
+        public const float RunCycleSpeed = 4.4f;
+
         private const float ThighLength = 0.41f, ShinLength = 0.41f;
 
-        public static bool Loops(AvatarClip clip) => clip == AvatarClip.Idle || clip == AvatarClip.Walk;
+        public static bool Loops(AvatarClip clip) => clip == AvatarClip.Idle || clip == AvatarClip.Walk || clip == AvatarClip.Run || clip == AvatarClip.Fall;
 
         public static float Length(AvatarClip clip) => clip switch
         {
             AvatarClip.Walk => WalkCycle,
+            AvatarClip.Run => RunCycle,
+            AvatarClip.Fall => 1f,
             AvatarClip.Ignite => IgniteLength,
             AvatarClip.Celebrate => CelebrateLength,
             _ => IdleCycle,
@@ -112,6 +127,12 @@ namespace UtsavNights.Core.Avatar
                     break;
                 case AvatarClip.Celebrate:
                     Celebrate(time, energy, style, pose, longHem);
+                    break;
+                case AvatarClip.Run:
+                    Run(time, energy, pose, longHem);
+                    break;
+                case AvatarClip.Fall:
+                    Fall(time, pose, longHem);
                     break;
                 default:
                     Idle(time, energy, pose);
@@ -162,6 +183,55 @@ namespace UtsavNights.Core.Avatar
             p.Y[AvatarSkeleton.Hips] = -4f * s;
             p.X[AvatarSkeleton.Spine] = 3f;
             p.HipsOffset = new V3(0f, -0.018f + 0.016f * Math.Abs((float)Math.Cos(phase)), 0f);
+        }
+
+        /// <summary>
+        /// Phase 12: a run. Longer strides with a high knee, arms bent at the elbow pumping against the legs, a forward lean
+        /// and a bounce. A long hem keeps the stride shorter and the knee lower, as people run in a sari or a long kurta.
+        /// </summary>
+        private static void Run(float t, float energy, AvatarPose p, bool longHem)
+        {
+            float phase = t / RunCycle * 2f * (float)Math.PI;
+            float s = (float)Math.Sin(phase);
+            float swing = longHem ? 26f : 44f;
+            p.X[AvatarSkeleton.LeftUpperLeg] = -swing * s - 8f;
+            p.X[AvatarSkeleton.RightUpperLeg] = swing * s - 8f;
+            float kneeLift = longHem ? 45f : 95f;
+            p.X[AvatarSkeleton.LeftLowerLeg] = 12f + kneeLift * Math.Max(0f, (float)Math.Sin(phase + 1.4f));
+            p.X[AvatarSkeleton.RightLowerLeg] = 12f + kneeLift * Math.Max(0f, (float)Math.Sin(phase + 1.4f + Math.PI));
+            p.X[AvatarSkeleton.LeftFoot] = -0.25f * (p.X[AvatarSkeleton.LeftUpperLeg] + p.X[AvatarSkeleton.LeftLowerLeg]);
+            p.X[AvatarSkeleton.RightFoot] = -0.25f * (p.X[AvatarSkeleton.RightUpperLeg] + p.X[AvatarSkeleton.RightLowerLeg]);
+
+            float pump = 38f * Math.Min(1.2f, energy);
+            p.X[AvatarSkeleton.LeftUpperArm] = pump * s;
+            p.X[AvatarSkeleton.RightUpperArm] = -pump * s;
+            p.Z[AvatarSkeleton.LeftUpperArm] = -8f;
+            p.Z[AvatarSkeleton.RightUpperArm] = 8f;
+            p.X[AvatarSkeleton.LeftLowerArm] = -75f;
+            p.X[AvatarSkeleton.RightLowerArm] = -75f;
+            p.Y[AvatarSkeleton.Chest] = 9f * s;
+            p.Y[AvatarSkeleton.Hips] = -7f * s;
+            p.X[AvatarSkeleton.Spine] = 9f;
+            p.X[AvatarSkeleton.Chest] = 4f;
+            p.X[AvatarSkeleton.Head] = -6f;
+            p.HipsOffset = new V3(0f, -0.045f + 0.05f * Math.Abs((float)Math.Cos(phase)), 0f);
+        }
+
+        /// <summary>Phase 12: in the air: knees up a little, arms out for balance, a slow flail.</summary>
+        private static void Fall(float t, AvatarPose p, bool longHem)
+        {
+            float wave = Sin(t, 1.3f);
+            float tuck = longHem ? 10f : 28f;
+            p.X[AvatarSkeleton.LeftUpperLeg] = -tuck - 6f * wave;
+            p.X[AvatarSkeleton.RightUpperLeg] = -tuck * 0.5f + 6f * wave;
+            p.X[AvatarSkeleton.LeftLowerLeg] = tuck * 1.6f;
+            p.X[AvatarSkeleton.RightLowerLeg] = tuck * 1.1f;
+            p.Z[AvatarSkeleton.LeftUpperArm] = -42f - 6f * wave;
+            p.Z[AvatarSkeleton.RightUpperArm] = 42f + 6f * wave;
+            p.X[AvatarSkeleton.LeftLowerArm] = -25f;
+            p.X[AvatarSkeleton.RightLowerArm] = -25f;
+            p.X[AvatarSkeleton.Spine] = 4f;
+            p.X[AvatarSkeleton.Head] = -4f;
         }
 
         /// <summary>

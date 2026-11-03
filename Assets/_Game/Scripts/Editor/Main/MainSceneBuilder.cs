@@ -197,6 +197,7 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<DecorationController>().Configure(camera, rig);
             systems.AddComponent<WalkController>().Configure(camera, rig);
             systems.AddComponent<InteriorController>().Configure(camera, rig);
+            systems.AddComponent<ExploreController>().Configure(camera, rig);
             systems.AddComponent<AnalyticsInstaller>();
             systems.AddComponent<PlaytestRecorder>();
             systems.AddComponent<DevOverlay>();
@@ -499,6 +500,17 @@ namespace UtsavNights.EditorTools.Main
             showsRect.offsetMax = Vector2.zero;
             showsGo.AddComponent<UI.ShowDesigner>();
             showsGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
+
+            // Phase 12: Explore mode, from the Explore button bottom left.
+            var exploreGo = new GameObject("ExploreMode", typeof(RectTransform));
+            exploreGo.transform.SetParent(safe.transform, false);
+            var exploreRect = (RectTransform)exploreGo.transform;
+            exploreRect.anchorMin = Vector2.zero;
+            exploreRect.anchorMax = Vector2.one;
+            exploreRect.offsetMin = Vector2.zero;
+            exploreRect.offsetMax = Vector2.zero;
+            exploreGo.AddComponent<UI.ExploreMode>();
+            exploreGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
 
             // Phase 11: interiors, from "Go inside" above Countdown.
             var interiorGo = new GameObject("InteriorMode", typeof(RectTransform));

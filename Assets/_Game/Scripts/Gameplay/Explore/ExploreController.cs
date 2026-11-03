@@ -1,0 +1,484 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UtsavNights.Audio;
+using UtsavNights.Core.Avatar;
+using UtsavNights.Core.Explore;
+using UtsavNights.Core.Home;
+using UtsavNights.Core.Neighbourhood;
+using UtsavNights.Core.Runtime;
+
+namespace UtsavNights.Gameplay
+{
+    /// <summary>Explore mode began or ended (analytics later; distances in whole metres).</summary>
+    public readonly struct ExploreEvent
+    {
+        public ExploreEvent(bool started, int seconds, int metres, int jumps)
+        {
+            Started = started;
+            Seconds = seconds;
+            Metres = metres;
+            Jumps = jumps;
+        }
+
+        public bool Started { get; }
+
+        public int Seconds { get; }
+
+        public int Metres { get; }
+
+        public int Jumps { get; }
+    }
+
+    /// <summary>
+    /// Explore mode (Phase 12 step 1): the player's own avatar as a game character in the neighbourhood. The stick moves it
+    /// relative to the camera (walk, jog, sprint, jump, land: <see cref="Locomotion"/>), a CharacterController keeps it on
+    /// the ground and out of walls (the neighbourhood's walls become colliders), the follow camera orbits over its shoulder
+    /// and pulls in at walls (<see cref="OrbitCamera"/>), the run and walk play at the pace of the feet, footsteps sound,
+    /// and an Interact prompt offers what's near: celebrate at a spot, go inside the house.
+    /// </summary>
+    public sealed class ExploreController : MonoBehaviour
+    {
+        public const float InteractRange = 2.2f;
+        public const float LookSensitivity = 0.2f;
+        private const float BodyHeight = 1.7f;
+        private const float BodyRadius = 0.3f;
+
+        private readonly OrbitCamera _orbit = new OrbitCamera();
+        private readonly List<(string id, string label, Vector3 at)> _targets = new List<(string, string, Vector3)>();
+        private readonly AudioClip[] _steps = new AudioClip[Footsteps.Variations];
+        private Camera _camera;
+        private CameraRig _rig;
+        private SettlementView _settlement;
+        private HomeService _home;
+        private WalkNavigator _nav;
+        private GameObject _world;
+        private AvatarView _avatar;
+        private AvatarAnimator _animator;
+        private CharacterController _body;
+        private LocomotionState _state;
+        private float _distanceVelocity;
+        private float _cameraDistance;
+        private float _startedAt;
+        private float _metres;
+        private int _jumps;
+        private int _step;
+        private bool _jumpPressed;
+        private ScreenOrientation _orientation;
+        private (bool p, bool pu, bool l, bool r) _rotation;
+
+        public event Action StateChanged;
+
+        public bool IsOpen { get; private set; }
+
+        /// <summary>Set by the HUD each frame: the stick's push (x right, y forward, relative to the camera).</summary>
+        public Vector2 Stick { get; set; }
+
+        /// <summary>Set by the HUD: sprint held or toggled on.</summary>
+        public bool Sprint { get; set; }
+
+        public Transform Player => _avatar != null ? _avatar.transform : null;
+
+        public LocomotionState State => _state;
+
+        public Gait Gait => Locomotion.GaitOf(_state);
+
+        public float Speed => _state.GroundSpeed;
+
+        public OrbitCamera Orbit => _orbit;
+
+        /// <summary>What Interact would do now ("Celebrate here", "Go inside"), or empty.</summary>
+        public string Prompt { get; private set; } = string.Empty;
+
+        public string PromptTarget { get; private set; } = string.Empty;
+
+        public float Metres => _metres;
+
+        public void Configure(Camera cameraToDrive, CameraRig rig)
+        {
+            _camera = cameraToDrive;
+            _rig = rig;
+        }
+
+        /// <summary>Starts exploring from the courtyard. False when it can't (walking, decorating, inside or visiting).</summary>
+        public bool Open()
+        {
+            if (IsOpen || !Game.Services.TryGet(out _settlement) || !Game.Services.TryGet(out _home) || _home.Visiting)
+            {
+                return false;
+            }
+
+            WalkController walk = FindFirstObjectByType<WalkController>();
+            DecorationController decorating = FindFirstObjectByType<DecorationController>();
+            InteriorController inside = FindFirstObjectByType<InteriorController>();
+            if ((walk != null && walk.IsOpen) || (decorating != null && decorating.IsOpen) || (inside != null && inside.IsInside))
+            {
+                return false;
+            }
+
+            _camera = _camera != null ? _camera : Camera.main;
+            _rig = _rig != null ? _rig : FindFirstObjectByType<CameraRig>();
+            if (Game.Services.TryGet(out PlacementController placement))
+            {
+                placement.Cancel();
+            }
+
+            TouchInput.EnsureEnabled();
+            _nav = new WalkNavigator(_settlement.Layout, _home.Design);
+            BuildWorld();
+            AvatarProfile profile = Game.Services.TryGet(out ProfileService profiles) && profiles.Current.created ? profiles.Current : AvatarPresets.Default;
+            _avatar = AvatarView.Create(transform, profile, "ExplorePlayer");
+            _animator = _avatar.gameObject.AddComponent<AvatarAnimator>();
+            _animator.FootDown += OnFootDown;
+            _body = _avatar.gameObject.AddComponent<CharacterController>();
+            _body.height = BodyHeight;
+            _body.radius = BodyRadius;
+            _body.center = new Vector3(0f, BodyHeight / 2f + 0.02f, 0f);
+            _body.stepOffset = 0.32f;
+            _body.slopeLimit = 48f;
+            _body.skinWidth = 0.03f;
+            WalkNode start = _settlement.Layout.Node("courtyard");
+            Teleport(new Vector3(start.Position.X, 0f, start.Position.Z), 180f);
+
+            CourtyardAvatar courtyard = FindFirstObjectByType<CourtyardAvatar>();
+            if (courtyard != null && courtyard.View != null)
+            {
+                courtyard.View.gameObject.SetActive(false);
+            }
+
+            if (_home.House != null)
+            {
+                _home.House.SetGateOpen(true);
+            }
+
+            _settlement.Focus = () => Player != null ? Player.position : Vector3.zero;
+            CollectTargets();
+            Landscape(true);
+            _startedAt = Time.unscaledTime;
+            _metres = 0f;
+            _jumps = 0;
+            IsOpen = true;
+            _cameraDistance = _orbit.Distance;
+            Pose(out Vector3 p, out Quaternion r, 0f);
+            _rig?.BeginOverride(p, r);
+            Game.Events.Publish(new ExploreEvent(true, 0, 0, 0));
+            StateChanged?.Invoke();
+            return true;
+        }
+
+        public void Close()
+        {
+            if (!IsOpen)
+            {
+                return;
+            }
+
+            IsOpen = false;
+            Game.Events.Publish(new ExploreEvent(false, (int)(Time.unscaledTime - _startedAt), (int)_metres, _jumps));
+            if (_avatar != null)
+            {
+                Destroy(_avatar.gameObject);
+            }
+
+            if (_world != null)
+            {
+                Destroy(_world);
+            }
+
+            _avatar = null;
+            _animator = null;
+            _body = null;
+            CourtyardAvatar courtyard = FindFirstObjectByType<CourtyardAvatar>();
+            if (courtyard != null)
+            {
+                courtyard.Refresh();
+            }
+
+            if (_home?.House != null)
+            {
+                _home.House.SetGateOpen(false);
+            }
+
+            if (_settlement != null)
+            {
+                _settlement.Focus = null;
+            }
+
+            _rig?.EndOverride();
+            Landscape(false);
+            Stick = Vector2.zero;
+            Sprint = false;
+            Prompt = string.Empty;
+            PromptTarget = string.Empty;
+            StateChanged?.Invoke();
+        }
+
+        /// <summary>Same as tapping Jump.</summary>
+        public void Jump() => _jumpPressed = true;
+
+        /// <summary>Turns the camera by a drag on the screen (pixels).</summary>
+        public void Look(Vector2 pixels, bool invertY = false, float sensitivity = LookSensitivity) =>
+            _orbit.Look(pixels.x * sensitivity, pixels.y * sensitivity, invertY);
+
+        /// <summary>Same as tapping Interact: does what the prompt says. False when there's nothing near.</summary>
+        public bool Interact()
+        {
+            if (!IsOpen || string.IsNullOrEmpty(PromptTarget))
+            {
+                return false;
+            }
+
+            string target = PromptTarget;
+            if (target == "door")
+            {
+                Close();
+                InteriorController inside = FindFirstObjectByType<InteriorController>();
+                return inside != null && inside.Enter(Rooms.Main);
+            }
+
+            if (Game.Services.TryGet(out CelebrationService celebration) && celebration.Choose(target))
+            {
+                Close();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Puts the character somewhere at once (the start, tests).</summary>
+        public void Teleport(Vector3 world, float facing)
+        {
+            if (_body != null)
+            {
+                _body.enabled = false;
+            }
+
+            _avatar.transform.SetPositionAndRotation(world, Quaternion.Euler(0f, facing, 0f));
+            if (_body != null)
+            {
+                _body.enabled = true;
+            }
+
+            _state = new LocomotionState { Facing = facing, Grounded = true };
+            _orbit.Yaw = facing;
+        }
+
+        private void Update()
+        {
+            if (!IsOpen || _body == null)
+            {
+                return;
+            }
+
+            float dt = Mathf.Min(Time.deltaTime, 0.05f);
+
+            // The stick, turned from the camera's view into the world.
+            float yaw = _orbit.Yaw * Mathf.Deg2Rad;
+            Vector2 stick = Vector2.ClampMagnitude(Stick, 1f);
+            float wx = stick.x * Mathf.Cos(yaw) + stick.y * Mathf.Sin(yaw);
+            float wz = -stick.x * Mathf.Sin(yaw) + stick.y * Mathf.Cos(yaw);
+            var input = new LocomotionInput(wx, wz, Sprint && stick.magnitude > Locomotion.Deadzone, _jumpPressed);
+            _jumpPressed = false;
+            bool wasGrounded = _state.Grounded;
+            float fall = -_state.Velocity.Y;
+            _state = Locomotion.Step(_state, input, dt);
+            if (_state.Jumped)
+            {
+                _jumps++;
+            }
+
+            Vector3 before = _avatar.transform.position;
+            _body.Move(new Vector3(_state.Velocity.X, _state.Velocity.Y, _state.Velocity.Z) * dt);
+            Vector3 after = _avatar.transform.position;
+
+            // Stay on the neighbourhood's walkable ground (its edges are open, not walled).
+            var v = new V3(after.x, 0f, after.z);
+            if (!_nav.IsWalkable(v))
+            {
+                V3 near = _nav.Nearest(v);
+                Move(new Vector3(near.X, after.y, near.Z));
+                after = _avatar.transform.position;
+                _state.Velocity = new V3(0f, _state.Velocity.Y, 0f);
+            }
+
+            bool grounded = _body.isGrounded;
+            if (grounded && !wasGrounded)
+            {
+                _state = Locomotion.Land(_state, fall);
+            }
+
+            _state.Grounded = grounded;
+            if (grounded && _state.Velocity.Y < 0f)
+            {
+                _state.Velocity = new V3(_state.Velocity.X, -2f, _state.Velocity.Z);
+            }
+
+            _metres += new Vector2(after.x - before.x, after.z - before.z).magnitude;
+            _avatar.transform.rotation = Quaternion.Euler(0f, _state.Facing, 0f);
+            _animator.SetLocomotion(_state.GroundSpeed, grounded || _state.Airborne <= Locomotion.CoyoteTime); // it ticks itself
+            _orbit.Follow(_state.Facing, _state.GroundSpeed > 0.5f, dt);
+            UpdatePrompt();
+        }
+
+        private void LateUpdate()
+        {
+            if (!IsOpen || _avatar == null)
+            {
+                return;
+            }
+
+            Pose(out Vector3 p, out Quaternion r, Time.deltaTime);
+            _rig?.SetOverridePose(p, r);
+        }
+
+        private void Pose(out Vector3 position, out Quaternion rotation, float dt)
+        {
+            Vector3 at = _avatar.transform.position;
+            var character = new V3(at.x, at.y, at.z);
+            V3 pivot = _orbit.Pivot(character);
+            V3 back = _orbit.Back();
+            var from = new Vector3(pivot.X, pivot.Y, pivot.Z);
+            var dir = new Vector3(back.X, back.Y, back.Z);
+            float? hit = null;
+            if (Physics.SphereCast(from, 0.18f, dir, out RaycastHit h, _orbit.Distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                && h.collider != _body)
+            {
+                hit = h.distance;
+            }
+
+            float clear = _orbit.Clear(hit);
+
+            // Pull in at once at a wall; ease back out after it.
+            _cameraDistance = clear < _cameraDistance || dt <= 0f ? clear : OrbitCamera.Smooth(_cameraDistance, clear, ref _distanceVelocity, 0.35f, dt);
+            V3 p = _orbit.Position(character, _cameraDistance);
+            position = new Vector3(p.X, p.Y, p.Z);
+            rotation = Quaternion.LookRotation(from - position, Vector3.up);
+        }
+
+        private void Move(Vector3 world)
+        {
+            _body.enabled = false;
+            _avatar.transform.position = world;
+            _body.enabled = true;
+        }
+
+        private void UpdatePrompt()
+        {
+            Vector3 at = _avatar.transform.position;
+            string label = string.Empty, id = string.Empty;
+            float best = InteractRange;
+            foreach ((string tid, string tlabel, Vector3 point) in _targets)
+            {
+                float d = new Vector2(point.x - at.x, point.z - at.z).magnitude;
+                if (d < best)
+                {
+                    best = d;
+                    label = tlabel;
+                    id = tid;
+                }
+            }
+
+            if (id != PromptTarget)
+            {
+                Prompt = label;
+                PromptTarget = id;
+                StateChanged?.Invoke();
+            }
+        }
+
+        private void CollectTargets()
+        {
+            _targets.Clear();
+            Vector3 door = new Vector3(0f, 0f, HouseGeometry.WorldFrontZ + 0.7f);
+            _targets.Add(("door", "Go inside", door));
+            if (!Game.Services.TryGet(out CelebrationService celebration))
+            {
+                return;
+            }
+
+            foreach (SpotDef spot in _settlement.Layout.spots)
+            {
+                if (celebration.Availability(spot.id).Open)
+                {
+                    string where = string.IsNullOrEmpty(spot.name) ? "here" : spot.name.ToLowerInvariant();
+                    _targets.Add((spot.id, $"Celebrate at the {where}", new Vector3(spot.x, 0f, spot.z)));
+                }
+            }
+        }
+
+        /// <summary>The neighbourhood's walls and houses as solid boxes, and the ground, for the character and the camera.</summary>
+        private void BuildWorld()
+        {
+            _world = new GameObject("ExploreWorld");
+            _world.transform.SetParent(transform, false);
+            var ground = _world.AddComponent<BoxCollider>();
+            ground.center = new Vector3(0f, -0.5f, 0f);
+            ground.size = new Vector3(600f, 1f, 600f);
+            foreach (Box3 b in _nav.Obstacles)
+            {
+                // The navigator widens obstacles by the walker's radius; the body has its own.
+                float minX = b.Min.X + WalkNavigator.Radius, maxX = b.Max.X - WalkNavigator.Radius;
+                float minZ = b.Min.Z + WalkNavigator.Radius, maxZ = b.Max.Z - WalkNavigator.Radius;
+                float minY = Mathf.Max(0f, b.Min.Y + 1f), maxY = b.Max.Y;
+                if (maxX - minX < 0.02f || maxZ - minZ < 0.02f || maxY - minY < 0.02f)
+                {
+                    continue;
+                }
+
+                var go = new GameObject("Wall");
+                go.transform.SetParent(_world.transform, false);
+                var box = go.AddComponent<BoxCollider>();
+                box.center = new Vector3((minX + maxX) / 2f, (minY + maxY) / 2f, (minZ + maxZ) / 2f);
+                box.size = new Vector3(maxX - minX, maxY - minY, maxZ - minZ);
+            }
+        }
+
+        private void OnFootDown()
+        {
+            if (!_state.Grounded || !Game.Services.TryGet(out AudioService audio))
+            {
+                return;
+            }
+
+            int i = _step++ % _steps.Length;
+            if (_steps[i] == null)
+            {
+                const int rate = 44100;
+                float[] data = Footsteps.Generate(rate, i);
+                _steps[i] = AudioClip.Create("footstep_" + i, data.Length, 1, rate, false);
+                _steps[i].SetData(data, 0);
+            }
+
+            audio.Play(_steps[i], Gait == Gait.Sprint ? 0.42f : 0.3f, SoundPriority.Effect);
+        }
+
+        /// <summary>Explore plays in landscape; the rest of the game keeps its own orientation.</summary>
+        private void Landscape(bool on)
+        {
+            if (Application.isEditor)
+            {
+                return;
+            }
+
+            if (on)
+            {
+                _orientation = Screen.orientation;
+                _rotation = (Screen.autorotateToPortrait, Screen.autorotateToPortraitUpsideDown, Screen.autorotateToLandscapeLeft, Screen.autorotateToLandscapeRight);
+                Screen.autorotateToPortrait = false;
+                Screen.autorotateToPortraitUpsideDown = false;
+                Screen.autorotateToLandscapeLeft = true;
+                Screen.autorotateToLandscapeRight = true;
+                Screen.orientation = ScreenOrientation.LandscapeLeft;
+                Screen.orientation = ScreenOrientation.AutoRotation;
+            }
+            else
+            {
+                Screen.autorotateToPortrait = _rotation.p;
+                Screen.autorotateToPortraitUpsideDown = _rotation.pu;
+                Screen.autorotateToLandscapeLeft = _rotation.l;
+                Screen.autorotateToLandscapeRight = _rotation.r;
+                Screen.orientation = _orientation;
+            }
+        }
+    }
+}
