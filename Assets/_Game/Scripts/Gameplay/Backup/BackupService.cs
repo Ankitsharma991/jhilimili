@@ -67,7 +67,7 @@ namespace UtsavNights.Gameplay
     {
         public const string UndoFolder = "restore_undo";
 
-        private static readonly string[] Files = { SettingsStore.FileName, ProfileStore.FileName, HouseStore.FileName, HouseStore.JournalName, ShowStore.FileName, ProgressStore.FileName };
+        private static readonly string[] Files = { SettingsStore.FileName, ProfileStore.FileName, HouseStore.FileName, HouseStore.JournalName, ShowStore.FileName, ProgressStore.FileName, PlayerService.FileName };
         private readonly Func<long> _clock;
 
         /// <summary>The game's own folder: pending changes in the running services are saved first and used.</summary>
@@ -103,6 +103,12 @@ namespace UtsavNights.Gameplay
             Add(archive, BackupRules.Profile, ProfileStore.FileName);
             Add(archive, BackupRules.House, HouseStore.FileName);
             Add(archive, BackupRules.Shows, ShowStore.FileName);
+            if (_live && Game.Services.TryGet(out PlayerService player))
+            {
+                player.Save();
+            }
+
+            Add(archive, BackupRules.Player, PlayerService.FileName);
             PlayerProgress progress = _live && Game.Services.TryGet(out ProgressService p) ? p.Current : new ProgressStore(Path.Combine(Folder, ProgressStore.FileName)).Load(_clock());
             var unlocks = new UnlockList();
             foreach (PlayerProgress.TimedUnlock u in progress.unlocks)
@@ -168,6 +174,7 @@ namespace UtsavNights.Gameplay
                     Delete(Target(HouseStore.JournalName)); // a journal belongs to the house it was written for
                 }
                 Write(Target(ShowStore.FileName), r.Shows != null ? JsonUtility.ToJson(r.Shows, true) : null);
+                Write(Target(PlayerService.FileName), r.Player != null ? JsonUtility.ToJson(r.Player, true) : null);
 
                 // Unlocks join this phone's progress; the purchase on this phone stays as it is.
                 var progressStore = new ProgressStore(Target(ProgressStore.FileName));
@@ -240,6 +247,7 @@ namespace UtsavNights.Gameplay
             public AvatarProfile Profile;
             public HouseState House;
             public ShowLibrary Shows;
+            public Core.Explore.PlayerRecord Player;
             public UnlockList Unlocks = new UnlockList();
         }
 
@@ -308,6 +316,18 @@ namespace UtsavNights.Gameplay
                     {
                         r.Shows.shows.RemoveRange(ShowRules.MaxSavedShows, r.Shows.shows.Count - ShowRules.MaxSavedShows);
                     }
+                }
+
+                if (archive.Part(BackupRules.Player) is string pl)
+                {
+                    r.Player = JsonUtility.FromJson<Core.Explore.PlayerRecord>(pl);
+                    if (r.Player == null || r.Player.version > Core.Explore.PlayerRecord.CurrentVersion)
+                    {
+                        return Newer("profile");
+                    }
+
+                    r.Player.Migrate();
+                    r.Player.Sanitize();
                 }
 
                 if (archive.Part(BackupRules.Unlocks) is string u)

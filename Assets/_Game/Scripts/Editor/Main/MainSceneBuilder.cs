@@ -198,6 +198,7 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<WalkController>().Configure(camera, rig);
             systems.AddComponent<InteriorController>().Configure(camera, rig);
             systems.AddComponent<ExploreController>().Configure(camera, rig);
+            systems.AddComponent<PlayerInstaller>();
             systems.AddComponent<AnalyticsInstaller>();
             systems.AddComponent<PlaytestRecorder>();
             systems.AddComponent<DevOverlay>();
@@ -500,6 +501,16 @@ namespace UtsavNights.EditorTools.Main
             showsRect.offsetMax = Vector2.zero;
             showsGo.AddComponent<UI.ShowDesigner>();
             showsGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
+
+            // Phase 12: the player's profile, from Settings and the Explore pause menu.
+            var profileGo = new GameObject("Profile", typeof(RectTransform));
+            profileGo.transform.SetParent(safe.transform, false);
+            var profileRect = (RectTransform)profileGo.transform;
+            profileRect.anchorMin = Vector2.zero;
+            profileRect.anchorMax = Vector2.one;
+            profileRect.offsetMin = Vector2.zero;
+            profileRect.offsetMax = Vector2.zero;
+            profileGo.AddComponent<UI.ProfileScreen>();
 
             // Phase 12: Explore mode, from the Explore button bottom left.
             var exploreGo = new GameObject("ExploreMode", typeof(RectTransform));

@@ -65,6 +65,9 @@ namespace UtsavNights.Gameplay
         private int _step;
         private bool _jumpPressed;
         private ScreenOrientation _orientation;
+        private float _lookScale = 1f;
+        private bool _invertLook;
+        private bool _autoRecentre = true;
         private (bool p, bool pu, bool l, bool r) _rotation;
 
         public event Action StateChanged;
@@ -152,6 +155,12 @@ namespace UtsavNights.Gameplay
             }
 
             _settlement.Focus = () => Player != null ? Player.position : Vector3.zero;
+            if (Game.Services.TryGet(out SettingsService settings))
+            {
+                ApplySettings(settings.Current);
+            }
+
+            Game.Events.Subscribe<Core.Settings.SettingsChangedEvent>(OnSettings);
             CollectTargets();
             Landscape(true);
             _startedAt = Time.unscaledTime;
@@ -174,6 +183,7 @@ namespace UtsavNights.Gameplay
             }
 
             IsOpen = false;
+            Game.Events.Unsubscribe<Core.Settings.SettingsChangedEvent>(OnSettings);
             Game.Events.Publish(new ExploreEvent(false, (int)(Time.unscaledTime - _startedAt), (int)_metres, _jumps));
             if (_avatar != null)
             {
@@ -216,9 +226,17 @@ namespace UtsavNights.Gameplay
         /// <summary>Same as tapping Jump.</summary>
         public void Jump() => _jumpPressed = true;
 
-        /// <summary>Turns the camera by a drag on the screen (pixels).</summary>
-        public void Look(Vector2 pixels, bool invertY = false, float sensitivity = LookSensitivity) =>
-            _orbit.Look(pixels.x * sensitivity, pixels.y * sensitivity, invertY);
+        /// <summary>Turns the camera by a drag on the screen (pixels), with the player's sensitivity and invert settings.</summary>
+        public void Look(Vector2 pixels) =>
+            _orbit.Look(pixels.x * LookSensitivity * _lookScale, pixels.y * LookSensitivity * _lookScale, _invertLook);
+
+        /// <summary>Phase 12 step 2: the control settings that shape the camera.</summary>
+        public void ApplySettings(Core.Settings.GameSettings s)
+        {
+            _lookScale = s.lookSensitivity;
+            _invertLook = s.invertLook;
+            _autoRecentre = s.autoRecentre;
+        }
 
         /// <summary>Same as tapping Interact: does what the prompt says. False when there's nothing near.</summary>
         public bool Interact()
@@ -316,9 +334,13 @@ namespace UtsavNights.Gameplay
             _metres += new Vector2(after.x - before.x, after.z - before.z).magnitude;
             _avatar.transform.rotation = Quaternion.Euler(0f, _state.Facing, 0f);
             _animator.SetLocomotion(_state.GroundSpeed, grounded || _state.Airborne <= Locomotion.CoyoteTime); // it ticks itself
-            _orbit.Follow(_state.Facing, _state.GroundSpeed > 0.5f, dt);
+            _orbit.Follow(_state.Facing, _state.GroundSpeed > 0.5f, dt, _autoRecentre);
             UpdatePrompt();
         }
+
+        private void OnSettings(Core.Settings.SettingsChangedEvent e) => ApplySettings(e.Settings);
+
+        private void OnDestroy() => Game.Events.Unsubscribe<Core.Settings.SettingsChangedEvent>(OnSettings);
 
         private void LateUpdate()
         {

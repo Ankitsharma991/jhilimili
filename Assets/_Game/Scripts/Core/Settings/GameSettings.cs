@@ -10,7 +10,7 @@ namespace UtsavNights.Core.Settings
     [Serializable]
     public sealed class GameSettings
     {
-        public const int CurrentVersion = 3;
+        public const int CurrentVersion = 4;
 
         /// <summary>Automatic quality: keep the detected tier.</summary>
         public const int AutoTier = -1;
@@ -53,6 +53,25 @@ namespace UtsavNights.Core.Settings
         /// <summary>Tonight's festival (Phase 11): its crackers, decorations and night. Added in version 3.</summary>
         public string festival = Festivals.Festivals.DiwaliTiharId;
 
+        // Phase 12 step 2, Explore controls (version 4).
+
+        /// <summary>Camera turn speed, a multiplier from 0.4 to 2.5.</summary>
+        public float lookSensitivity = 1f;
+
+        public bool invertLook;
+
+        /// <summary>The camera eases back behind the character after a moment.</summary>
+        public bool autoRecentre = true;
+
+        /// <summary>Sprint while the button is held, instead of tapping it on and off.</summary>
+        public bool holdToSprint;
+
+        /// <summary>The Explore controls' size, 0.8 to 1.3.</summary>
+        public float hudScale = 1f;
+
+        /// <summary>The thumbstick on the right and the buttons on the left.</summary>
+        public bool leftHanded;
+
         public GameSettings Clone() => (GameSettings)MemberwiseClone();
 
         /// <summary>Clamps every value into range and fixes impossible combinations. Returns true if anything changed.</summary>
@@ -67,6 +86,15 @@ namespace UtsavNights.Core.Settings
             if (qualityTier < AutoTier || qualityTier > 2)
             {
                 qualityTier = AutoTier;
+                changed = true;
+            }
+
+            float look = float.IsNaN(lookSensitivity) ? 1f : Math.Max(Explore.ControlRanges.MinLook, Math.Min(Explore.ControlRanges.MaxLook, lookSensitivity));
+            float hud = float.IsNaN(hudScale) ? 1f : Math.Max(Explore.ControlRanges.MinHud, Math.Min(Explore.ControlRanges.MaxHud, hudScale));
+            if (!look.Equals(lookSensitivity) || !hud.Equals(hudScale))
+            {
+                lookSensitivity = look;
+                hudScale = hud;
                 changed = true;
             }
 
@@ -90,6 +118,8 @@ namespace UtsavNights.Core.Settings
             // Version 0 (or missing) means a file written before versioning: keep values, stamp the version.
             // Version 2 added shareUsageStats; JsonUtility leaves a missing field at its default (true).
             // Version 3 added festival; a missing one reads as empty and Sanitize makes it Diwali and Tihar.
+            // Version 4 added the Explore controls; missing fields keep their defaults, as for a new player.
+
             version = CurrentVersion;
             return true;
         }
@@ -101,7 +131,9 @@ namespace UtsavNights.Core.Settings
                    ambienceVolume == o.ambienceVolume && musicEnabled == o.musicEnabled && musicVolume == o.musicVolume &&
                    quietMode == o.quietMode && reduceFlash == o.reduceFlash && reduceShake == o.reduceShake &&
                    hapticsEnabled == o.hapticsEnabled && hapticsIntensity == o.hapticsIntensity &&
-                   qualityTier == o.qualityTier && quietTipShown == o.quietTipShown && shareUsageStats == o.shareUsageStats && festival == o.festival;
+                   qualityTier == o.qualityTier && quietTipShown == o.quietTipShown && shareUsageStats == o.shareUsageStats && festival == o.festival
+                   && lookSensitivity == o.lookSensitivity && invertLook == o.invertLook && autoRecentre == o.autoRecentre && holdToSprint == o.holdToSprint
+                   && hudScale == o.hudScale && leftHanded == o.leftHanded;
         }
 
         public override int GetHashCode() => version;

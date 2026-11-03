@@ -22,6 +22,12 @@ namespace UtsavNights.Core.Analytics
             Add(changes, "haptics_strength", Tenths(before.hapticsIntensity), Tenths(after.hapticsIntensity));
             Add(changes, "quality", Tier(before.qualityTier), Tier(after.qualityTier));
             Add(changes, "festival", before.festival, after.festival);
+            Add(changes, "look_sensitivity", Tenths(before.lookSensitivity), Tenths(after.lookSensitivity));
+            Add(changes, "invert_look", OnOff(before.invertLook), OnOff(after.invertLook));
+            Add(changes, "auto_recentre", OnOff(before.autoRecentre), OnOff(after.autoRecentre));
+            Add(changes, "hold_to_sprint", OnOff(before.holdToSprint), OnOff(after.holdToSprint));
+            Add(changes, "hud_scale", Tenths(before.hudScale), Tenths(after.hudScale));
+            Add(changes, "left_handed", OnOff(before.leftHanded), OnOff(after.leftHanded));
             return changes;
         }
 

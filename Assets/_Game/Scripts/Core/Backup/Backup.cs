@@ -323,6 +323,9 @@ namespace UtsavNights.Core.Backup
         /// <summary>The timed cracker unlocks only: never the purchase, which comes back through Google Play's Restore.</summary>
         public const string Unlocks = "unlocks";
 
+        /// <summary>Phase 12: the player's coins, reputation and stats.</summary>
+        public const string Player = "player";
+
         public const int MinPasswordLength = 8;
         public const int MaxParts = 16;
         public const int MaxPartChars = 2 * 1024 * 1024;
@@ -331,7 +334,7 @@ namespace UtsavNights.Core.Backup
         public const string Folder = "backups";
 
         /// <summary>The parts this version writes, in the order a restore applies them.</summary>
-        public static readonly string[] Parts = { Settings, Profile, House, Shows, Unlocks };
+        public static readonly string[] Parts = { Settings, Profile, House, Shows, Unlocks, Player };
 
         /// <summary>Why a password can't protect an export file, or null when it can.</summary>
         public static string PasswordProblem(string password)

@@ -39,6 +39,12 @@ namespace UtsavNights.UI
         private TextMeshProUGUI _vibrationNote;
         private SegmentedView _tier;
         private SegmentedView _festival;
+        private Slider _lookSpeed;
+        private Slider _controlsSize;
+        private SwitchView _invertLook;
+        private SwitchView _autoRecentre;
+        private SwitchView _holdToSprint;
+        private SwitchView _leftHanded;
         private SwitchView _usageStats;
         private TextMeshProUGUI _privacyNote;
         private ConsentService _consent;
@@ -113,6 +119,16 @@ namespace UtsavNights.UI
             if (storage != null)
             {
                 storage.Open();
+            }
+        }
+
+        /// <summary>Opens the player's profile over the settings (Phase 12).</summary>
+        public void OpenProfile()
+        {
+            ProfileScreen profile = FindFirstObjectByType<ProfileScreen>();
+            if (profile != null)
+            {
+                profile.Open();
             }
         }
 
@@ -287,6 +303,12 @@ namespace UtsavNights.UI
             _vibrationNote.text = hasVibrator ? "Taps and rumbles with each cracker" : "This device has no vibration motor";
             _tier.Set(s.qualityTier + 1, false);
             _festival.Set(System.Math.Max(0, System.Array.FindIndex(Core.Festivals.Festivals.All, f => f.Id == s.festival)), false);
+            _lookSpeed.value = Core.Explore.ControlRanges.LookSlider(s.lookSensitivity);
+            _controlsSize.value = Core.Explore.ControlRanges.HudSlider(s.hudScale);
+            _invertLook.Set(s.invertLook, false);
+            _autoRecentre.Set(s.autoRecentre, false);
+            _holdToSprint.Set(s.holdToSprint, false);
+            _leftHanded.Set(s.leftHanded, false);
             _usageStats.Set(s.shareUsageStats, false);
             Game.Services.TryGet(out _consent);
             _privacyNote.text = _consent != null ? _consent.Description : "Ads are not set up in this build";
@@ -429,6 +451,22 @@ namespace UtsavNights.UI
             _festival = Row(rows, "Festival tonight", "The crackers, decorations and night that go with it", SegmentedView.Create(rows, FestivalLabels).gameObject)
                 .GetComponentInChildren<SegmentedView>();
             _festival.Changed += index => Edit(s => s.festival = Core.Festivals.Festivals.All[index].Id, true);
+
+            // Phase 12: how Explore handles.
+            Section(rows, "Explore controls");
+            Row(rows, "Your profile", "Your level, coins and what you've done", RowButton(rows, "Open", OpenProfile));
+            _lookSpeed = Row(rows, "Look speed", "How fast a drag turns the camera", SliderFactory.Create(rows).gameObject).GetComponentInChildren<Slider>();
+            _lookSpeed.onValueChanged.AddListener(v => Edit(s => s.lookSensitivity = Core.Explore.ControlRanges.Look(v), false));
+            _invertLook = Row(rows, "Invert up and down", null, SwitchView.Create(rows).gameObject).GetComponentInChildren<SwitchView>();
+            _invertLook.Changed += on => Edit(s => s.invertLook = on, true);
+            _autoRecentre = Row(rows, "Camera follows behind", "Swings back behind you as you move", SwitchView.Create(rows).gameObject).GetComponentInChildren<SwitchView>();
+            _autoRecentre.Changed += on => Edit(s => s.autoRecentre = on, true);
+            _holdToSprint = Row(rows, "Hold to sprint", "Instead of tapping Sprint on and off", SwitchView.Create(rows).gameObject).GetComponentInChildren<SwitchView>();
+            _holdToSprint.Changed += on => Edit(s => s.holdToSprint = on, true);
+            _leftHanded = Row(rows, "Left-handed controls", "The stick on the right, buttons on the left", SwitchView.Create(rows).gameObject).GetComponentInChildren<SwitchView>();
+            _leftHanded.Changed += on => Edit(s => s.leftHanded = on, true);
+            _controlsSize = Row(rows, "Controls size", null, SliderFactory.Create(rows).gameObject).GetComponentInChildren<Slider>();
+            _controlsSize.onValueChanged.AddListener(v => Edit(s => s.hudScale = Core.Explore.ControlRanges.Hud(v), false));
 
             Section(rows, "Graphics");
             _tier = Row(rows, "Quality", "Auto picks the best level for this device", SegmentedView.Create(rows, TierLabels).gameObject).GetComponentInChildren<SegmentedView>();
