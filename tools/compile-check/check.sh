@@ -114,4 +114,5 @@ if [ -n "${FIREBASE_SDK:-}" ]; then
 fi
 step "Tool self-tests"
 python3 "$HERE/../metrics_report.py" --self-test
+UNITY_DATA="$D" "$HERE/../creator/pack.sh" selftest
 echo "All project assemblies compiled."

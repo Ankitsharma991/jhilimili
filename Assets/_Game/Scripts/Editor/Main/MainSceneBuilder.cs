@@ -60,6 +60,7 @@ namespace UtsavNights.EditorTools.Main
             catalog.Upsert(more.Confetti);
 
             EditorUtility.SetDirty(catalog);
+            ExportCrackerTimings(catalog);
             TrayIconRenderer.RenderAll(assets.Definition, more.Sparkler, chakri, more.Lar, more.Bomb, rocket, more.Skyshot, more.Cake, more.Peacock, more.Crown, more.Confetti);
             AssetDatabase.SaveAssets();
             BuildBoot();
@@ -72,6 +73,27 @@ namespace UtsavNights.EditorTools.Main
             };
             AssetDatabase.SaveAssets();
             Debug.Log("[Utsav setup] Boot and Main scenes built; they are now the build scenes.");
+        }
+
+        /// <summary>
+        /// Phase 11 step 4: the crackers' ids and timings for the creator tool (tools/creator/crackers.json), so a shows pack
+        /// is checked outside Unity exactly as the game checks it.
+        /// </summary>
+        private static void ExportCrackerTimings(Content.CrackerCatalog catalog)
+        {
+            var sb = new System.Text.StringBuilder("{\n    \"crackers\": [\n");
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                Content.CrackerDefinition d = catalog.Entries[i].definition;
+                Core.Shows.CrackerTiming t = ShowPlayer.TimingOf(d);
+                sb.Append(System.FormattableString.Invariant($"        {{ \"id\": \"{d.Id}\", \"fuse\": {t.Fuse:0.###}, \"show\": {t.Show:0.###}, \"aerial\": {(t.Aerial ? "true" : "false")} }}"));
+                sb.Append(i < catalog.Count - 1 ? ",\n" : "\n");
+            }
+
+            sb.Append("    ]\n}\n");
+            string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..", "tools", "creator", "crackers.json"));
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+            System.IO.File.WriteAllText(path, sb.ToString());
         }
 
         public static void BuildBatch()

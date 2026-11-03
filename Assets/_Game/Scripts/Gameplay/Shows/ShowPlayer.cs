@@ -170,24 +170,25 @@ namespace UtsavNights.Gameplay
             }
 
             CrackerDefinition d = catalog != null ? catalog.FindById(id) : null;
-            t = null;
-            if (d != null)
-            {
-                float stop = 0f;
-                try
-                {
-                    stop = d.BuildTimeline().StopSeconds;
-                }
-                catch (ArgumentException)
-                {
-                    // An invalid timeline is caught by the content lint; count the pad as busy for the cooldown only.
-                }
-
-                t = new CrackerTiming(d.FuseSeconds, stop + d.CooldownSeconds, PlacementValidator.IsAerial(d));
-            }
-
+            t = d != null ? TimingOf(d) : (CrackerTiming?)null;
             _timings[id ?? string.Empty] = t;
             return t;
+        }
+
+        /// <summary>A cracker's fuse, how long its pad stays busy, and whether it flies (also exported for the creator tool).</summary>
+        public static CrackerTiming TimingOf(CrackerDefinition d)
+        {
+            float stop = 0f;
+            try
+            {
+                stop = d.BuildTimeline().StopSeconds;
+            }
+            catch (ArgumentException)
+            {
+                // An invalid timeline is caught by the content lint; count the pad as busy for the cooldown only.
+            }
+
+            return new CrackerTiming(d.FuseSeconds, stop + d.CooldownSeconds, PlacementValidator.IsAerial(d));
         }
 
         /// <summary>The spot the show would play at: the chosen celebration spot, or the courtyard's area when there is none.</summary>

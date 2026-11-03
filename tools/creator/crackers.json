@@ -1,0 +1,15 @@
+{
+    "crackers": [
+        { "id": "flowerpot_gold", "fuse": 2.5, "show": 12, "aerial": false },
+        { "id": "sparkler_classic", "fuse": 1.2, "show": 14.5, "aerial": false },
+        { "id": "chakri_classic", "fuse": 2, "show": 9.5, "aerial": false },
+        { "id": "chain_lar", "fuse": 2, "show": 8, "aerial": false },
+        { "id": "bomb_single", "fuse": 3, "show": 8.5, "aerial": false },
+        { "id": "rocket_basic", "fuse": 2, "show": 7.5, "aerial": true },
+        { "id": "skyshot_green", "fuse": 2, "show": 7.5, "aerial": true },
+        { "id": "cake_twelve", "fuse": 2.5, "show": 13.75, "aerial": true },
+        { "id": "peacock_fountain", "fuse": 2.5, "show": 12.5, "aerial": false },
+        { "id": "skyshot_gold_crown", "fuse": 2, "show": 9, "aerial": true },
+        { "id": "fountain_confetti", "fuse": 2.5, "show": 11.5, "aerial": false }
+    ]
+}

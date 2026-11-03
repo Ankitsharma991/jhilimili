@@ -1,0 +1,32 @@
+{
+    "id": "sample_wardrobe",
+    "version": 1,
+    "title": "Sample wardrobe",
+    "licence": "creator-001",
+    "garments": [
+        {
+            "id": "sample_wardrobe_kurta",
+            "name": "Festive kurta",
+            "slots": [
+                "BaseTop"
+            ],
+            "covers": [
+                "Chest",
+                "Belly",
+                "UpperArms",
+                "LowerArms"
+            ],
+            "occasion": [
+                "Festive"
+            ],
+            "inspiration": [
+                "SouthAsian"
+            ],
+            "variants": 2,
+            "hidesHair": false,
+            "mesh": "generator:kurta",
+            "vertices": 1800,
+            "culturalReview": "pending"
+        }
+    ]
+}

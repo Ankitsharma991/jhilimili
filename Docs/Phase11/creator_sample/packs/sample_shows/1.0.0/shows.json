@@ -1,0 +1,49 @@
+{
+    "version": 1,
+    "shows": [
+        {
+            "id": "sample_shows_1",
+            "name": "My first show",
+            "pads": [
+                {
+                    "dx": -0.7,
+                    "dz": -0.35
+                },
+                {
+                    "dx": 0,
+                    "dz": -0.35
+                },
+                {
+                    "dx": 0.7,
+                    "dz": -0.35
+                },
+                {
+                    "dx": 0,
+                    "dz": 0.35
+                }
+            ],
+            "cues": [
+                {
+                    "cracker": "sparkler_classic",
+                    "pad": 0,
+                    "at": 0
+                },
+                {
+                    "cracker": "flowerpot_gold",
+                    "pad": 1,
+                    "at": 1.5
+                },
+                {
+                    "cracker": "sparkler_classic",
+                    "pad": 2,
+                    "at": 3
+                },
+                {
+                    "cracker": "flowerpot_gold",
+                    "pad": 3,
+                    "at": 5
+                }
+            ]
+        }
+    ]
+}

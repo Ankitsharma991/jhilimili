@@ -1,0 +1,43 @@
+{
+    "packId": "env_sample_lakeside",
+    "version": "1.0.0",
+    "type": "environment",
+    "title": "Sample lakeside",
+    "description": "A neighbourhood to celebrate in.",
+    "requires": [],
+    "sizeBytes": 41353,
+    "sha256": "610686a6f1f91c7f511f89b21f8ccddcf6b1dfe2e09469483a3d664cd2abb126",
+    "tags": {
+        "geo": [],
+        "style": [],
+        "festival": [
+            "diwali"
+        ]
+    },
+    "budget": {
+        "maxTriangles": 400000,
+        "maxTextureMB": 48,
+        "drawCalls": 140
+    },
+    "review": {
+        "advisor": "Sample Advisor",
+        "date": "2026-11-03"
+    },
+    "files": [
+        {
+            "path": "environment.json",
+            "sizeBytes": 1050,
+            "sha256": "138f0252c1f2764b14df39a9e28d90dc3345ed7648259ff18bed7a4f57ed55d9"
+        },
+        {
+            "path": "layout.json",
+            "sizeBytes": 9836,
+            "sha256": "cf553f91300fca3bf6c303fba40b525b77667cb5f0575f13d2f84c1add7a68d2"
+        },
+        {
+            "path": "preview.png",
+            "sizeBytes": 30467,
+            "sha256": "e7f1d08ecac4bba08ecb9016f1b4d5253cfca1bd7cf7b2cc22cb6efce5149112"
+        }
+    ]
+}

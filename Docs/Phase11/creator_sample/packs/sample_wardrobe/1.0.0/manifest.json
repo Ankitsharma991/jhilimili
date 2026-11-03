@@ -1,0 +1,31 @@
+{
+    "packId": "sample_wardrobe",
+    "version": "1.0.0",
+    "type": "wardrobe",
+    "title": "Sample wardrobe",
+    "description": "Clothes for the avatar.",
+    "requires": [],
+    "sizeBytes": 754,
+    "sha256": "e58567bd183c11a6e67a9890874a8d842cae845e4d1c62416aeaacffe986c599",
+    "tags": {
+        "geo": [],
+        "style": [],
+        "festival": []
+    },
+    "budget": {
+        "maxTriangles": 60000,
+        "maxTextureMB": 16,
+        "drawCalls": 40
+    },
+    "review": {
+        "advisor": "Sample Advisor",
+        "date": "2026-11-03"
+    },
+    "files": [
+        {
+            "path": "wardrobe.json",
+            "sizeBytes": 754,
+            "sha256": "fd0650a7282ed8728145cc6834d0e4aeadaf18c3df4aefed7ae85886adbc4aee"
+        }
+    ]
+}

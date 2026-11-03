@@ -1,0 +1,34 @@
+{
+    "packId": "sample_shows",
+    "version": "1.0.0",
+    "type": "shows",
+    "title": "Sample shows",
+    "description": "Fireworks shows to start from.",
+    "requires": [],
+    "sizeBytes": 1184,
+    "sha256": "6fed56abd0a33fe0145a17c12b981e2fa24d157863d68e80f23fc5b769584e45",
+    "tags": {
+        "geo": [],
+        "style": [],
+        "festival": [
+            "diwali",
+            "tihar"
+        ]
+    },
+    "budget": {
+        "maxTriangles": 0,
+        "maxTextureMB": 4,
+        "drawCalls": 0
+    },
+    "review": {
+        "advisor": "Sample Advisor",
+        "date": "2026-11-03"
+    },
+    "files": [
+        {
+            "path": "shows.json",
+            "sizeBytes": 1184,
+            "sha256": "30016dcd6c8a9235276f3ccb0692f6ae1ef441b837c76740b8a4f318bc2e5af8"
+        }
+    ]
+}
