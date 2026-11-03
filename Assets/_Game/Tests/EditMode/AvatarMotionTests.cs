@@ -25,7 +25,7 @@ namespace UtsavNights.Tests
             (AvatarSkeleton.RightFoot, -50f, 50f, 10f, 10f),
         };
 
-        private static readonly AvatarClip[] Clips = { AvatarClip.Idle, AvatarClip.Walk, AvatarClip.Ignite, AvatarClip.Celebrate };
+        private static readonly AvatarClip[] Clips = { AvatarClip.Idle, AvatarClip.Walk, AvatarClip.Ignite, AvatarClip.Celebrate, AvatarClip.Run, AvatarClip.Fall, AvatarClip.CoverEars, AvatarClip.Wave };
         private static readonly AnimationStyle[] Styles = { AnimationStyle.Calm, AnimationStyle.Lively };
 
         [Test]
@@ -69,6 +69,8 @@ namespace UtsavNights.Tests
 
         [TestCase(AvatarClip.Ignite)]
         [TestCase(AvatarClip.Celebrate)]
+        [TestCase(AvatarClip.CoverEars)]
+        [TestCase(AvatarClip.Wave)]
         public void OneShots_StartAndEndAtRest(AvatarClip clip)
         {
             var pose = new AvatarPose();

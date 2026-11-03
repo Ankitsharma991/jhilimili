@@ -18,6 +18,12 @@ namespace UtsavNights.Core.Avatar
 
         /// <summary>Phase 12: in the air after a jump or a drop (loops).</summary>
         Fall,
+
+        /// <summary>Phase 12: hands over the ears and a flinch, at a loud cracker close by (one-shot).</summary>
+        CoverEars,
+
+        /// <summary>Phase 12: a friendly wave with the right hand, to the player (one-shot).</summary>
+        Wave,
     }
 
     /// <summary>
@@ -73,6 +79,8 @@ namespace UtsavNights.Core.Avatar
         public const float IgniteLength = 1.9f;
         public const float CelebrateLength = 1.7f;
         public const float IdleCycle = 8f;
+        public const float CoverEarsLength = 1.6f;
+        public const float WaveLength = 1.5f;
 
         /// <summary>Phase 12: one stride pair of the run, at <see cref="RunCycleSpeed"/>.</summary>
         public const float RunCycle = 0.68f;
@@ -92,6 +100,8 @@ namespace UtsavNights.Core.Avatar
             AvatarClip.Fall => 1f,
             AvatarClip.Ignite => IgniteLength,
             AvatarClip.Celebrate => CelebrateLength,
+            AvatarClip.CoverEars => CoverEarsLength,
+            AvatarClip.Wave => WaveLength,
             _ => IdleCycle,
         };
 
@@ -133,6 +143,12 @@ namespace UtsavNights.Core.Avatar
                     break;
                 case AvatarClip.Fall:
                     Fall(time, pose, longHem);
+                    break;
+                case AvatarClip.CoverEars:
+                    CoverEars(time, pose, longHem);
+                    break;
+                case AvatarClip.Wave:
+                    Wave(time, energy, pose);
                     break;
                 default:
                     Idle(time, energy, pose);
@@ -232,6 +248,45 @@ namespace UtsavNights.Core.Avatar
             p.X[AvatarSkeleton.RightLowerArm] = -25f;
             p.X[AvatarSkeleton.Spine] = 4f;
             p.X[AvatarSkeleton.Head] = -4f;
+        }
+
+        /// <summary>
+        /// Phase 12: hands up to the ears (to 0.25 s), held through a flinch with the head ducked and the knees soft (to 1.2 s),
+        /// then down. A long hem keeps the knees straighter.
+        /// </summary>
+        private static void CoverEars(float t, AvatarPose p, bool longHem)
+        {
+            float up = Ease(Clamp01(t / 0.25f)) * (1f - Ease(Clamp01((t - 1.2f) / 0.4f)));
+            float flinch = (float)Math.Sin(Clamp01(t / 0.6f) * Math.PI);
+            p.Z[AvatarSkeleton.LeftUpperArm] = -62f * up;
+            p.Z[AvatarSkeleton.RightUpperArm] = 62f * up;
+            p.X[AvatarSkeleton.LeftUpperArm] = -38f * up;
+            p.X[AvatarSkeleton.RightUpperArm] = -38f * up;
+            p.X[AvatarSkeleton.LeftLowerArm] = -135f * up;
+            p.X[AvatarSkeleton.RightLowerArm] = -135f * up;
+            p.X[AvatarSkeleton.Head] = 14f * up;
+            p.X[AvatarSkeleton.Chest] = 6f * up + 4f * flinch;
+            p.Y[AvatarSkeleton.Head] = 10f * flinch;
+            float bend = (longHem ? 6f : 16f) * up;
+            p.X[AvatarSkeleton.LeftUpperLeg] = -bend;
+            p.X[AvatarSkeleton.RightUpperLeg] = -bend;
+            p.X[AvatarSkeleton.LeftLowerLeg] = bend * 1.8f;
+            p.X[AvatarSkeleton.RightLowerLeg] = bend * 1.8f;
+            p.X[AvatarSkeleton.LeftFoot] = -bend * 0.8f;
+            p.X[AvatarSkeleton.RightFoot] = -bend * 0.8f;
+            p.HipsOffset = new V3(0f, -CrouchDrop(-bend, bend * 1.8f), -0.03f * flinch);
+        }
+
+        /// <summary>Phase 12: the right arm up, swaying side to side with the forearm opening and closing; a small head tilt.</summary>
+        private static void Wave(float t, float energy, AvatarPose p)
+        {
+            float up = Ease(Clamp01(t / 0.3f)) * (1f - Ease(Clamp01((t - 1.15f) / 0.35f)));
+            float sway = Sin(t, 2.4f * Math.Min(1.3f, energy));
+            p.Z[AvatarSkeleton.RightUpperArm] = (124f + 14f * sway) * up;
+            p.X[AvatarSkeleton.RightUpperArm] = -12f * up;
+            p.X[AvatarSkeleton.RightLowerArm] = (-35f + 20f * sway) * up;
+            p.Z[AvatarSkeleton.Head] = 6f * up;
+            p.Z[AvatarSkeleton.Spine] = -2f * up;
         }
 
         /// <summary>

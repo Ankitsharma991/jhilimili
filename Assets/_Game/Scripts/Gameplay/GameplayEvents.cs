@@ -28,13 +28,17 @@ namespace UtsavNights.Gameplay
     /// <summary>The payoff (the burst, the fountain's peak) begins; the courtyard avatar celebrates (Phase 6 step 6).</summary>
     public readonly struct PayoffStartedEvent
     {
-        public PayoffStartedEvent(string crackerId, UnityEngine.Vector3 position)
+        public PayoffStartedEvent(string crackerId, UnityEngine.Vector3 position, bool loud = false)
         {
             CrackerId = crackerId;
             Position = position;
+            Loud = loud;
         }
 
         public string CrackerId { get; }
+
+        /// <summary>Phase 12: a loud cracker (people close by cover their ears).</summary>
+        public bool Loud { get; }
 
         public UnityEngine.Vector3 Position { get; }
     }

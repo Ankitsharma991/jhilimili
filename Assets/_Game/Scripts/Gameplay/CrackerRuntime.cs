@@ -444,7 +444,7 @@ namespace UtsavNights.Gameplay
             ApplyCameraCue(stage, position);
             if (stage.payoff && cue.Repeat == 0)
             {
-                Game.Events.Publish(new PayoffStartedEvent(definition.Id, transform.position));
+                Game.Events.Publish(new PayoffStartedEvent(definition.Id, transform.position, definition.Intensity == Intensity.Loud));
             }
         }
 

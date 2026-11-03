@@ -167,23 +167,35 @@ namespace UtsavNights.Core.District
             }
 
             (int tx, int tz) = TileOf(x, z);
-            foreach (int i in Near(tx, tz))
+            Index();
+            for (int dx = -1; dx <= 1; dx++)
             {
-                if (Buildings[i].Footprint.Contains(x, z, radius))
+                for (int dz = -1; dz <= 1; dz++)
+                {
+                    if (!_byTile.TryGetValue(Key(tx + dx, tz + dz), out List<int> list))
+                    {
+                        continue;
+                    }
+
+                    for (int k = 0; k < list.Count; k++)
+                    {
+                        if (Buildings[list[k]].Footprint.Contains(x, z, radius))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            for (int k = 0; k < Props.Count; k++)
+            {
+                if (Props[k].Solid && Props[k].Footprint.Contains(x, z, radius))
                 {
                     return false;
                 }
             }
 
-            foreach (DistrictProp p in Props)
-            {
-                if (p.Solid && p.Footprint.Contains(x, z, radius))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return true; // allocation-free: the crowd asks this for every step
         }
 
         public bool OnRoad(float x, float z)
@@ -204,6 +216,24 @@ namespace UtsavNights.Core.District
         /// <summary>Buildings in a tile and its neighbours (a building can overhang a tile edge).</summary>
         public IEnumerable<int> Near(int tx, int tz)
         {
+            Index();
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dz = -1; dz <= 1; dz++)
+                {
+                    if (_byTile.TryGetValue(Key(tx + dx, tz + dz), out List<int> list))
+                    {
+                        foreach (int i in list)
+                        {
+                            yield return i;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void Index()
+        {
             if (_byTile == null)
             {
                 _byTile = new Dictionary<long, List<int>>();
@@ -217,20 +247,6 @@ namespace UtsavNights.Core.District
                     }
 
                     list.Add(i);
-                }
-            }
-
-            for (int dx = -1; dx <= 1; dx++)
-            {
-                for (int dz = -1; dz <= 1; dz++)
-                {
-                    if (_byTile.TryGetValue(Key(tx + dx, tz + dz), out List<int> list))
-                    {
-                        foreach (int i in list)
-                        {
-                            yield return i;
-                        }
-                    }
                 }
             }
         }
