@@ -91,6 +91,29 @@ namespace UtsavNights.Gameplay
         public Material SparkMaterial => _spark;
 
         /// <summary>Quiet mode, as the settings report it.</summary>
+        /// <summary>
+        /// Phase 11, New Year's midnight: the whole neighbourhood lights up for a while (at least
+        /// <paramref name="burstsPerMinute"/> distant bursts) and everyone out cheers. Quiet mode and the low tier keep
+        /// their silence: the surge only lifts a rate the plan already allows.
+        /// </summary>
+        public void Surge(float seconds, float burstsPerMinute)
+        {
+            _surgeUntil = Time.unscaledTime + seconds;
+            _surgeRate = burstsPerMinute;
+            float now = Time.unscaledTime;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                var p = _people[i];
+                p.nextCheer = now;
+                _people[i] = p;
+            }
+        }
+
+        public bool Surging => Time.unscaledTime < _surgeUntil;
+
+        private float _surgeUntil = -1f;
+        private float _surgeRate;
+
         public void SetQuiet(bool quiet)
         {
             _quiet = quiet;
@@ -160,7 +183,8 @@ namespace UtsavNights.Gameplay
             }
 
             _due.Clear();
-            _bursts.Tick(dt, Plan.BurstsPerMinute, _due);
+            float rate = Plan.BurstsPerMinute > 0f && Surging ? Mathf.Max(Plan.BurstsPerMinute, _surgeRate) : Plan.BurstsPerMinute;
+            _bursts.Tick(dt, rate, _due);
             for (int i = 0; i < _due.Count; i++)
             {
                 Emit(_due[i]);

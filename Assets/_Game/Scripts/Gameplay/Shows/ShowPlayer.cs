@@ -129,6 +129,11 @@ namespace UtsavNights.Gameplay
         public List<ShowDef> Templates()
         {
             var list = new List<ShowDef>(ShowTemplates.All);
+            if (Game.Services.TryGet(out SettingsService settings))
+            {
+                list.InsertRange(0, ShowTemplates.ForFestival(settings.Current.festival)); // tonight's festival first
+            }
+
             if (!Game.Services.TryGet(out PackService packs))
             {
                 return list;

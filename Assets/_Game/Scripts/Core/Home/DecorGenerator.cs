@@ -46,6 +46,8 @@ namespace UtsavNights.Core.Home
                 case "diya_clay": Diya(m); break;
                 case "diya_brass_stand": BrassStand(m); break;
                 case "lantern_akash_kandil": Kandil(m); break;
+                case "lantern_star_new_year": Kandil(m); break;
+                case "balloons_cluster": Balloons(m); break;
                 case "lantern_paper_round": PaperLantern(m); break;
                 case "lamp_post_small": LampPost(m); break;
                 case "tulsi_planter": Tulsi(m); break;
@@ -89,6 +91,7 @@ namespace UtsavNights.Core.Home
             {
                 case "string_lights_warm":
                 case "string_lights_colour":
+                case "string_lights_gold":
                 {
                     Cord(m, Point, steps, 0.008f, HousePaint.Iron);
                     int bulbs = Math.Max(2, (int)Math.Round(length / 0.2f));
@@ -136,6 +139,23 @@ namespace UtsavNights.Core.Home
                         {
                             m.Ball(p.X, p.Y - 0.035f, p.Z + 0.015f, 0.025f, 5, 3, HousePaint.Marigold);
                         }
+                    }
+
+                    break;
+                }
+
+                case "bunting_party":
+                {
+                    // Pennants: triangles hanging from the cord, four colours in turn.
+                    Cord(m, Point, steps, 0.006f, HousePaint.Fabric);
+                    int flags = Math.Max(2, (int)Math.Round(length / 0.22f));
+                    V3 across = (b - a).Normalized;
+                    var facing = V3.Cross(across, new V3(0, 1, 0)).Normalized;
+                    for (int i = 0; i < flags; i++)
+                    {
+                        V3 p = Point((i + 0.5f) / flags);
+                        V3 side = across * 0.08f;
+                        m.TwoSided(new[] { p - side, p + side, p - new V3(0f, 0.18f, 0f) }, facing, HousePaint.Powder1 + i % 4);
                     }
 
                     break;
@@ -243,6 +263,22 @@ namespace UtsavNights.Core.Home
             {
                 float x = t * 0.06f, top = cy - 0.12f;
                 m.TwoSided(new[] { new V3(x - 0.02f, top, 0f), new V3(x + 0.02f, top, 0f), new V3(x + 0.015f, 0f, 0f), new V3(x - 0.015f, 0f, 0f) }, new V3(0, 0, 1), HousePaint.Fabric);
+            }
+        }
+
+        private static void Balloons(HouseMesh m)
+        {
+            // Five balloons on strings from a small weight, in four colours.
+            m.Lathe(0f, 0f, new[] { 0.05f, 0f, 0.05f, 0.04f, 0f, 0.05f }, 8, HousePaint.Iron);
+            float[][] balloons =
+            {
+                new[] { 0f, 1.45f, 0f }, new[] { -0.17f, 1.3f, 0.05f }, new[] { 0.17f, 1.32f, -0.04f }, new[] { -0.06f, 1.18f, -0.14f }, new[] { 0.08f, 1.2f, 0.15f },
+            };
+            for (int i = 0; i < balloons.Length; i++)
+            {
+                float[] p = balloons[i];
+                m.Strut(new V3(0f, 0.05f, 0f), new V3(p[0], p[1] - 0.14f, p[2]), 0.003f, HousePaint.Fabric);
+                m.Ball(p[0], p[1], p[2], 0.13f, 8, 6, HousePaint.Powder1 + i % 4);
             }
         }
 

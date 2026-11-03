@@ -22,7 +22,7 @@ namespace UtsavNights.UI
     public sealed class DecorationMode : MonoBehaviour
     {
         public static readonly string[] Tabs = { "Decorate", "House" };
-        public static readonly string[] Festivals = { "All", "Diwali", "Tihar", "Everyday" };
+        public static readonly string[] Festivals = { "All", "Diwali", "Tihar", "Everyday", "New Year" };
         public static readonly string[] Categories = { "Lamps", "Lights", "Garlands", "Plants", "Furniture", "Rangoli" };
         private const float RowHeight = 112f;
         private const float CardWidth = 250f;
@@ -487,6 +487,7 @@ namespace UtsavNights.UI
                 1 => Festival.Diwali,
                 2 => Festival.Tihar,
                 3 => Festival.Everyday,
+                4 => Festival.NewYear,
                 _ => Festival.None,
             };
             DecorCategory category = (DecorCategory)Mathf.Clamp(_category.Selected, 0, Categories.Length - 1);

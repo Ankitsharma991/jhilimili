@@ -58,8 +58,8 @@ namespace UtsavNights.Tests.PlayMode
             Assert.IsTrue(quiet.value == "On" || quiet.value == "Off");
             Assert.AreEqual(AccessibilityRole.Slider, settings.First(n => n.label == "Volume").role);
             StringAssert.EndsWith("percent", settings.First(n => n.label == "Volume").value);
-            Assert.AreEqual(4, settings.Count(n => n.role == AccessibilityRole.TabButton), "Auto, Low, Mid, High");
-            Assert.AreEqual(1, settings.Count(n => n.role == AccessibilityRole.TabButton && n.state == AccessibilityState.Selected));
+            Assert.AreEqual(6, settings.Count(n => n.role == AccessibilityRole.TabButton), "Auto, Low, Mid, High, and the two festivals");
+            Assert.AreEqual(2, settings.Count(n => n.role == AccessibilityRole.TabButton && n.state == AccessibilityState.Selected), "one quality and one festival");
             CollectionAssert.Contains(settings.Select(n => n.label).ToArray(), "Done");
             sheet.Close();
         }

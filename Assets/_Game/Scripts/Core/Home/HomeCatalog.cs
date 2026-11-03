@@ -74,6 +74,9 @@ namespace UtsavNights.Core.Home
         Diwali = 2,
         Tihar = 4,
         Wedding = 8,
+
+        /// <summary>Phase 11: the New Year night.</summary>
+        NewYear = 16,
     }
 
     /// <summary>How an item is placed (PRD 9): free with snapping, drawn between two points, or stamped on the floor.</summary>
@@ -222,14 +225,18 @@ namespace UtsavNights.Core.Home
                 PlacementMode.Free, Surface.Wall | Surface.Railing, 0.32f, 0.32f, 0.4f, 3, 5),
             new DecorInfo("lamp_post_small", "Garden lamp", DecorCategory.Lamps, Festival.Everyday, PlacementMode.Free,
                 Surface.Ground, 0.25f, 0.25f, 1.2f, 4, 2),
+            new DecorInfo("lantern_star_new_year", "Silver star lantern", DecorCategory.Lamps, Festival.NewYear | Festival.Wedding, PlacementMode.Free,
+                Surface.Wall | Surface.Railing, 0.45f, 0.28f, 0.6f, 4, 2),
 
             // Lights (drawn between two points)
             new DecorInfo("string_lights_warm", "Warm string lights", DecorCategory.Lights, Festival.Diwali | Festival.Tihar | Festival.Wedding | Festival.Everyday,
                 PlacementMode.Path, Surface.Wall | Surface.Railing | Surface.Roof, 0.03f, 0.03f, 0.03f, 4, 1),
             new DecorInfo("string_lights_colour", "Coloured string lights", DecorCategory.Lights, Festival.Diwali | Festival.Tihar | Festival.Wedding,
                 PlacementMode.Path, Surface.Wall | Surface.Railing | Surface.Roof, 0.03f, 0.03f, 0.03f, 4, 1),
-            new DecorInfo("light_curtain", "Light curtain", DecorCategory.Lights, Festival.Diwali | Festival.Wedding, PlacementMode.Path,
+            new DecorInfo("light_curtain", "Light curtain", DecorCategory.Lights, Festival.Diwali | Festival.Wedding | Festival.NewYear, PlacementMode.Path,
                 Surface.Wall | Surface.Railing, 0.03f, 0.03f, 1.2f, 6, 2),
+            new DecorInfo("string_lights_gold", "Gold and silver lights", DecorCategory.Lights, Festival.NewYear | Festival.Wedding,
+                PlacementMode.Path, Surface.Wall | Surface.Railing | Surface.Roof, 0.03f, 0.03f, 0.03f, 4, 1),
 
             // Garlands (drawn between two points)
             new DecorInfo("toran_mango", "Mango-leaf toran", DecorCategory.Garlands, Festival.Diwali | Festival.Tihar | Festival.Wedding | Festival.Everyday,
@@ -238,6 +245,8 @@ namespace UtsavNights.Core.Home
                 PlacementMode.Path, Surface.Wall | Surface.Railing, 0.07f, 0.07f, 0.07f, 3, 2),
             new DecorInfo("garland_marigold_strands", "Hanging marigold strands", DecorCategory.Garlands, Festival.Diwali | Festival.Tihar | Festival.Wedding,
                 PlacementMode.Path, Surface.Wall | Surface.Railing, 0.07f, 0.07f, 0.8f, 5, 2),
+            new DecorInfo("bunting_party", "Party bunting", DecorCategory.Garlands, Festival.NewYear | Festival.Wedding,
+                PlacementMode.Path, Surface.Wall | Surface.Railing, 0.18f, 0.02f, 0.2f, 3, 2),
 
             // Plants
             new DecorInfo("tulsi_planter", "Tulsi planter", DecorCategory.Plants, Festival.Everyday | Festival.Diwali, PlacementMode.Free,
@@ -246,6 +255,8 @@ namespace UtsavNights.Core.Home
                 Surface.Ground | Surface.Step | Surface.Railing | Surface.Roof, 0.25f, 0.25f, 0.35f, 2, 2),
             new DecorInfo("pot_palm", "Potted palm", DecorCategory.Plants, Festival.Everyday, PlacementMode.Free,
                 Surface.Ground | Surface.Roof, 0.4f, 0.4f, 1.3f, 3, 1),
+            new DecorInfo("balloons_cluster", "Balloon bunch", DecorCategory.Garlands, Festival.NewYear | Festival.Wedding, PlacementMode.Free,
+                Surface.Ground | Surface.Step | Surface.Railing | Surface.Roof, 0.6f, 0.56f, 1.6f, 3, 3),
 
             // Furniture
             new DecorInfo("bench_wooden", "Wooden bench", DecorCategory.Furniture, Festival.Everyday, PlacementMode.Free,

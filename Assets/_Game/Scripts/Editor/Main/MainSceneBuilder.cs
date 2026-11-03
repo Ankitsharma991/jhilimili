@@ -55,8 +55,12 @@ namespace UtsavNights.EditorTools.Main
             // Phase 4 premium item (PRD 15.1): locked until a rewarded ad or the Remove-ads purchase.
             catalog.Upsert(more.Peacock, locked: true, unlockHint: "Premium: watch a short ad to unlock for 24 hours");
 
+            // Phase 11: New Year's own crackers (in the tray on the New Year night only).
+            catalog.Upsert(more.Crown);
+            catalog.Upsert(more.Confetti);
+
             EditorUtility.SetDirty(catalog);
-            TrayIconRenderer.RenderAll(assets.Definition, more.Sparkler, chakri, more.Lar, more.Bomb, rocket, more.Skyshot, more.Cake, more.Peacock);
+            TrayIconRenderer.RenderAll(assets.Definition, more.Sparkler, chakri, more.Lar, more.Bomb, rocket, more.Skyshot, more.Cake, more.Peacock, more.Crown, more.Confetti);
             AssetDatabase.SaveAssets();
             BuildBoot();
             BuildMain(assets, catalog);
@@ -472,6 +476,17 @@ namespace UtsavNights.EditorTools.Main
             showsRect.offsetMax = Vector2.zero;
             showsGo.AddComponent<UI.ShowDesigner>();
             showsGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
+
+            // Phase 11: the New Year countdown, left of Shows on a New Year night.
+            var countdownGo = new GameObject("NewYearCountdown", typeof(RectTransform));
+            countdownGo.transform.SetParent(safe.transform, false);
+            var countdownRect = (RectTransform)countdownGo.transform;
+            countdownRect.anchorMin = Vector2.zero;
+            countdownRect.anchorMax = Vector2.one;
+            countdownRect.offsetMin = Vector2.zero;
+            countdownRect.offsetMax = Vector2.zero;
+            countdownGo.AddComponent<UI.NewYearCountdown>();
+            countdownGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
 
             // Phase 10: home visits, from the Visit button above Shows.
             var visitsGo = new GameObject("HomeVisits", typeof(RectTransform));

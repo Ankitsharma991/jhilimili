@@ -363,6 +363,16 @@ namespace UtsavNights.Core.Shows
             Make("tihar_lights", "Tihar lights", 4, ("sparkler_classic", 0, 0f), ("flowerpot_gold", 1, 1f), ("chakri_classic", 2, 3.5f), ("sparkler_classic", 3, 6f)),
         };
 
+        /// <summary>
+        /// Phase 11: the New Year show, played at midnight after the countdown. Confetti on the ground first, then gold
+        /// crowns and the sky; six pads, one cracker each, so it fits every tier's limit.
+        /// </summary>
+        public static readonly ShowDef NewYear = Make("new_year_midnight", "Midnight", 6, ("fountain_confetti", 0, 0f), ("fountain_confetti", 1, 0.6f),
+            ("skyshot_gold_crown", 2, 1.5f), ("skyshot_gold_crown", 3, 3.2f), ("skyshot_green", 4, 5f), ("cake_twelve", 5, 6.5f));
+
+        /// <summary>The templates a festival adds to the built-in ones.</summary>
+        public static ShowDef[] ForFestival(string festivalId) => festivalId == Festivals.Festivals.NewYearId ? new[] { NewYear } : new ShowDef[0];
+
         /// <summary>A fresh, empty show with its pads laid out.</summary>
         public static ShowDef Blank(string id, string name, int pads = 4) => Make(id, name, pads);
 

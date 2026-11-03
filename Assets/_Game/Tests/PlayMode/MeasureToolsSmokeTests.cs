@@ -26,19 +26,19 @@ namespace UtsavNights.Tests.PlayMode
             Assert.IsTrue(tools.IsOpen);
             Assert.IsTrue(InputBlockers.IsBlocked(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f)), "the lighter is blocked while testing");
             tools.BeginTest();
-            Assert.AreEqual(8, tools.Test.Count, "all eight crackers");
+            Assert.AreEqual(10, tools.Test.Count, "all ten free crackers (eight, and New Year's two)");
             Assert.IsTrue(tools.IsPlayingSound, "the first sound starts at once");
             yield return new WaitForSecondsRealtime(0.3f);
 
             tools.PlayAgain();
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 10; i++)
             {
-                tools.Guess(i < 6 ? tools.Test.Current : null);
+                tools.Guess(i < 8 ? tools.Test.Current : null);
                 yield return null;
             }
 
             Assert.IsTrue(tools.Test.IsComplete);
-            Assert.AreEqual(6, tools.Test.CorrectCount);
+            Assert.AreEqual(8, tools.Test.CorrectCount);
             Assert.IsTrue(tools.Test.Passed);
             Assert.AreEqual(1, tools.Test.Answers[0].Replays);
             Assert.Greater(new FileInfo(MeasureTools.FilePath).Length, before, "results appended");

@@ -22,6 +22,9 @@ namespace UtsavNights.UI
         private const float TipSeconds = 5f;
         private static readonly string[] TierLabels = { "Auto", "Low", "Mid", "High" };
 
+        /// <summary>Phase 11: tonight's festival, in the order of <see cref="Core.Festivals.Festivals.All"/>.</summary>
+        private static readonly string[] FestivalLabels = System.Array.ConvertAll(Core.Festivals.Festivals.All, f => f.Name);
+
         private SettingsService _settings;
         private RectTransform _overlay;
         private RectTransform _openButton;
@@ -35,6 +38,7 @@ namespace UtsavNights.UI
         private Slider _vibrationStrength;
         private TextMeshProUGUI _vibrationNote;
         private SegmentedView _tier;
+        private SegmentedView _festival;
         private SwitchView _usageStats;
         private TextMeshProUGUI _privacyNote;
         private ConsentService _consent;
@@ -225,6 +229,10 @@ namespace UtsavNights.UI
 
         public void SetTier(int segment) => _tier.Set(segment, true);
 
+        /// <summary>Same as tapping a festival on the "Festival tonight" switch.</summary>
+        public void SetFestival(string festivalId) =>
+            _festival.Set(System.Math.Max(0, System.Array.FindIndex(Core.Festivals.Festivals.All, f => f.Id == festivalId)), true);
+
         public void SetMasterVolume(float value) => _master.value = value;
 
         private void Update()
@@ -278,6 +286,7 @@ namespace UtsavNights.UI
             _vibrationStrength.interactable = hasVibrator && s.hapticsEnabled;
             _vibrationNote.text = hasVibrator ? "Taps and rumbles with each cracker" : "This device has no vibration motor";
             _tier.Set(s.qualityTier + 1, false);
+            _festival.Set(System.Math.Max(0, System.Array.FindIndex(Core.Festivals.Festivals.All, f => f.Id == s.festival)), false);
             _usageStats.Set(s.shareUsageStats, false);
             Game.Services.TryGet(out _consent);
             _privacyNote.text = _consent != null ? _consent.Description : "Ads are not set up in this build";
@@ -415,6 +424,12 @@ namespace UtsavNights.UI
             _vibrationStrength = Row(rows, "Vibration strength", null, SliderFactory.Create(rows).gameObject).GetComponentInChildren<Slider>();
             _vibrationStrength.onValueChanged.AddListener(v => Edit(s => s.hapticsIntensity = v, false));
 
+            // Phase 11: which festival tonight is: its crackers, decorations and night.
+            Section(rows, "Festival");
+            _festival = Row(rows, "Festival tonight", "The crackers, decorations and night that go with it", SegmentedView.Create(rows, FestivalLabels).gameObject)
+                .GetComponentInChildren<SegmentedView>();
+            _festival.Changed += index => Edit(s => s.festival = Core.Festivals.Festivals.All[index].Id, true);
+
             Section(rows, "Graphics");
             _tier = Row(rows, "Quality", "Auto picks the best level for this device", SegmentedView.Create(rows, TierLabels).gameObject).GetComponentInChildren<SegmentedView>();
             _tier.Changed += index => Edit(s => s.qualityTier = index - 1, true);
@@ -455,6 +470,11 @@ namespace UtsavNights.UI
             for (int i = 0; i < _tier.Count; i++)
             {
                 _controls.Add(new AccessibleControl { Label = "Graphics " + TierLabels[i], Rect = _tier.SegmentRect(i), Segmented = _tier, Segment = i });
+            }
+
+            for (int i = 0; i < _festival.Count; i++)
+            {
+                _controls.Add(new AccessibleControl { Label = "Festival tonight: " + FestivalLabels[i], Rect = _festival.SegmentRect(i), Segmented = _festival, Segment = i });
             }
 
             Button buy = _buyButton.GetComponent<Button>();

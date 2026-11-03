@@ -28,6 +28,10 @@ namespace UtsavNights.EditorTools.Main
             public CrackerDefinition Skyshot;
             public CrackerDefinition Cake;
             public CrackerDefinition Peacock;
+
+            // Phase 11: New Year.
+            public CrackerDefinition Crown;
+            public CrackerDefinition Confetti;
         }
 
         public static Set BuildAll()
@@ -46,6 +50,8 @@ namespace UtsavNights.EditorTools.Main
                 Skyshot = Skyshot(add, fuseSpark, fuseHiss),
                 Cake = Cake(add, fuseSpark, fuseHiss),
                 Peacock = Peacock(add, alpha, fuseSpark, fuseHiss),
+                Crown = Crown(add, fuseSpark, fuseHiss),
+                Confetti = Confetti(add, alpha, fuseSpark, fuseHiss),
             };
         }
 
@@ -85,6 +91,7 @@ namespace UtsavNights.EditorTools.Main
 
             CrackerDefinition d = Load($"{Defs}/Cracker_Sparkler.asset");
             Common(d, "sparkler_classic", new LocalizedName("Sparkler", "Phuljhadi", "Phuljhadi"), CrackerCategory.Sparkler, Intensity.Gentle, 1, modelPrefab);
+            d.SetFestivals("diwali", "tihar", "new_year");
             d.Footprint = new Vector2(0.15f, 0.15f);
             d.EffectVolume = new Vector3(0.6f, 1.2f, 0.6f);
             d.Surfaces = PlacementSurface.Ground | PlacementSurface.Hand;
@@ -269,6 +276,7 @@ namespace UtsavNights.EditorTools.Main
 
             CrackerDefinition d = Load($"{Defs}/Cracker_Skyshot.asset");
             Common(d, "skyshot_green", new LocalizedName("Skyshot", "Skyshot", "Skyshot"), CrackerCategory.Skyshot, Intensity.Loud, 2, modelPrefab);
+            d.SetFestivals("diwali", "tihar", "new_year");
             d.Footprint = new Vector2(0.2f, 0.2f);
             d.EffectVolume = new Vector3(1.5f, height + 1f, 1.5f);
             d.Surfaces = PlacementSurface.Ground | PlacementSurface.Rooftop | PlacementSurface.LaunchPad;
@@ -350,6 +358,7 @@ namespace UtsavNights.EditorTools.Main
 
             CrackerDefinition d = Load($"{Defs}/Cracker_Cake.asset");
             Common(d, "cake_twelve", new LocalizedName("Multi-shot cake", "Cake", "Cake"), CrackerCategory.MultiShotCake, Intensity.Loud, 3, modelPrefab);
+            d.SetFestivals("diwali", "tihar", "new_year");
             d.Footprint = new Vector2(0.32f, 0.26f);
             d.EffectVolume = new Vector3(3.6f, height + 1f, 1.5f);
             d.Surfaces = PlacementSurface.Ground | PlacementSurface.LaunchPad;
@@ -435,6 +444,151 @@ namespace UtsavNights.EditorTools.Main
             // Emitters with endWithNextEmitter stop when any later emitter starts, so smoke joins the last phase.
             s.Add(new StageDefinition { time = 7.9f, emitter = smoke });
             s.Add(new StageDefinition { time = 10.5f, stop = true });
+            return Save(d);
+        }
+
+        // ---------------------------------------------------------------- New Year (Phase 11)
+
+        /// <summary>A sky shot that opens into a gold crown and falls slowly like a willow.</summary>
+        private static CrackerDefinition Crown(Material add, ParticleSystem fuseSpark, AudioClip fuseHiss)
+        {
+            const string folder = Root + "/Crown";
+            const float height = 11f;
+            const float rise = 0.9f;
+            AudioClip thump = F.WriteClip("crown_thump", ProceduralSounds.Generate(ProceduralSounds.Kind.Thump, F.SampleRate, 9101), false);
+            AudioClip bang = F.WriteClip("crown_bang", ProceduralSounds.Generate(ProceduralSounds.Kind.Bang, F.SampleRate, 9102), false);
+            AudioClip crackle = F.WriteClip("crown_crackle", ProceduralSounds.Generate(ProceduralSounds.Kind.Crackle, F.SampleRate, 9103), false);
+
+            ParticleSystem trail = F.NewSystem("FX_Crown_Trail", add, 140, true);
+            Main(trail, 0.25f, 0.5f, 0.1f, 0.6f, 0.03f, 0.06f, 0.4f, new Color(1f, 0.9f, 0.6f), new Color(1f, 0.65f, 0.2f));
+            Emit(trail, 170f);
+            Sphere(trail, 0.01f);
+            F.Fade(trail, Color.white, new Color(1f, 0.5f, 0.1f), 0.2f);
+            trail = F.SavePrefab(trail, "FX_Crown_Trail", folder);
+
+            // Gold stars that hang, then droop and fade: long lives, heavy drag, gentle gravity.
+            ParticleSystem crown = F.NewSystem("FX_Crown_Burst", add, 520, true);
+            Main(crown, 2.6f, 3.4f, 5f, 6.5f, 0.05f, 0.09f, 0.22f, new Color(1f, 0.85f, 0.4f), new Color(1f, 0.7f, 0.25f));
+            OneShot(crown, 480);
+            Sphere(crown, 0.1f);
+            Drag(crown, 1.9f);
+            F.Fade(crown, new Color(1f, 0.95f, 0.75f), new Color(0.75f, 0.4f, 0.1f), 0.45f);
+            crown = F.SavePrefab(crown, "FX_Crown_Burst", folder);
+
+            ParticleSystem silver = F.NewSystem("FX_Crown_Silver", add, 200, false);
+            Main(silver, 0.15f, 0.35f, 0f, 0.3f, 0.07f, 0.12f, 0.15f, Color.white, new Color(0.85f, 0.9f, 1f));
+            Emit(silver, 280f);
+            var sshape = silver.shape;
+            sshape.shapeType = ParticleSystemShapeType.Sphere;
+            sshape.radius = 3f;
+            var smain = silver.main;
+            smain.loop = false;
+            smain.duration = 1f;
+            silver = F.SavePrefab(silver, "FX_Crown_Silver", folder);
+
+            var model = new GameObject("Model_Crown");
+            Material card = CrackerWrappers.Material("Crown_Card", WrapperPattern.Stars, new Color(0.08f, 0.1f, 0.3f), new Color(0.95f, 0.8f, 0.35f), new Color(0.82f, 0.84f, 0.9f));
+            Material label = SceneKit.LitMaterial("Crown_Label", new Color(0.95f, 0.78f, 0.3f), 0.5f);
+            Material dark = SceneKit.LitMaterial("Crown_Mouth", new Color(0.08f, 0.06f, 0.05f), 0.1f);
+            SceneKit.Primitive(PrimitiveType.Cube, "Base", model.transform, new Vector3(0f, 0.015f, 0f), new Vector3(0.18f, 0.03f, 0.18f), card, false);
+            SceneKit.Primitive(PrimitiveType.Cylinder, "Tube", model.transform, new Vector3(0f, 0.16f, 0f), new Vector3(0.08f, 0.13f, 0.08f), card, false);
+            SceneKit.Primitive(PrimitiveType.Cylinder, "Label", model.transform, new Vector3(0f, 0.17f, 0f), new Vector3(0.082f, 0.04f, 0.082f), label, false);
+            SceneKit.Primitive(PrimitiveType.Cylinder, "Mouth", model.transform, new Vector3(0f, 0.292f, 0f), new Vector3(0.06f, 0.003f, 0.06f), dark, false);
+            GameObject modelPrefab = F.SaveGameObject(model, "Model_Crown", folder);
+
+            CrackerDefinition d = Load($"{Defs}/Cracker_Crown.asset");
+            Common(d, "skyshot_gold_crown", new LocalizedName("Golden crown", "Sunaulo mukut", "Sunehra mukut"), CrackerCategory.Skyshot, Intensity.Loud, 3, modelPrefab);
+            d.SetFestivals("new_year");
+            d.Footprint = new Vector2(0.22f, 0.22f);
+            d.EffectVolume = new Vector3(1.6f, height + 1f, 1.6f);
+            d.Surfaces = PlacementSurface.Ground | PlacementSurface.Rooftop | PlacementSurface.LaunchPad;
+            d.FuseSeconds = 2f;
+            d.FuseAnchor = new Vector3(0.05f, 0.04f, 0f);
+            d.CooldownSeconds = 1.5f;
+            Quality(d, 240, 400, 520);
+            var s = d.MutableStages;
+            s.Clear();
+            s.Add(new StageDefinition { time = 0f, emitter = fuseSpark, anchor = StageAnchor.Fuse, endWithNextEmitter = true, sound = fuseHiss, loopSound = true, volume = 0.45f, haptic = HapticPattern.Tick });
+            s.Add(new StageDefinition
+            {
+                time = 2f, emitter = trail, motion = StageMotion.Launch, launchHeight = height, launchRiseSeconds = rise, endLoopSound = true,
+                sound = thump, volume = 0.85f, haptic = HapticPattern.Thud, camera = CameraCue.AerialFollow,
+            });
+            s.Add(new StageDefinition
+            {
+                time = 2f + rise, emitter = crown, anchor = StageAnchor.Apex, launchHeight = height, payoff = true, sound = bang, volume = 0.85f,
+                light = true, lightColor = new Color(1f, 0.8f, 0.4f), lightPeak = 4f, haptic = HapticPattern.Thud,
+            });
+            s.Add(new StageDefinition { time = 3.6f + rise, emitter = silver, anchor = StageAnchor.Apex, launchHeight = height - 2f, sound = crackle, volume = 0.5f });
+            s.Add(new StageDefinition { time = 7.5f, stop = true });
+            return Save(d);
+        }
+
+        /// <summary>A ground fountain of four-colour sparks, like confetti thrown up and falling.</summary>
+        private static CrackerDefinition Confetti(Material add, Material alpha, ParticleSystem fuseSpark, AudioClip fuseHiss)
+        {
+            const string folder = Root + "/Confetti";
+            AudioClip roar = AssetDatabase.LoadAssetAtPath<AudioClip>($"{F.AudioFolder}/fountain_roar_loop.wav");
+            AudioClip whoosh = AssetDatabase.LoadAssetAtPath<AudioClip>($"{F.AudioFolder}/fountain_ignite.wav");
+            AudioClip crackle = F.WriteClip("confetti_crackle", ProceduralSounds.Generate(ProceduralSounds.Kind.Crackle, F.SampleRate, 9201), false);
+
+            ParticleSystem spray = F.NewSystem("FX_Confetti_Spray", add, 800, true);
+            Main(spray, 1.4f, 2.1f, 3.5f, 5.5f, 0.04f, 0.08f, 0.7f, new Color(1f, 0.85f, 0.3f), new Color(0.4f, 0.75f, 1f));
+            var emission = spray.emission;
+            emission.rateOverTime = 320f;
+            var shape = spray.shape;
+            shape.shapeType = ParticleSystemShapeType.Cone;
+            shape.angle = 22f;
+            shape.radius = 0.04f;
+            shape.position = new Vector3(0f, 0.25f, 0f);
+            shape.rotation = new Vector3(-90f, 0f, 0f);
+            var colour = spray.colorOverLifetime;
+            colour.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(new Color(1f, 0.85f, 0.3f), 0f), new GradientColorKey(new Color(1f, 0.35f, 0.6f), 0.35f), new GradientColorKey(new Color(0.4f, 0.75f, 1f), 0.7f), new GradientColorKey(new Color(0.85f, 0.9f, 1f), 1f) },
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 0.7f), new GradientAlphaKey(0f, 1f) });
+            colour.color = gradient;
+            spray = F.SavePrefab(spray, "FX_Confetti_Spray", folder);
+
+            ParticleSystem smoke = F.NewSystem("FX_Confetti_Smoke", alpha, 40, false);
+            Main(smoke, 2.5f, 3.5f, 0.2f, 0.5f, 0.4f, 0.8f, -0.05f, new Color(0.5f, 0.5f, 0.55f, 0.25f), new Color(0.4f, 0.4f, 0.45f, 0.2f));
+            Emit(smoke, 6f);
+            Sphere(smoke, 0.15f);
+            smoke = F.SavePrefab(smoke, "FX_Confetti_Smoke", folder);
+
+            var model = new GameObject("Model_Confetti");
+            Material body = CrackerWrappers.Material("Confetti_Body", WrapperPattern.Stars, new Color(0.12f, 0.12f, 0.35f), new Color(0.95f, 0.4f, 0.65f), new Color(0.95f, 0.8f, 0.35f));
+            Material band = SceneKit.LitMaterial("Confetti_Band", new Color(0.82f, 0.84f, 0.9f), 0.6f);
+            Material fuse = SceneKit.LitMaterial("Confetti_Fuse", new Color(0.75f, 0.12f, 0.08f), 0.2f);
+            SceneKit.Primitive(PrimitiveType.Cylinder, "Body", model.transform, new Vector3(0f, 0.12f, 0f), new Vector3(0.2f, 0.12f, 0.2f), body, false);
+            SceneKit.Primitive(PrimitiveType.Cylinder, "Band", model.transform, new Vector3(0f, 0.2f, 0f), new Vector3(0.205f, 0.015f, 0.205f), band, false);
+            SceneKit.Primitive(PrimitiveType.Sphere, "Top", model.transform, new Vector3(0f, 0.25f, 0f), new Vector3(0.14f, 0.06f, 0.14f), body, false);
+            SceneKit.Primitive(PrimitiveType.Cylinder, "Fuse", model.transform, new Vector3(0f, 0.29f, 0f), new Vector3(0.012f, 0.025f, 0.012f), fuse, false);
+            GameObject modelPrefab = F.SaveGameObject(model, "Model_Confetti", folder);
+
+            CrackerDefinition d = Load($"{Defs}/Cracker_Confetti.asset");
+            Common(d, "fountain_confetti", new LocalizedName("Confetti fountain", "Rangin phohara", "Rangeen fawwara"), CrackerCategory.GroundFountain, Intensity.Medium, 2, modelPrefab);
+            d.SetFestivals("new_year");
+            d.Footprint = new Vector2(0.24f, 0.24f);
+            d.EffectVolume = new Vector3(2f, 3f, 2f);
+            d.Surfaces = PlacementSurface.Ground | PlacementSurface.Rooftop;
+            d.FuseSeconds = 2.5f;
+            d.FuseAnchor = new Vector3(0f, 0.31f, 0f);
+            d.CooldownSeconds = 2f;
+            Quality(d, 240, 480, 800);
+            var s = d.MutableStages;
+            s.Clear();
+            s.Add(new StageDefinition { time = 0f, emitter = fuseSpark, anchor = StageAnchor.Fuse, endWithNextEmitter = true, sound = fuseHiss, loopSound = true, volume = 0.5f, haptic = HapticPattern.Tick });
+            s.Add(new StageDefinition
+            {
+                time = 2.5f, emitter = spray, payoff = true, sound = roar, loopSound = true, volume = 0.7f, haptic = HapticPattern.Rumble,
+                light = true, lightColor = new Color(1f, 0.75f, 0.6f), lightPeak = 2.2f, camera = CameraCue.PushInSmall,
+            });
+            s.Add(new StageDefinition { time = 2.5f, sound = whoosh, volume = 0.65f });
+            s.Add(new StageDefinition { time = 5f, sound = crackle, volume = 0.5f });
+            s.Add(new StageDefinition { time = 7.5f, emitter = smoke });
+            s.Add(new StageDefinition { time = 9.5f, stop = true });
             return Save(d);
         }
 

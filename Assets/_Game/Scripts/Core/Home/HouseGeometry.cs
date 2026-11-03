@@ -202,6 +202,14 @@ namespace UtsavNights.Core.Home
             new[] { new Rgb(0.5f, 0.2f, 0.75f), new Rgb(0.6f, 0.86f, 0.15f), new Rgb(0.86f, 0.1f, 0.15f), new Rgb(0.95f, 0.95f, 0.9f) },
         };
 
+        /// <summary>New Year balloons and bunting: gold, silver, midnight blue and a fourth colour per variant.</summary>
+        public static readonly Rgb[][] PartyColours =
+        {
+            new[] { new Rgb(0.95f, 0.75f, 0.25f), new Rgb(0.82f, 0.84f, 0.9f), new Rgb(0.1f, 0.14f, 0.45f), new Rgb(0.9f, 0.2f, 0.35f) },
+            new[] { new Rgb(0.95f, 0.75f, 0.25f), new Rgb(0.82f, 0.84f, 0.9f), new Rgb(0.1f, 0.14f, 0.45f), new Rgb(0.15f, 0.65f, 0.6f) },
+            new[] { new Rgb(0.95f, 0.45f, 0.65f), new Rgb(0.55f, 0.35f, 0.85f), new Rgb(0.95f, 0.75f, 0.25f), new Rgb(0.35f, 0.75f, 0.95f) },
+        };
+
         /// <summary>Paints that glow: lit glass, flames, paper lanterns and bulbs.</summary>
         public static bool IsEmissive(HousePaint paint) =>
             paint == HousePaint.Glass || paint == HousePaint.Flame || paint == HousePaint.Paper ||
@@ -226,10 +234,15 @@ namespace UtsavNights.Core.Home
                 case HousePaint.MarigoldAlt:
                     return v % 2 == 1 ? MarigoldOrange : MarigoldYellow;
                 case HousePaint.Paper:
-                    return PaperColours[v % PaperColours.Length];
+                    return itemId == "lantern_star_new_year" ? (v % 2 == 1 ? new Rgb(1f, 0.82f, 0.4f) : new Rgb(0.85f, 0.88f, 0.98f)) : PaperColours[v % PaperColours.Length];
                 case HousePaint.BulbA:
                 case HousePaint.BulbB:
                 case HousePaint.BulbC:
+                    if (itemId == "string_lights_gold")
+                    {
+                        return paint == HousePaint.BulbB ? new Rgb(0.85f, 0.9f, 1f) : new Rgb(1f, 0.78f, 0.3f);
+                    }
+
                     if (itemId == "string_lights_colour")
                     {
                         return paint == HousePaint.BulbA ? new Rgb(1f, 0.2f, 0.25f) : paint == HousePaint.BulbB ? new Rgb(0.3f, 1f, 0.35f) : new Rgb(0.35f, 0.5f, 1f);
@@ -245,6 +258,11 @@ namespace UtsavNights.Core.Home
                 case HousePaint.Powder2:
                 case HousePaint.Powder3:
                 case HousePaint.Powder4:
+                    if (itemId == "balloons_cluster" || itemId == "bunting_party")
+                    {
+                        return PartyColours[v % PartyColours.Length][paint - HousePaint.Powder1];
+                    }
+
                     return Powders[v % Powders.Length][paint - HousePaint.Powder1];
                 case HousePaint.Glass:
                     return WarmBulb;

@@ -10,7 +10,7 @@ namespace UtsavNights.Core.Settings
     [Serializable]
     public sealed class GameSettings
     {
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
 
         /// <summary>Automatic quality: keep the detected tier.</summary>
         public const int AutoTier = -1;
@@ -50,6 +50,9 @@ namespace UtsavNights.Core.Settings
         /// <summary>Anonymous usage statistics and crash reports (PRD 16, F12). Added in version 2.</summary>
         public bool shareUsageStats = true;
 
+        /// <summary>Tonight's festival (Phase 11): its crackers, decorations and night. Added in version 3.</summary>
+        public string festival = Festivals.Festivals.DiwaliTiharId;
+
         public GameSettings Clone() => (GameSettings)MemberwiseClone();
 
         /// <summary>Clamps every value into range and fixes impossible combinations. Returns true if anything changed.</summary>
@@ -67,6 +70,12 @@ namespace UtsavNights.Core.Settings
                 changed = true;
             }
 
+            if (!Festivals.Festivals.IsKnown(festival))
+            {
+                festival = Festivals.Festivals.DiwaliTiharId;
+                changed = true;
+            }
+
             return changed;
         }
 
@@ -80,6 +89,7 @@ namespace UtsavNights.Core.Settings
 
             // Version 0 (or missing) means a file written before versioning: keep values, stamp the version.
             // Version 2 added shareUsageStats; JsonUtility leaves a missing field at its default (true).
+            // Version 3 added festival; a missing one reads as empty and Sanitize makes it Diwali and Tihar.
             version = CurrentVersion;
             return true;
         }
@@ -91,7 +101,7 @@ namespace UtsavNights.Core.Settings
                    ambienceVolume == o.ambienceVolume && musicEnabled == o.musicEnabled && musicVolume == o.musicVolume &&
                    quietMode == o.quietMode && reduceFlash == o.reduceFlash && reduceShake == o.reduceShake &&
                    hapticsEnabled == o.hapticsEnabled && hapticsIntensity == o.hapticsIntensity &&
-                   qualityTier == o.qualityTier && quietTipShown == o.quietTipShown && shareUsageStats == o.shareUsageStats;
+                   qualityTier == o.qualityTier && quietTipShown == o.quietTipShown && shareUsageStats == o.shareUsageStats && festival == o.festival;
         }
 
         public override int GetHashCode() => version;

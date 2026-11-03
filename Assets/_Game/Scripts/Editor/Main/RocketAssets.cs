@@ -44,7 +44,7 @@ namespace UtsavNights.EditorTools.Main
             def.Schema = CrackerDefinition.CurrentSchema;
             def.DisplayName = new LocalizedName("Rocket", "Rocket", "Rocket");
             def.Category = CrackerCategory.Rocket;
-            def.SetFestivals("diwali", "tihar");
+            def.SetFestivals("diwali", "tihar", "new_year");
             def.Intensity = Intensity.Loud;
             def.Footprint = new Vector2(0.25f, 0.25f);
             def.EffectVolume = new Vector3(1.5f, BurstHeight + 1f, 1.5f);

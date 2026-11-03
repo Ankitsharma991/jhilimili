@@ -21,6 +21,7 @@ namespace UtsavNights.Core.Analytics
             Add(changes, "haptics", OnOff(before.hapticsEnabled), OnOff(after.hapticsEnabled));
             Add(changes, "haptics_strength", Tenths(before.hapticsIntensity), Tenths(after.hapticsIntensity));
             Add(changes, "quality", Tier(before.qualityTier), Tier(after.qualityTier));
+            Add(changes, "festival", before.festival, after.festival);
             return changes;
         }
 

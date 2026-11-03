@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UtsavNights.Content;
 using UtsavNights.Core.Runtime;
+using UtsavNights.Core.Settings;
 using UtsavNights.Gameplay;
 
 namespace UtsavNights.UI
@@ -37,7 +38,38 @@ namespace UtsavNights.UI
 
         public CrackerCatalog Catalog => catalog;
 
-        public int ItemCount => _items.Count;
+        /// <summary>Items in tonight's tray (Phase 11: other festivals' crackers are hidden, at the end of the catalogue).</summary>
+        public int ItemCount
+        {
+            get
+            {
+                int n = 0;
+                foreach (ItemView item in _items)
+                {
+                    n += item.Rect.gameObject.activeSelf ? 1 : 0;
+                }
+
+                return n;
+            }
+        }
+
+        /// <summary>Whether item <paramref name="index"/> belongs to tonight's festival.</summary>
+        public bool ItemShown(int index) => index >= 0 && index < _items.Count && _items[index].Rect.gameObject.activeSelf;
+
+        /// <summary>The ids of tonight's crackers, in tray order.</summary>
+        public List<string> ShownIds()
+        {
+            var ids = new List<string>();
+            foreach (ItemView item in _items)
+            {
+                if (item.Rect.gameObject.activeSelf)
+                {
+                    ids.Add(item.Entry.definition.Id);
+                }
+            }
+
+            return ids;
+        }
 
         public int SelectedIndex { get; private set; } = -1;
 
@@ -87,6 +119,8 @@ namespace UtsavNights.UI
             }
 
             RefreshLocks();
+            ApplyFestival(Game.Services.TryGet(out SettingsService settings) ? settings.Current.festival : null);
+            Game.Events.Subscribe<SettingsChangedEvent>(OnSettings);
             if (_placement != null)
             {
                 _placement.SelectionChanged += OnSelectionChanged;
@@ -106,6 +140,7 @@ namespace UtsavNights.UI
             }
 
             Game.Events.Unsubscribe<PayoffCompleteEvent>(OnPayoff);
+            Game.Events.Unsubscribe<SettingsChangedEvent>(OnSettings);
             InputBlockers.Unregister(_panel);
             if (_progress != null)
             {
@@ -113,10 +148,34 @@ namespace UtsavNights.UI
             }
         }
 
+        /// <summary>Shows only tonight's festival's crackers (Phase 11).</summary>
+        public void ApplyFestival(string festivalId)
+        {
+            Core.Festivals.FestivalInfo festival = Core.Festivals.Festivals.Find(festivalId);
+            bool changed = false;
+            for (int i = 0; i < _items.Count; i++)
+            {
+                bool show = Core.Festivals.Festivals.HasCracker(festival, _items[i].Entry.definition.Festivals);
+                changed |= _items[i].Rect.gameObject.activeSelf != show;
+                _items[i].Rect.gameObject.SetActive(show);
+                if (!show && SelectedIndex == i && _placement != null)
+                {
+                    _placement.Cancel();
+                }
+            }
+
+            if (changed)
+            {
+                _lastViewportWidth = -1f; // lay the tray out again
+            }
+        }
+
+        private void OnSettings(SettingsChangedEvent e) => ApplyFestival(e.Settings.festival);
+
         /// <summary>Same as tapping item <paramref name="index"/>.</summary>
         public void Select(int index)
         {
-            if (_placement == null || index < 0 || index >= _items.Count)
+            if (_placement == null || !ItemShown(index))
             {
                 return;
             }

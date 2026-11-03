@@ -22,6 +22,7 @@ MonoBehaviour:
   festivals:
   - diwali
   - tihar
+  - new_year
   intensity: 0
   footprint: {x: 0.15, y: 0.15}
   effectVolume: {x: 0.6, y: 1.2, z: 0.6}
