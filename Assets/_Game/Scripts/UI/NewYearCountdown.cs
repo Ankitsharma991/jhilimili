@@ -11,14 +11,6 @@ using UtsavNights.Haptics;
 
 namespace UtsavNights.UI
 {
-    /// <summary>Midnight came (analytics in step 5: whether the show could play at this spot).</summary>
-    public readonly struct MidnightEvent
-    {
-        public MidnightEvent(bool showPlayed) => ShowPlayed = showPlayed;
-
-        public bool ShowPlayed { get; }
-    }
-
     /// <summary>
     /// The New Year countdown (Phase 11 step 1). On a New Year night a Countdown button sits left of Shows. Ten seconds
     /// count down in big numbers; at midnight the greeting shows, the Midnight show plays at the spot (when it fits

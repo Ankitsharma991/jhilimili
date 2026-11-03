@@ -72,6 +72,13 @@ namespace UtsavNights.Core.Analytics
             { "home_withdrawn", new[] { "ok" } },
             { "show_shared", new[] { "ok", "reason", "cues" } },
             { "show_opened", new[] { "ok", "reason", "cues" } },
+
+            // R5, Phase 11 (exit gate: revenue and retention justify the content cost). Tonight's festival arrives as
+            // settings_changed (key festival). Never anything of a photo: only how the suggestion went.
+            { "midnight", new[] { "show_played" } },
+            { "interior_entered", new[] { "room", "decorations" } },
+            { "interior_left", new[] { "room", "decorations" } },
+            { "photo_suggestion", new[] { "outcome", "camera" } },
         };
 
         public static IEnumerable<string> EventNames => Events.Keys;

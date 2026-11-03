@@ -28,7 +28,8 @@ namespace UtsavNights.Tests
             {
                 "account_changed", "backup_made", "backup_restored", "home_shared", "home_visited", "home_reported", "home_withdrawn", "show_shared", "show_opened",
             };
-            CollectionAssert.AreEquivalent(prd.Concat(r1).Concat(r3).Concat(r4), AnalyticsSchema.EventNames.ToArray());
+            string[] r5 = { "midnight", "interior_entered", "interior_left", "photo_suggestion" };
+            CollectionAssert.AreEquivalent(prd.Concat(r1).Concat(r3).Concat(r4).Concat(r5), AnalyticsSchema.EventNames.ToArray());
         }
 
         [Test]
@@ -129,6 +130,24 @@ namespace UtsavNights.Tests
             foreach (Core.Cloud.ReportReason r in System.Enum.GetValues(typeof(Core.Cloud.ReportReason)))
             {
                 Assert.IsTrue(AnalyticsSchema.IsSafeId(Core.Cloud.CloudRules.ReasonId(r)), r.ToString());
+            }
+        }
+
+        [Test]
+        public void ExpansionEvents_CarryNothingOfAPhoto()
+        {
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("photo_suggestion", new EventParams().Add("outcome", "suggested").Add("camera", true)));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("interior_entered", new EventParams().Add("room", "main_room").Add("decorations", 3L)));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("midnight", new EventParams().Add("show_played", true)));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("settings_changed", new EventParams().Add("key", "festival").Add("value", "new_year")));
+            foreach (string banned in new[] { "skin_tone", "hair_colour", "face_shape", "width", "height" })
+            {
+                Assert.IsNotEmpty(AnalyticsSchema.Validate("photo_suggestion", new EventParams().Add(banned, 1L)), banned + " never leaves the phone");
+            }
+
+            foreach (Core.Home.RoomDef room in Core.Home.Rooms.All)
+            {
+                Assert.IsTrue(AnalyticsSchema.IsSafeId(room.Id), room.Id);
             }
         }
 

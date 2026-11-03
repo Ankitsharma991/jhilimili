@@ -64,6 +64,8 @@ feedback and changes come after all PRD features are built.
 
 | 4. Creator pack pipeline | Done. `tools/creator/pack.sh` (builds itself from the game's Core code with the Mono inside Unity, no editor): `new` (a template of each type that already passes: shows from a built-in template, a wardrobe garment, the sample neighbourhood renamed; with `pack.json`, `content/` and `REVIEW.md`), `lint` (the game's own `PackLint`, with shows checked against the real cracker timings exported by the scene build to `tools/creator/crackers.json`), `build` (sealed in the hosting layout), `review` (the advisor signs only when every box in `REVIEW.md` is ticked; the name and date go into the manifest), `submit` (checks, seals and zips the pack with its signed review; refused before the review), `catalog` (the owner rebuilds catalog.json, the newest version of each pack), `selftest` (one pack of each type through the whole flow, an unknown cracker caught; run by the compile check). `tools/creator/Json.cs` (a JSON reader and writer with JsonUtility's shapes). `ShowPlayer.TimingOf` is shared by the game and the export. `Docs/Phase11/CREATORS.md` (for creators, advisors and the owner). `Docs/Phase11/creator_sample` (the self-test's packs in the hosting layout). Tests: the tool's self-test (compile check), `CreatorPackSmokeTests` (Play Mode: the tool-made catalog reads and all three packs install through the game's pack manager; the neighbourhood registers and the show is offered in the designer) |
 
+| 5. Measure and wrap-up | Done. Analytics: `midnight` (whether the Midnight show played at the spot), `interior_entered` and `interior_left` (the room and its decorations), `photo_suggestion` (suggested, no face, cancelled or error; camera or picker; never anything of the photo), and tonight's festival as `settings_changed` (key `festival`). `MidnightEvent` moved to Gameplay so analytics can hear it. The metrics report gains the expansion section for the exit gate (New Year nights and midnights, who goes inside and how much they decorate, photo suggestions and how often they work, D1 and D7 return of expansion users against everyone else, to weigh against each feature's content cost); the BigQuery query has the new columns. Performance: inside a room 0.00 KB of garbage a frame on average (0.04 KB at most; the room with nothing in it is 240 triangles); New Year's midnight with its show and the neighbourhood's surge 0.85 KB on average, within the finale's 4 KB (peaks of about 33 KB when a cracker is set on its pad, like the stress finale). The privacy policy explains the photo suggestion (18+, on the phone only, deleted at once, only three choices kept) and the new statistics; `COMPLIANCE.md`: photos are processed on the device only, so not collected. Tests: `AnalyticsSchemaTests`, `AnalyticsSmokeTests`, `PerformanceGuardTests` (inside a room, New Year's midnight), metrics report self-test |
+
 ### Step 1 notes
 
 - **New Year needs no cultural advisor** in the sense Eid and Lunar New Year do: no religious imagery, nothing
@@ -106,3 +108,33 @@ feedback and changes come after all PRD features are built.
   review, and the owner publishes it. The tool enforces the review; choosing the advisors is the owner's.
 - **Windows:** the wrapper is a bash script. Creators on Windows can run it in WSL or Git Bash; a `.cmd` wrapper can
   come with the feedback round if needed.
+
+## Phase 11 result
+
+Interiors (F25), the New Year festival, the photo-assisted avatar (F26) and the creator pack pipeline are built; iOS is
+left for later by the owner's decision.
+- **Festivals as data**, with New Year: its crackers, decorations, Midnight show and the countdown to midnight.
+- **Interiors:** two rooms entered with a fade, decorated within each tier's budget and saved with the house; only one
+  of inside and outside is drawn at a time.
+- **Photo-assisted avatar:** 18+ only, on the phone only, the photo deleted at once, a suggestion the player adjusts.
+- **Creator packs:** a tool that runs the game's own checks, a review an advisor signs, submission and publishing.
+- **Measured:** a room adds no per-frame garbage; midnight stays within the finale's limit.
+- **Open items** (with the feedback round):
+  - a real face on the tablet for the photo suggestion (step 3 notes);
+  - native-speaker checks of the New Year cracker names;
+  - advisors for Eid, Lunar New Year and new regions before any of them is built;
+  - iOS (a Mac, Xcode and an Apple Developer account);
+  - the review lists in the step notes above.
+
+## Every PRD feature is built
+
+With Phase 11, every feature in the PRD (F01 to F26) and every phase (0 to 11) is built, apart from the iOS port. What
+is left before launch is the owner's and the device's:
+- the Firebase project and `google-services.json` (Phase 5, Phase 10);
+- AdMob live IDs and the Play Console set-up (Phase 4, Phase 5);
+- static hosting for packs (Phase 9);
+- Java 21 for the rules tests (Phase 10);
+- the cultural reviews (Phases 6 to 9, 11) and the privacy review's second read (Phase 10);
+- device checks: clips on the tablet (Phase 9), the photo suggestion (Phase 11), 30 fps while walking on a low-tier
+  phone (Phase 8);
+- then the feedback round the owner planned for after all features.

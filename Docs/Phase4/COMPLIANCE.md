@@ -93,6 +93,12 @@ is sent with them. [Verify both against the current Play help.]
 | Files and docs (cloud backups, encrypted on the phone) | Yes | No | Yes (only if backed up) | App functionality | Cloud Storage (Phase 10) |
 | Financial info, messages, photos, audio, contacts, calendar, web browsing, health, precise location | No | | | | |
 
+**Photos (Phase 11):** the photo-assisted avatar reads one photo the player picks or takes, on the phone only, and
+deletes it at once; only a skin tone, hair colour and face shape are kept, in the avatar. Data processed only on the
+device is not "collected" in Play's sense, so Photos stays "No". Say so in the app's description of the feature, and
+answer the "photos and videos" questions accordingly. [Verify against the current Play help.] The feature is behind
+an 18+ confirmation (PRD 8: no photo feature for minors).
+
 **Shared versus collected:** per Google's guidance, data sent to a service provider that processes it
 for you (Firebase) counts as collected, not shared. AdMob uses data for its own advertising, so mark
 AdMob data as shared. [Verify against the current Play help article "Data safety: SDKs".]
@@ -129,5 +135,6 @@ declare them, so the form stays correct.
 - [ ] AdMob live IDs in `AdsConfig.asset`, test devices registered (SDK_SETUP.md), GDPR message published
 - [ ] `remove_ads` product active in Play Console, licence tester added
 - [ ] Ads, Advertising ID, Target audience, Content rating and Data safety sections completed
+- [ ] Phase 11: the photo suggestion stays on the phone (Photos: not collected); the 18+ confirmation is in place
 - [ ] Phase 10 online features: Data safety rows for sign-in, backups and shared content; the delete-account web link
       (the privacy policy's "Deleting your data") entered in Data safety; content rating answers for shared content

@@ -229,6 +229,13 @@ namespace UtsavNights.Tests.PlayMode
                 Assert.AreEqual("show_shared", log.LastEvent);
                 Game.Events.Publish(new ShowShareEvent("opened", false, "hidden"));
                 Assert.AreEqual("show_opened", log.LastEvent);
+                Game.Events.Publish(new MidnightEvent(true));
+                Assert.AreEqual("midnight", log.LastEvent);
+                Game.Events.Publish(new InteriorEvent("main_room", true, 2));
+                Assert.AreEqual("interior_entered", log.LastEvent);
+                Game.Events.Publish(new PhotoAvatarEvent("suggested", false));
+                Assert.AreEqual("photo_suggestion", log.LastEvent);
+                StringAssert.Contains("\"outcome\":\"suggested\"", Last());
                 Assert.AreEqual(rejected, analytics.Rejected, "every event passed the schema");
 
                 // A real share through the memory cloud: the code never reaches analytics.

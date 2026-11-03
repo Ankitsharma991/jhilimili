@@ -62,7 +62,12 @@ SELECT
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'where') AS `where`,
   (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'ok') AS ok,
   (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'offline') AS offline,
-  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'signed_in') AS signed_in
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'signed_in') AS signed_in,
+  -- R5 (Phase 11) expansion
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'show_played') AS show_played,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'room') AS room,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'outcome') AS outcome,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'camera') AS camera
 FROM `PROJECT.analytics_000000000.events_*`
 WHERE _TABLE_SUFFIX BETWEEN '20261101' AND '20261131'
   AND event_name IN ('app_first_open', 'scene_ready', 'cracker_placed', 'cracker_ignited', 'payoff_complete',
@@ -75,5 +80,6 @@ WHERE _TABLE_SUFFIX BETWEEN '20261101' AND '20261131'
                      'pack_installed', 'pack_failed', 'pack_deleted', 'show_saved', 'show_played',
                      'clip_recorded', 'clip_failed',
                      'account_changed', 'backup_made', 'backup_restored', 'home_shared', 'home_visited',
-                     'home_reported', 'home_withdrawn', 'show_shared', 'show_opened')
+                     'home_reported', 'home_withdrawn', 'show_shared', 'show_opened',
+                     'midnight', 'interior_entered', 'interior_left', 'photo_suggestion')
 ORDER BY user, ts

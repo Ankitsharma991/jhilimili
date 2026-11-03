@@ -257,6 +257,30 @@ def compute(events, crashes=None, ecpm=None):
             back = sum(1 for u in cohort if first_day[u] + timedelta(days=n) in active[u])
             m[f"d{n}_retention_{group}"] = back / len(cohort) if cohort else None
 
+    # R5 (Phase 11) exit gate: revenue and retention justify the content cost. Who uses each expansion feature, and whether
+    # they come back more than everyone else (compare with the revenue section above per feature group).
+    new_year = {e["user"] for e in events if e["event"] == "settings_changed" and e.get("key") == "festival" and e.get("value") == "new_year"}
+    midnights = [e for e in events if e["event"] == "midnight"]
+    insiders = {e["user"] for e in events if e["event"] == "interior_entered"}
+    photos = [e for e in events if e["event"] == "photo_suggestion"]
+    m["new_year_users"] = len(new_year)
+    m["midnights"] = len(midnights)
+    m["midnight_show_rate"] = sum(1 for e in midnights if num(e, "show_played") == 1) / len(midnights) if midnights else None
+    m["interior_users"] = len(insiders)
+    m["interior_share"] = len(insiders) / len(by_user) if by_user else None
+    m["interior_visits"] = sum(1 for e in events if e["event"] == "interior_entered")
+    left = [num(e, "decorations") for e in events if e["event"] == "interior_left" and num(e, "decorations") is not None]
+    m["median_room_decorations"] = statistics.median(left) if left else None
+    m["photo_tries"] = len(photos)
+    m["photo_success_rate"] = sum(1 for e in photos if e.get("outcome") == "suggested") / len(photos) if photos else None
+    m["photo_outcomes"] = Counter(e.get("outcome") for e in photos if e.get("outcome")).most_common(4)
+    expansion = new_year | insiders | {e["user"] for e in photos}
+    for group, users in (("expansion", expansion), ("nonexpansion", set(by_user) - expansion)):
+        for n in (1, 7):
+            cohort = [u for u in users if last_day and first_day[u] + timedelta(days=n) <= last_day]
+            back = sum(1 for u in cohort if first_day[u] + timedelta(days=n) in active[u])
+            m[f"d{n}_retention_{group}"] = back / len(cohort) if cohort else None
+
     # PRD 15.3: sessions per user x impressions per session x eCPM / 1000.
     if ecpm is not None and m["sessions_per_user"] is not None and m["ads_per_session"] is not None:
         m["ad_revenue_per_user_usd"] = m["sessions_per_user"] * m["ads_per_session"] * ecpm / 1000
@@ -386,6 +410,15 @@ def report(m, since, days, installs=None):
     lines.append(f"| Shows shared / opened | {m['shows_shared']} / {m['shows_opened']} |")
     lines.append(f"| Signed in / made a backup | {m['signed_in_users']} / {m['backup_users']} users ({m['backups_cloud']} cloud, {m['backups_file']} file); {m['restores']} restores |")
     lines.append("| Real-time? | Only if many players both share and visit, and visits per shared home stay well above one (PRD 19) |")
+    lines += ["", "## Expansion (R5, Phase 11 exit gate)", "", "| Metric | Value |", "|---|---|"]
+    lines.append(f"| New Year nights chosen / midnights / Midnight show played | {m['new_year_users']} users / {m['midnights']} / {fmt(m['midnight_show_rate'], 'pct')} |")
+    lines.append(f"| Users who went inside / visits / median decorations in a room | {m['interior_users']} ({fmt(m['interior_share'], 'pct')}) / {m['interior_visits']} / {fmt(m['median_room_decorations'], 'n')} |")
+    lines.append(f"| Photo suggestions tried / worked | {m['photo_tries']} / {fmt(m['photo_success_rate'], 'pct')} |")
+    if m["photo_outcomes"]:
+        lines.append(f"| Photo outcomes | {', '.join(f'{k} ({n})' for k, n in m['photo_outcomes'])} |")
+    lines.append(f"| D1 / D7 return, expansion users vs others | {fmt(m['d1_retention_expansion'], 'pct')} vs {fmt(m['d1_retention_nonexpansion'], 'pct')} / "
+                 f"{fmt(m['d7_retention_expansion'], 'pct')} vs {fmt(m['d7_retention_nonexpansion'], 'pct')} |")
+    lines.append("| Worth the content cost? | Compare these users' return and the revenue section with the art and review cost of each feature (PRD 19) |")
     lines += ["", "Small tests (20 to 50 users) can judge feel, time to ignition, completion and crashes. "
               "Retention, conversion and ad revenue need hundreds to thousands of users (PRD 17)."]
     return "\n".join(lines)
@@ -466,6 +499,16 @@ def self_test():
     add("u1", t0 + timedelta(minutes=9, seconds=50), "backup_made", where="cloud", ok=1, reason="none")
     add("u1", t0 + timedelta(minutes=9, seconds=55), "show_shared", ok=1, reason="none", cues=6)
 
+    # u2 chooses New Year and reaches midnight once (the show played); u1 goes inside twice; u3 tries the photo twice.
+    add("u2", t0 + timedelta(minutes=10), "settings_changed", key="festival", value="new_year")
+    add("u2", t0 + timedelta(minutes=11), "midnight", show_played=1)
+    add("u1", t0 + timedelta(minutes=12), "interior_entered", room="main_room", decorations=0)
+    add("u1", t0 + timedelta(minutes=13), "interior_left", room="main_room", decorations=2)
+    add("u1", t0 + timedelta(minutes=14), "interior_entered", room="upper_room", decorations=1)
+    add("u1", t0 + timedelta(minutes=15), "interior_left", room="upper_room", decorations=4)
+    add("u3", t0 + timedelta(minutes=16), "photo_suggestion", outcome="noface", camera=1)
+    add("u3", t0 + timedelta(minutes=17), "photo_suggestion", outcome="suggested", camera=0)
+
     events = load_events(rows, t0.date(), 8)
     m = compute(events, crashes=1, ecpm=2.0)
     checks = {
@@ -513,6 +556,11 @@ def self_test():
         "visitors_who_never_shared": (m["visitors_who_never_shared"], 2),
         "top_visit_failure": (m["visit_failures"][0][0] if m["visit_failures"] else None, "hidden"),
         "backups_cloud": (m["backups_cloud"], 1),
+        "new_year_users": (m["new_year_users"], 1),
+        "midnight_show_rate": (m["midnight_show_rate"], 1.0),
+        "interior_users": (m["interior_users"], 1),
+        "median_room_decorations": (m["median_room_decorations"], 3.0),
+        "photo_success_rate": (m["photo_success_rate"], 0.5),
         # 7 sessions / 4 users x 2 ads / 7 sessions x $2 / 1000.
         "ad_revenue_per_user_usd": (round(m["ad_revenue_per_user_usd"], 6), round(7 / 4 * 2 / 7 * 2 / 1000, 6)),
     }

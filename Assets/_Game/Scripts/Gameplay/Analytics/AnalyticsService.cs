@@ -75,6 +75,9 @@ namespace UtsavNights.Gameplay
             Game.Events.Subscribe<CloudBackupEvent>(OnBackup);
             Game.Events.Subscribe<HomeVisitEvent>(OnHomeVisit);
             Game.Events.Subscribe<ShowShareEvent>(OnShowShare);
+            Game.Events.Subscribe<MidnightEvent>(OnMidnight);
+            Game.Events.Subscribe<InteriorEvent>(OnInterior);
+            Game.Events.Subscribe<PhotoAvatarEvent>(OnPhoto);
         }
 
         private bool _reportedRestore;
@@ -128,6 +131,9 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<CloudBackupEvent>(OnBackup);
             Game.Events.Unsubscribe<HomeVisitEvent>(OnHomeVisit);
             Game.Events.Unsubscribe<ShowShareEvent>(OnShowShare);
+            Game.Events.Unsubscribe<MidnightEvent>(OnMidnight);
+            Game.Events.Unsubscribe<InteriorEvent>(OnInterior);
+            Game.Events.Unsubscribe<PhotoAvatarEvent>(OnPhoto);
         }
 
         /// <summary>app_first_open once per install (PRD 17: install quality).</summary>
@@ -364,6 +370,13 @@ namespace UtsavNights.Gameplay
 
         private void OnShowShare(ShowShareEvent e) => Send(e.Action == "shared" ? "show_shared" : "show_opened",
             new EventParams().Add("ok", e.Ok).Add("reason", ReasonId(e.Reason)).Add("cues", (long)e.Cues));
+
+        private void OnMidnight(MidnightEvent e) => Send("midnight", new EventParams().Add("show_played", e.ShowPlayed));
+
+        private void OnInterior(InteriorEvent e) =>
+            Send(e.Entered ? "interior_entered" : "interior_left", new EventParams().Add("room", e.Room).Add("decorations", (long)e.Decorations));
+
+        private void OnPhoto(PhotoAvatarEvent e) => Send("photo_suggestion", new EventParams().Add("outcome", e.Outcome).Add("camera", e.Camera));
 
         /// <summary>A reason id as sent: "none" when empty (the schema allows only short ids).</summary>
         private static string ReasonId(string reason) => string.IsNullOrEmpty(reason) ? "none" : reason;

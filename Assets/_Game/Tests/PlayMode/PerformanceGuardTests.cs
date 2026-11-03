@@ -174,6 +174,56 @@ namespace UtsavNights.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator InsideARoom_AllocatesAlmostNothingPerFrame()
+        {
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            var mode = Object.FindFirstObjectByType<InteriorMode>();
+            Assert.IsTrue(mode.GoInside());
+            yield return WaitSeconds(Gameplay.InteriorController.FadeSeconds * 2f + Gameplay.CameraRig.OverrideSeconds + 0.3f);
+            Assert.IsTrue(mode.Inside);
+            var result = new float[2];
+            yield return Measure(90, result);
+            Debug.Log($"[UTSAV_PERF] inside gc_kb_per_frame avg={result[0]:0.00} max={result[1]:0.00} triangles={mode.Controller.Triangles}");
+            mode.Leave();
+            yield return WaitSeconds(Gameplay.InteriorController.FadeSeconds * 2f + 0.2f);
+            Assert.Less(result[0], IdleLimitKb, "a room adds no per-frame garbage");
+        }
+
+        [UnityTest]
+        public IEnumerator NewYearMidnight_AllocationsStaySmall()
+        {
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            Assert.IsTrue(Core.Runtime.Game.Services.TryGet(out Gameplay.SettingsService settings));
+            string before = settings.Current.festival;
+            settings.Change(s => s.festival = Core.Festivals.Festivals.NewYearId);
+            yield return null;
+            var countdown = Object.FindFirstObjectByType<NewYearCountdown>();
+            try
+            {
+                Assert.IsTrue(countdown.Begin());
+                countdown.Advance(Core.Festivals.MidnightCountdown.Seconds + 0.05f);
+                yield return WaitSeconds(1.5f);
+                var result = new float[2];
+                yield return Measure(120, result);
+                Debug.Log($"[UTSAV_PERF] midnight gc_kb_per_frame avg={result[0]:0.00} max={result[1]:0.00} show={countdown.ShowPlayed}");
+                Assert.Less(result[0], ShowLimitKb, "the Midnight show and the surge stay within the finale's limit");
+            }
+            finally
+            {
+                if (Core.Runtime.Game.Services.TryGet(out Gameplay.ShowPlayer player))
+                {
+                    player.Stop();
+                }
+
+                settings.Change(s => s.festival = before);
+            }
+        }
+
         /// <summary>Takes frames and throws them away, so only the recorder's own garbage is measured.</summary>
         private sealed class NullClipEncoder : Gameplay.IClipEncoder
         {
