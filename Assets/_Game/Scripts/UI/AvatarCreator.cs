@@ -348,6 +348,7 @@ namespace UtsavNights.UI
             BuildFace(_pages[2]);
             BuildHair(_pages[3]);
             BuildOutfit(_pages[4]);
+            BuildPhotoSheet();
             _overlay.gameObject.SetActive(false);
         }
 
@@ -379,6 +380,18 @@ namespace UtsavNights.UI
 
         private void BuildLooks(RectTransform rows)
         {
+            // Phase 11 (F26): a suggestion from a photo, for players 18 and over; the ready-made looks follow.
+            RectTransform photo = UiKit.Rect("PhotoRow", rows);
+            photo.sizeDelta = new Vector2(0f, UiTheme.MinTouch);
+            Image photoBg = UiKit.Panel(photo, UiTheme.Saffron);
+            photoBg.sprite = UiKit.Rounded;
+            var photoButton = photo.gameObject.AddComponent<Button>();
+            photoButton.targetGraphic = photoBg;
+            photoButton.onClick.AddListener(OpenPhotoSheet);
+            UiKit.Text(photo, "Suggest a look from a photo", UiTheme.BodyText, TextAlignmentOptions.Center, UiTheme.Indigo);
+            _photoRow = photo.gameObject;
+            _photoRow.SetActive(PhotoAvatar.Offered);
+
             for (int start = 0; start < AvatarPresets.All.Count; start += 4)
             {
                 RectTransform line = UiKit.Rect("Looks", rows);
@@ -615,6 +628,143 @@ namespace UtsavNights.UI
                     chip.color = new Color(c.R, c.G, c.B);
                 }
             });
+        }
+
+        // ---- Phase 11 step 3: the photo-assisted look (F26) ----
+
+        private GameObject _photoRow;
+        private RectTransform _photoSheet;
+        private TextMeshProUGUI _photoText;
+        private GameObject _photoAge;
+        private GameObject _photoChoose;
+        private GameObject _photoDone;
+
+        public bool PhotoOffered => _photoRow != null && _photoRow.activeSelf;
+
+        public bool PhotoSheetOpen => _photoSheet != null && _photoSheet.gameObject.activeSelf;
+
+        public string PhotoMessage => _photoText != null ? _photoText.text : string.Empty;
+
+        /// <summary>Same as tapping "Suggest a look from a photo".</summary>
+        public void OpenPhotoSheet()
+        {
+            if (!PhotoAvatar.Offered)
+            {
+                return;
+            }
+
+            _photoSheet.gameObject.SetActive(true);
+            _photoSheet.SetAsLastSibling();
+            if (PhotoAvatar.Age == PhotoAvatar.AgeAnswer.Adult)
+            {
+                PhotoStage(_photoChoose, PhotoPromise);
+            }
+            else
+            {
+                PhotoStage(_photoAge, "Are you 18 or older? Photo suggestions are only for adults.");
+            }
+        }
+
+        /// <summary>Same as answering the age question.</summary>
+        public void AnswerAge(bool adult)
+        {
+            PhotoAvatar.Age = adult ? PhotoAvatar.AgeAnswer.Adult : PhotoAvatar.AgeAnswer.Minor;
+            if (adult)
+            {
+                PhotoStage(_photoChoose, PhotoPromise);
+                return;
+            }
+
+            _photoRow.SetActive(false);
+            PhotoStage(_photoDone, "No problem. Pick a ready-made look, or build your own in the tabs above.");
+        }
+
+        /// <summary>Same as tapping "Take a photo" (camera) or "Choose a photo".</summary>
+        public void UsePhoto(bool camera)
+        {
+            PhotoStage(_photoDone, "Looking at the photo…");
+            PhotoAvatar.Request(camera, (suggestion, error) =>
+            {
+                if (suggestion.HasValue)
+                {
+                    PhotoSuggestion s = suggestion.Value;
+                    Edit(p => s.ApplyTo(p));
+                    PhotoStage(_photoDone, "Done: skin tone, " + (s.HairColour >= 0 ? "hair colour " : string.Empty) + "and face shape are set from your photo. "
+                        + "Change anything you like. The photo has been deleted.");
+                }
+                else if (error == null)
+                {
+                    PhotoStage(_photoChoose, PhotoPromise);
+                }
+                else
+                {
+                    PhotoStage(_photoDone, error);
+                }
+            });
+        }
+
+        public void ClosePhotoSheet() => _photoSheet.gameObject.SetActive(false);
+
+        private const string PhotoPromise = "Your photo stays on this phone. The game looks at it once to suggest a skin tone, hair colour and face shape, "
+            + "then deletes it. Nothing of the photo is kept or sent.";
+
+        private void PhotoStage(GameObject stage, string text)
+        {
+            _photoAge.SetActive(stage == _photoAge);
+            _photoChoose.SetActive(stage == _photoChoose);
+            _photoDone.SetActive(stage == _photoDone);
+            _photoText.text = text;
+        }
+
+        private void BuildPhotoSheet()
+        {
+            _photoSheet = UiKit.Rect("PhotoSheet", _overlay);
+            _photoSheet.anchorMin = new Vector2(0.06f, 0.25f);
+            _photoSheet.anchorMax = new Vector2(0.94f, 0.7f);
+            _photoSheet.offsetMin = _photoSheet.offsetMax = Vector2.zero;
+            UiKit.Panel(_photoSheet, new Color(0.14f, 0.09f, 0.3f, 1f)).sprite = UiKit.Rounded;
+            RectTransform text = UiKit.Rect("Text", _photoSheet);
+            text.anchorMin = new Vector2(0f, 0.35f);
+            text.anchorMax = new Vector2(1f, 1f);
+            text.offsetMin = new Vector2(32f, 0f);
+            text.offsetMax = new Vector2(-32f, -28f);
+            _photoText = UiKit.Text(text, string.Empty, UiTheme.SmallText, TextAlignmentOptions.TopLeft, UiTheme.OffWhite);
+            _photoText.textWrappingMode = TextWrappingModes.Normal;
+
+            _photoAge = PhotoButtons("Age", ("Yes, 18 or older", UiTheme.Saffron, () => AnswerAge(true)), ("No", UiTheme.IndigoLight, () => AnswerAge(false)));
+            _photoChoose = PhotoButtons("Choose", ("Take a photo", UiTheme.Saffron, () => UsePhoto(true)), ("Choose a photo", UiTheme.Saffron, () => UsePhoto(false)),
+                ("Cancel", UiTheme.IndigoLight, ClosePhotoSheet));
+            _photoDone = PhotoButtons("Done", ("OK", UiTheme.Saffron, ClosePhotoSheet));
+            _photoSheet.gameObject.SetActive(false);
+        }
+
+        private GameObject PhotoButtons(string name, params (string label, Color colour, Action action)[] buttons)
+        {
+            RectTransform row = UiKit.Rect(name, _photoSheet);
+            row.anchorMin = new Vector2(0f, 0f);
+            row.anchorMax = new Vector2(1f, 0.32f);
+            row.offsetMin = new Vector2(24f, 24f);
+            row.offsetMax = new Vector2(-24f, 0f);
+            var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.spacing = 16f;
+            h.childControlWidth = true;
+            h.childForceExpandWidth = true;
+            h.childControlHeight = true;
+            h.childForceExpandHeight = true;
+            foreach ((string label, Color colour, Action action) in buttons)
+            {
+                RectTransform b = UiKit.Rect(label, row);
+                Image image = UiKit.Panel(b, colour);
+                image.sprite = UiKit.Rounded;
+                var button = b.gameObject.AddComponent<Button>();
+                button.targetGraphic = image;
+                Action act = action;
+                button.onClick.AddListener(() => act());
+                TextMeshProUGUI t = UiKit.Text(b, label, UiTheme.SmallText, TextAlignmentOptions.Center, colour == UiTheme.Saffron ? UiTheme.Indigo : UiTheme.OffWhite);
+                t.textWrappingMode = TextWrappingModes.Normal;
+            }
+
+            return row.gameObject;
         }
 
         private static void Button(RectTransform parent, string label, Vector2 anchor, Vector2 position, float width, Color background, Color text, Action action)

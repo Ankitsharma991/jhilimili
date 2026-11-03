@@ -27,7 +27,8 @@ for f in ['Logs/editmode-results.xml', 'Logs/playmode-results.xml']:
 PY
 if [ "$ok" != 1 ]; then echo "tests failed: APK not built"; exit 1; fi
 if [ "${1:-}" = "--tests-only" ]; then exit 0; fi
-timeout 3000 "$U" -batchmode -nographics -projectPath . -buildTarget Android -executeMethod UtsavNights.EditorTools.BuildScript.CiReleaseApk -logFile Logs/build_apk.log; echo "apk=$?"
+timeout 3000 "$U" -batchmode -nographics -projectPath . -buildTarget Android -executeMethod UtsavNights.EditorTools.BuildScript.CiReleaseApk -logFile Logs/build_apk.log; apk=$?; echo "apk=$apk"
 grep -a "UTSAV_BUILD" Logs/build_apk.log | tail -1 | cut -c1-160
 grep -aE "\[Ads\]|FAILURE|What went wrong" Logs/build_apk.log | head -5
+if [ "$apk" != 0 ]; then echo "APK build failed: nothing installed"; exit 1; fi
 if [ "${1:-}" != "--no-install" ]; then timeout 120 adb install -r Builds/Android/UtsavNights-release.apk 2>&1 | tail -1; fi

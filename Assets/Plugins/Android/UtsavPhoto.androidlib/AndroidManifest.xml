@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 11 step 3 (F26): the photo-assisted avatar. The camera app or the system photo picker hands over one photo;
+     no CAMERA or storage permission is declared. The photo is analysed on the phone and deleted immediately. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <activity
+        android:name="com.ankitsharma.utsavnights.photo.PhotoFaceActivity"
+        android:exported="false"
+        android:theme="@android:style/Theme.Translucent.NoTitleBar"
+        android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" />
+    <provider
+        android:name="com.ankitsharma.utsavnights.photo.PhotoFileProvider"
+        android:authorities="${applicationId}.photo"
+        android:exported="false"
+        android:grantUriPermissions="true">
+      <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/utsav_photo_paths" />
+    </provider>
+  </application>
+</manifest>
