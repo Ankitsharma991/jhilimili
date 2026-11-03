@@ -81,6 +81,11 @@ namespace UtsavNights.Core.Neighbourhood
             foreach (PlacedDecor d in design.decorations)
             {
                 DecorInfo info = HomeCatalog.Decoration(d.item);
+                if (d.Indoors)
+                {
+                    continue; // inside, never seen from the street
+                }
+
                 if (detail == ChunkDetail.Simple && !ChunkPlanner.KeptAtSimple(info))
                 {
                     continue;

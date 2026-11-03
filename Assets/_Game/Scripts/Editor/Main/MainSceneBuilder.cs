@@ -174,6 +174,7 @@ namespace UtsavNights.EditorTools.Main
             systems.AddComponent<AvatarInstaller>();
             systems.AddComponent<DecorationController>().Configure(camera, rig);
             systems.AddComponent<WalkController>().Configure(camera, rig);
+            systems.AddComponent<InteriorController>().Configure(camera, rig);
             systems.AddComponent<AnalyticsInstaller>();
             systems.AddComponent<PlaytestRecorder>();
             systems.AddComponent<DevOverlay>();
@@ -476,6 +477,17 @@ namespace UtsavNights.EditorTools.Main
             showsRect.offsetMax = Vector2.zero;
             showsGo.AddComponent<UI.ShowDesigner>();
             showsGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
+
+            // Phase 11: interiors, from "Go inside" above Countdown.
+            var interiorGo = new GameObject("InteriorMode", typeof(RectTransform));
+            interiorGo.transform.SetParent(safe.transform, false);
+            var interiorRect = (RectTransform)interiorGo.transform;
+            interiorRect.anchorMin = Vector2.zero;
+            interiorRect.anchorMax = Vector2.one;
+            interiorRect.offsetMin = Vector2.zero;
+            interiorRect.offsetMax = Vector2.zero;
+            interiorGo.AddComponent<UI.InteriorMode>();
+            interiorGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
 
             // Phase 11: the New Year countdown, left of Shows on a New Year night.
             var countdownGo = new GameObject("NewYearCountdown", typeof(RectTransform));

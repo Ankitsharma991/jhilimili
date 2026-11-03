@@ -50,6 +50,11 @@ namespace UtsavNights.Core.Home
         public float ez;
         public float sag;
 
+        /// <summary>Phase 11: the interior room it stands in (room space), or empty outdoors (house space).</summary>
+        public string room = string.Empty;
+
+        public bool Indoors => !string.IsNullOrEmpty(room);
+
         public PlacedDecor Clone() => (PlacedDecor)MemberwiseClone();
 
         public void CopyPoseFrom(PlacedDecor other)
@@ -68,7 +73,7 @@ namespace UtsavNights.Core.Home
         }
 
         public string Fingerprint() => string.Join(",", uid.ToString(CultureInfo.InvariantCulture), item, Num(variant), Num(x), Num(y), Num(z),
-            Num(yaw), Num(scale), Num((int)surface), Num(ex), Num(ey), Num(ez), Num(sag));
+            Num(yaw), Num(scale), Num((int)surface), Num(ex), Num(ey), Num(ez), Num(sag), room ?? string.Empty);
 
         private static string Num(float v) => v.ToString("R", CultureInfo.InvariantCulture);
 
@@ -128,6 +133,12 @@ namespace UtsavNights.Core.Home
 
         public PlacedDecor Find(int uid) => decorations.Find(d => d.uid == uid);
 
+        /// <summary>The decorations outside (the courtyard, the house front, the roof): what the outdoor views and rules see.</summary>
+        public List<PlacedDecor> Outdoor() => decorations.FindAll(d => d != null && !d.Indoors);
+
+        /// <summary>The decorations in one interior room (Phase 11).</summary>
+        public List<PlacedDecor> InRoom(string room) => decorations.FindAll(d => d != null && d.room == room);
+
         public int IndexOf(int uid) => decorations.FindIndex(d => d.uid == uid);
 
         /// <summary>A stable text of every edited value, for exact undo checks and change detection.</summary>
@@ -185,10 +196,12 @@ namespace UtsavNights.Core.Home
 
             var seen = new HashSet<int>();
             int maxUid = 0;
-            decorations.RemoveAll(d => d == null || HomeCatalog.Decoration(d.item) == null || !Finite(d) || d.uid <= 0 || !seen.Add(d.uid));
+            decorations.RemoveAll(d => d == null || HomeCatalog.Decoration(d.item) == null || !Finite(d) || d.uid <= 0 || !seen.Add(d.uid)
+                || (!string.IsNullOrEmpty(d.room) && Rooms.Find(d.room) == null));
             foreach (PlacedDecor d in decorations)
             {
                 DecorInfo info = HomeCatalog.Decoration(d.item);
+                d.room ??= string.Empty;
                 d.variant = ClampInt(d.variant, 0, info.Variants - 1);
                 d.scale = Math.Max(HomeCatalog.MinScale, Math.Min(info.MaxScale, d.scale));
                 d.yaw = NormaliseYaw(d.yaw);

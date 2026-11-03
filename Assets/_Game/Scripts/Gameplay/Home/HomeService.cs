@@ -101,6 +101,9 @@ namespace UtsavNights.Gameplay
 
         public HouseStore Store { get; }
 
+        /// <summary>The house's placement colliders (hidden while the player is inside, Phase 11).</summary>
+        public Transform Colliders => _colliders;
+
         public HouseEditor Editor { get; }
 
         public HouseView House { get; }
@@ -185,7 +188,7 @@ namespace UtsavNights.Gameplay
 
             if (Decor != null)
             {
-                Decor.Show(Shown.decorations);
+                Decor.Show(Shown.Outdoor()); // Phase 11: rooms show their own, inside
             }
 
             RebuildColliders();

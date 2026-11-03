@@ -404,7 +404,7 @@ namespace UtsavNights.Core.Home
         public static List<PlacementResult> Audit(PlacementContext ctx)
         {
             var failing = new List<PlacementResult>();
-            foreach (PlacedDecor d in ctx.Design.decorations)
+            foreach (PlacedDecor d in ctx.Design.Outdoor())
             {
                 PlacementResult r = Check(ctx, d);
                 if (!r.Ok)
@@ -423,7 +423,7 @@ namespace UtsavNights.Core.Home
             foreach (PlacedDecor d in design.decorations)
             {
                 DecorInfo info = HomeCatalog.Decoration(d.item);
-                if (info != null && d.uid != exceptUid && (category == null || info.Category == category))
+                if (info != null && !d.Indoors && d.uid != exceptUid && (category == null || info.Category == category))
                 {
                     units += DecorBudget.CostOf(info, PathLength(d));
                 }
@@ -548,7 +548,7 @@ namespace UtsavNights.Core.Home
             foreach (PlacedDecor other in ctx.Design.decorations)
             {
                 DecorInfo oi = HomeCatalog.Decoration(other.item);
-                if (other.uid == pose.uid || oi == null || oi.Mode == PlacementMode.Path)
+                if (other.uid == pose.uid || other.Indoors || oi == null || oi.Mode == PlacementMode.Path)
                 {
                     continue;
                 }

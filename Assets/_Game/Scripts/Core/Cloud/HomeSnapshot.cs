@@ -89,7 +89,7 @@ namespace UtsavNights.Core.Cloud
             foreach (PlacedDecor d in shown.decorations)
             {
                 DecorInfo info = HomeCatalog.Decoration(d.item);
-                if (info == null)
+                if (info == null || d.Indoors) // a visit shows the outside
                 {
                     continue;
                 }

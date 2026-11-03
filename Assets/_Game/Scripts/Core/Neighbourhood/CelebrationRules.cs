@@ -111,7 +111,7 @@ namespace UtsavNights.Core.Neighbourhood
             foreach (PlacedDecor d in design?.decorations ?? new List<PlacedDecor>())
             {
                 DecorInfo info = HomeCatalog.Decoration(d.item);
-                if (info == null || info.Mode != PlacementMode.Path)
+                if (info == null || info.Mode != PlacementMode.Path || d.Indoors)
                 {
                     continue;
                 }

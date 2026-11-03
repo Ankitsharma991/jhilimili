@@ -282,9 +282,10 @@ namespace UtsavNights.Gameplay
             int tier = Game.Services.TryGet(out QualityManager quality) ? quality.Tier : 1;
             HouseDesign shown = HomeSnapshot.ForTier(snapshot.design, tier);
             var notes = new List<string>();
-            if (shown.decorations.Count < snapshot.design.decorations.Count)
+            int outdoor = snapshot.design.Outdoor().Count;
+            if (shown.decorations.Count < outdoor)
             {
-                notes.Add($"Showing {shown.decorations.Count} of {snapshot.design.decorations.Count} decorations, as many as this phone shows smoothly.");
+                notes.Add($"Showing {shown.decorations.Count} of {outdoor} decorations, as many as this phone shows smoothly.");
             }
 
             WalkController walk = UnityEngine.Object.FindFirstObjectByType<WalkController>();

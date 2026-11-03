@@ -448,7 +448,7 @@ namespace UtsavNights.Core.Home
         public void Decor(PlacedDecor d)
         {
             Int(d.uid);
-            Str(d.item);
+            Str(string.IsNullOrEmpty(d.room) ? d.item : d.item + "@" + d.room); // Phase 11: older lines read as outdoors
             Int(d.variant);
             Float(d.x);
             Float(d.y);
@@ -528,10 +528,20 @@ namespace UtsavNights.Core.Home
 
         public float Float() => float.Parse(Next(), NumberStyles.Float, CultureInfo.InvariantCulture);
 
-        public PlacedDecor Decor() => new PlacedDecor
+        public PlacedDecor Decor()
         {
-            uid = Int(),
-            item = Str(),
+            int uid = Int();
+            string item = Str();
+            int at = item.IndexOf('@');
+            PlacedDecor d = DecorFields();
+            d.uid = uid;
+            d.item = at < 0 ? item : item.Substring(0, at);
+            d.room = at < 0 ? string.Empty : item.Substring(at + 1);
+            return d;
+        }
+
+        private PlacedDecor DecorFields() => new PlacedDecor
+        {
             variant = Int(),
             x = Float(),
             y = Float(),

@@ -930,7 +930,7 @@ namespace UtsavNights.Gameplay
             foreach (PlacedDecor d in _home.Design.decorations)
             {
                 DecorInfo info = HomeCatalog.Decoration(d.item);
-                if (info == null)
+                if (info == null || d.Indoors)
                 {
                     continue;
                 }
