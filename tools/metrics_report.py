@@ -224,6 +224,39 @@ def compute(events, crashes=None, ecpm=None):
     m["clip_share_rate"] = len(shared) / recorded if recorded else None
     m["share_targets"] = Counter(e.get("target") for e in shared if e.get("target")).most_common(3)
 
+    # R4 (Phase 10) exit gate: evidence that players share and visit homes before anything real-time is built. Counts
+    # only: no share code or account id ever reaches analytics, so visits are counted, not joined to their homes.
+    def ok(e):
+        return num(e, "ok") == 1
+
+    sharers = {e["user"] for e in events if e["event"] == "home_shared" and ok(e)}
+    visitors = {e["user"] for e in events if e["event"] == "home_visited" and ok(e)}
+    m["home_sharers"] = len(sharers)
+    m["home_sharer_share"] = len(sharers) / len(by_user) if by_user else None
+    m["homes_shared"] = sum(1 for e in events if e["event"] == "home_shared" and ok(e))
+    m["home_visitors"] = len(visitors)
+    m["home_visitor_share"] = len(visitors) / len(by_user) if by_user else None
+    m["home_visits"] = sum(1 for e in events if e["event"] == "home_visited" and ok(e))
+    m["home_visits_offline"] = sum(1 for e in events if e["event"] == "home_visited" and ok(e) and num(e, "offline") == 1)
+    m["visits_per_share"] = m["home_visits"] / m["homes_shared"] if m["homes_shared"] else None
+    m["visitors_who_never_shared"] = len(visitors - sharers)
+    failed_visits = [e for e in events if e["event"] == "home_visited" and not ok(e)]
+    m["visit_failures"] = Counter(e.get("reason") for e in failed_visits if e.get("reason")).most_common(4)
+    m["home_reports"] = sum(1 for e in events if e["event"] == "home_reported" and ok(e))
+    m["shows_shared"] = sum(1 for e in events if e["event"] == "show_shared" and ok(e))
+    m["shows_opened"] = sum(1 for e in events if e["event"] == "show_opened" and ok(e))
+    backups = [e for e in events if e["event"] == "backup_made" and ok(e)]
+    m["backup_users"] = len({e["user"] for e in backups})
+    m["backups_cloud"] = sum(1 for e in backups if e.get("where") == "cloud")
+    m["backups_file"] = sum(1 for e in backups if e.get("where") == "file")
+    m["restores"] = sum(1 for e in events if e["event"] == "backup_restored" and ok(e))
+    m["signed_in_users"] = len({e["user"] for e in events if e["event"] == "account_changed" and num(e, "signed_in") == 1})
+    for group, users in (("sharers", sharers), ("nonsharers", set(by_user) - sharers)):
+        for n in (1, 7):
+            cohort = [u for u in users if last_day and first_day[u] + timedelta(days=n) <= last_day]
+            back = sum(1 for u in cohort if first_day[u] + timedelta(days=n) in active[u])
+            m[f"d{n}_retention_{group}"] = back / len(cohort) if cohort else None
+
     # PRD 15.3: sessions per user x impressions per session x eCPM / 1000.
     if ecpm is not None and m["sessions_per_user"] is not None and m["ads_per_session"] is not None:
         m["ad_revenue_per_user_usd"] = m["sessions_per_user"] * m["ads_per_session"] * ecpm / 1000
@@ -341,6 +374,18 @@ def report(m, since, days, installs=None):
     lines.append(f"| Clips shared | {m['clips_shared']} ({fmt(m['clip_share_rate'], 'pct')} of clips) |")
     if m["share_targets"]:
         lines.append(f"| Shared to | {', '.join(f'{k} ({n})' for k, n in m['share_targets'])} |")
+    lines += ["", "## Sharing and backup (R4, Phase 10 exit gate)", "", "| Metric | Value |", "|---|---|"]
+    lines.append(f"| Users who shared a home | {m['home_sharers']} ({fmt(m['home_sharer_share'], 'pct')} of users), {m['homes_shared']} codes |")
+    lines.append(f"| Users who visited a home | {m['home_visitors']} ({fmt(m['home_visitor_share'], 'pct')} of users), {m['visitors_who_never_shared']} of them never shared |")
+    lines.append(f"| Visits / per shared home / offline | {m['home_visits']} / {fmt(m['visits_per_share'], 'n')} / {m['home_visits_offline']} |")
+    if m["visit_failures"]:
+        lines.append(f"| Visits that didn't open | {', '.join(f'{k} ({n})' for k, n in m['visit_failures'])} |")
+    lines.append(f"| D1 / D7 return, sharers vs others | {fmt(m['d1_retention_sharers'], 'pct')} vs {fmt(m['d1_retention_nonsharers'], 'pct')} / "
+                 f"{fmt(m['d7_retention_sharers'], 'pct')} vs {fmt(m['d7_retention_nonsharers'], 'pct')} |")
+    lines.append(f"| Reports | {m['home_reports']} |")
+    lines.append(f"| Shows shared / opened | {m['shows_shared']} / {m['shows_opened']} |")
+    lines.append(f"| Signed in / made a backup | {m['signed_in_users']} / {m['backup_users']} users ({m['backups_cloud']} cloud, {m['backups_file']} file); {m['restores']} restores |")
+    lines.append("| Real-time? | Only if many players both share and visit, and visits per shared home stay well above one (PRD 19) |")
     lines += ["", "Small tests (20 to 50 users) can judge feel, time to ignition, completion and crashes. "
               "Retention, conversion and ad revenue need hundreds to thousands of users (PRD 17)."]
     return "\n".join(lines)
@@ -411,6 +456,16 @@ def self_test():
     add("u1", t0 + timedelta(minutes=8, seconds=30), "clip_recorded", seconds=12, source="free", frames=350)
     add("u1", t0 + timedelta(minutes=8, seconds=40), "clip_shared", target="whatsapp", seconds=12, source="free", fell_back=0)
 
+    # u1 shares a home that u2 visits twice (once offline) and u3 once; u3 also fails a hidden code; u1 backs up.
+    add("u1", t0 + timedelta(minutes=9), "account_changed", signed_in=1)
+    add("u1", t0 + timedelta(minutes=9, seconds=10), "home_shared", ok=1, reason="none")
+    add("u2", t0 + timedelta(minutes=9, seconds=20), "home_visited", ok=1, reason="none", offline=0)
+    add("u2", t0 + timedelta(days=1, minutes=9), "home_visited", ok=1, reason="none", offline=1)
+    add("u3", t0 + timedelta(minutes=9, seconds=30), "home_visited", ok=1, reason="none", offline=0)
+    add("u3", t0 + timedelta(minutes=9, seconds=40), "home_visited", ok=0, reason="hidden", offline=0)
+    add("u1", t0 + timedelta(minutes=9, seconds=50), "backup_made", where="cloud", ok=1, reason="none")
+    add("u1", t0 + timedelta(minutes=9, seconds=55), "show_shared", ok=1, reason="none", cues=6)
+
     events = load_events(rows, t0.date(), 8)
     m = compute(events, crashes=1, ecpm=2.0)
     checks = {
@@ -451,6 +506,13 @@ def self_test():
         "show_replays": (m["show_replays"], 1),
         "clip_share_rate": (m["clip_share_rate"], 0.5),
         "top_share_target": (m["share_targets"][0][0] if m["share_targets"] else None, "whatsapp"),
+        "home_sharers": (m["home_sharers"], 1),
+        "home_visitors": (m["home_visitors"], 2),
+        "visits_per_share": (m["visits_per_share"], 3.0),
+        "home_visits_offline": (m["home_visits_offline"], 1),
+        "visitors_who_never_shared": (m["visitors_who_never_shared"], 2),
+        "top_visit_failure": (m["visit_failures"][0][0] if m["visit_failures"] else None, "hidden"),
+        "backups_cloud": (m["backups_cloud"], 1),
         # 7 sessions / 4 users x 2 ads / 7 sessions x $2 / 1000.
         "ad_revenue_per_user_usd": (round(m["ad_revenue_per_user_usd"], 6), round(7 / 4 * 2 / 7 * 2 / 1000, 6)),
     }

@@ -15,17 +15,21 @@ namespace UtsavNights.Gameplay
         public bool SignedIn { get; }
     }
 
-    /// <summary>A cloud backup was made or restored (analytics in step 7: counts only).</summary>
+    /// <summary>A backup was made or restored, in the cloud or as a file (analytics: outcomes only).</summary>
     public readonly struct CloudBackupEvent
     {
-        public CloudBackupEvent(bool restored, bool ok, string reason)
+        public CloudBackupEvent(bool restored, bool ok, string reason, bool file = false)
         {
             Restored = restored;
             Ok = ok;
             Reason = reason;
+            File = file;
         }
 
         public bool Restored { get; }
+
+        /// <summary>A backup file rather than the cloud.</summary>
+        public bool File { get; }
 
         public bool Ok { get; }
 

@@ -71,6 +71,10 @@ namespace UtsavNights.Gameplay
             Game.Events.Subscribe<ShowPlayedEvent>(OnShowPlayed);
             Game.Events.Subscribe<ClipRecordedEvent>(OnClipRecorded);
             Game.Events.Subscribe<ClipSharedEvent>(OnClipShared);
+            Game.Events.Subscribe<CloudAccountEvent>(OnAccount);
+            Game.Events.Subscribe<CloudBackupEvent>(OnBackup);
+            Game.Events.Subscribe<HomeVisitEvent>(OnHomeVisit);
+            Game.Events.Subscribe<ShowShareEvent>(OnShowShare);
         }
 
         private bool _reportedRestore;
@@ -120,6 +124,10 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<ShowPlayedEvent>(OnShowPlayed);
             Game.Events.Unsubscribe<ClipRecordedEvent>(OnClipRecorded);
             Game.Events.Unsubscribe<ClipSharedEvent>(OnClipShared);
+            Game.Events.Unsubscribe<CloudAccountEvent>(OnAccount);
+            Game.Events.Unsubscribe<CloudBackupEvent>(OnBackup);
+            Game.Events.Unsubscribe<HomeVisitEvent>(OnHomeVisit);
+            Game.Events.Unsubscribe<ShowShareEvent>(OnShowShare);
         }
 
         /// <summary>app_first_open once per install (PRD 17: install quality).</summary>
@@ -329,6 +337,36 @@ namespace UtsavNights.Gameplay
 
         private void OnClipShared(ClipSharedEvent e) => Send("clip_shared", new EventParams().Add("target", e.Target.ToString().ToLowerInvariant())
             .Add("seconds", (long)e.Seconds).Add("source", e.Source).Add("fell_back", e.FellBack));
+
+        private void OnAccount(CloudAccountEvent e) => Send("account_changed", new EventParams().Add("signed_in", e.SignedIn));
+
+        private void OnBackup(CloudBackupEvent e) => Send(e.Restored ? "backup_restored" : "backup_made",
+            new EventParams().Add("where", e.File ? "file" : "cloud").Add("ok", e.Ok).Add("reason", ReasonId(e.Reason)));
+
+        private void OnHomeVisit(HomeVisitEvent e)
+        {
+            switch (e.Action)
+            {
+                case "shared":
+                    Send("home_shared", new EventParams().Add("ok", e.Ok).Add("reason", ReasonId(e.Reason)));
+                    break;
+                case "visited":
+                    Send("home_visited", new EventParams().Add("ok", e.Ok).Add("reason", ReasonId(e.Reason)).Add("offline", e.Offline));
+                    break;
+                case "reported":
+                    Send("home_reported", new EventParams().Add("ok", e.Ok).Add("reason", ReasonId(e.Reason)));
+                    break;
+                case "withdrawn":
+                    Send("home_withdrawn", new EventParams().Add("ok", e.Ok));
+                    break;
+            }
+        }
+
+        private void OnShowShare(ShowShareEvent e) => Send(e.Action == "shared" ? "show_shared" : "show_opened",
+            new EventParams().Add("ok", e.Ok).Add("reason", ReasonId(e.Reason)).Add("cues", (long)e.Cues));
+
+        /// <summary>A reason id as sent: "none" when empty (the schema allows only short ids).</summary>
+        private static string ReasonId(string reason) => string.IsNullOrEmpty(reason) ? "none" : reason;
 
         private void OnLayout(HouseLayoutEvent e) => Send(e.Saved ? "layout_saved" : "layout_loaded", new EventParams().Add("slot", (long)e.Slot));
 

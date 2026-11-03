@@ -1,0 +1,37 @@
+{
+    "name": "UtsavNights.FirebaseCloud",
+    "rootNamespace": "UtsavNights.FirebaseCloud",
+    "references": [
+        "UtsavNights.Core",
+        "UtsavNights.Gameplay"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UTSAV_FIREBASE_AUTH",
+        "UTSAV_FIREBASE_FIRESTORE",
+        "UTSAV_FIREBASE_STORAGE"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.google.firebase.auth",
+            "expression": "14.0.0",
+            "define": "UTSAV_FIREBASE_AUTH"
+        },
+        {
+            "name": "com.google.firebase.firestore",
+            "expression": "14.0.0",
+            "define": "UTSAV_FIREBASE_FIRESTORE"
+        },
+        {
+            "name": "com.google.firebase.storage",
+            "expression": "14.0.0",
+            "define": "UTSAV_FIREBASE_STORAGE"
+        }
+    ],
+    "noEngineReferences": false
+}

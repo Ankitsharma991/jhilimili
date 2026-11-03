@@ -69,6 +69,12 @@ the owner's decision; feedback and changes come after all PRD features are built
 
 | 4. Home visits | Done. `Core/Cloud/HomeSnapshot` (the house design, its neighbourhood, and the avatar's look only when the player turns on "Show my avatar"; never the avatar's name or the layouts' names; repaired like a save file; newer versions refused; `ForTier` shows the owner's decorations in their order while they fit the visitor's decoration budget), `VisitHistory` (the newest ten visits kept with their snapshot, for offline). `Gameplay/Cloud/HomeVisits` (share my home: Google sign-in needed, the account document made first; visit by code: no account needed, a silent anonymous one; the friend's house shown in place of the player's own, view only, in their neighbourhood when this phone has it, their avatar when they chose it, crackers cleared and walks ended; offline or server trouble falls back to the copy on the phone; hidden, taken down, expired or missing codes are forgotten; report; take down; my homes), `TextShare` (the share sheet with a line of text, also copied). `HomeService` shows a visited design without touching the player's own and refuses edits while visiting; decoration mode won't open; `CourtyardAvatar` shows the friend's look or nobody. `UI/HomeVisitScreen` (the Visit button above Shows; Visit a home: a code and recent visits with Visit again; Share my home: Show my avatar, Share, the new code with Send, your codes with their visits, Send and Take down; during a visit a see-through cover with a bar: whose code, notes such as fewer decorations on this phone, Report with four reasons, Leave). Tests: `HomeSnapshotTests` (Mono), `HomeVisitSmokeTests` (Play Mode: a friend's riverside home with their avatar, view only, the player's house untouched, back home after; offline copy; hidden after three reports and forgotten; taken down; the screen: sign-in needed to share, a bad code, share, send, visit with the bar, report, leave, take down) |
 
+| 5. Shared shows | Done. `Gameplay/Cloud/SharedShows` (share a show that plays on this phone, Google sign-in needed; it travels as pads and cues only, its name stays on the sharer's phone; open by code with no account; the friend's phone loads it as a new show named after its code ("From BCDF-2345") and checks it against its own spot and limits; a home code is told apart; offline falls back to the copy kept on the phone, the newest ten; closed codes forgotten; `ShowShareEvent`). `UI/ShowDesigner`'s Shows list: a friend's code with Open, Share beside each saved show (the share sheet with an invitation, and copied), shows received listed to open again; a line for sharing and opening news. A friend's show that can't play here says why in the designer (for example more crackers at once than this phone allows). Tests: `SharedShowSmokeTests` (Play Mode: sign-in needed to share, the name never travels, a friend opens, plays and the copy is kept, offline, a home code refused; a show too big for a low-tier phone explains itself; the designer shares a saved show, opens it, saves it as the player's own, lists it as received) |
+
+| 6. Firebase and Google sign-in | Built; going live waits for the owner's Firebase setup (`FIREBASE_SETUP.md`). `Sdk/FirebaseCloud`: `FirebaseCloud` (every `ICloud` call on Firebase Auth, Firestore and Storage, each write shaped as the rules allow: the account document with its key first, the day's count raised in the same batch as a share and its content, a taken code retried, visits and reports as one-step increments, a report and its count in one batch, a take-down that deletes the content; errors mapped to `CloudError`, nothing thrown to the game; Delete my data removes backups, shares, the account document and, where Firebase allows, the account), `FirebaseCloudRegistration` (devices only), `GoogleSignInBridge`; `UtsavNights.FirebaseCloud.asmdef` compiles only when the Auth, Firestore and Storage packages (14.0.0 or newer) are installed. `UtsavSignIn.androidlib` (`GoogleSignIn.java`: Credential Manager with the project's web client from google-services.json, an ID token only, cancel and "no Google account" told apart; sign-out clears the chosen account). The compile check builds `UtsavNights.FirebaseCloud` against the real SDK when `FIREBASE_SDK` points at the unpacked packages (Auth, Firestore, Storage, Analytics, Crashlytics 14.1.0); passes with warnings as errors. The release APK carries the sign-in library (Gradle resolved Credential Manager 1.3.0 and googleid 1.1.1). `Docs/Phase10/FIREBASE_SETUP.md` (the owner's steps: Google and Anonymous sign-in, SHA-1 fingerprints, a fresh google-services.json, Firestore and Storage, deploying the rules, the TTL policy, App Check, a budget alert; the moderation review; costs) |
+
+| 7. Measure and privacy review | Done. Analytics: `account_changed` (signed in or out), `backup_made` and `backup_restored` (cloud or file, worked or not, a reason id such as password or offline), `home_shared`, `home_visited` (with offline), `home_reported`, `home_withdrawn`, `show_shared` and `show_opened` (with the number of crackers). Never a share code, an account id, a name or anything inside a backup, home or show (schema test; the smoke test searches the log for the real code and account id). The metrics report gains the exit gate section: users who shared and who visited (and how many visitors never shared), visits per shared home, offline visits, why visits failed, D1 and D7 return of sharers against everyone else, reports, shows shared and opened, sign-ins, backups and restores, and the PRD's rule for real-time; the BigQuery query has the new columns. `PRIVACY_REVIEW.md` (what leaves the phone, where, who can read it, for how long and how it's deleted; 13 checks; the risks kept open; the before-launch list). The privacy policy covers the optional sign-in (what Firebase keeps), backups, sharing by code (anyone with the code can see it), reports, retention and Delete my cloud data; `COMPLIANCE.md` has the Data safety rows, the account-deletion paths Play requires and the content rating answer for shared content. Tests: `AnalyticsSchemaTests`, `AnalyticsSmokeTests`, metrics report self-test |
+
 ### Step 1 notes
 
 - **Restoring replaces, part by part.** A part the backup has replaces this phone's file; a part it doesn't have
@@ -112,3 +118,42 @@ the owner's decision; feedback and changes come after all PRD features are built
   - Should a visitor be able to light a cracker in a friend's courtyard (on their own phone only)?
   - Should a visit let the visitor walk round the friend's neighbourhood?
   - A "copy this decoration idea" button?
+
+### Step 5 notes
+
+- **A shared show is a copy.** Edits the sharer makes later don't reach friends; they share again for a new code.
+- **Review list:** should the designer offer to fit a friend's show to this phone (fewer crackers at once, by
+  spreading the cues), instead of only explaining why it won't play?
+
+### Step 6 notes
+
+- **Not run against Firebase yet.** Without the project and its packages, the real calls can't run. The memory cloud
+  covers the game's side, `tools/rules-test` covers the rules (once Java 21 is installed), and the compile check
+  covers the API. The device run in `FIREBASE_SETUP.md` closes the gap.
+- **Google sign-in needs the app's SHA-1** (upload key and Play app signing key) in the Firebase project, or the
+  account picker returns an error. A sideloaded release APK is signed with the upload key; a Play install with
+  Play's key.
+
+## Phase 10 result
+
+Backup, home visits and shared shows (F23, F24, and the PRD's asynchronous shared show) are built.
+- **Backup:**
+  - a password-protected backup file that needs no account;
+  - an optional Google sign-in for cloud backups sealed with the account's key, the newest three kept;
+  - restore checks everything first and can be undone; the purchase never travels;
+  - restore on a new phone is tested with two phones on one server.
+- **Home visits:** share a code, visit view only in the friend's neighbourhood, the newest ten kept for offline, report,
+  take down; shared homes carry no text.
+- **Shared shows:** by code; a friend plays it at their own spot, checked for their phone, and keeps a copy.
+- **Moderation:** three reports hide a code until reviewed; one report per account; codes expire after a year unvisited;
+  ten shares a day.
+- **Firebase:** the backend, rules, indexes, Google sign-in through Credential Manager, and the owner's setup guide.
+- **Privacy review** done (`PRIVACY_REVIEW.md`).
+- **Exit gate data:** the sharing section of the metrics report.
+- **Open items** (with the feedback round after all PRD features):
+  - the owner's Firebase setup and `google-services.json`; then the packages and a device run of every online flow
+    (`FIREBASE_SETUP.md`);
+  - Java 21 for the rules' emulator tests;
+  - App Check, the TTL policy and anonymous-account cleanup before launch;
+  - the second read of the privacy review;
+  - the review lists in the step notes above.

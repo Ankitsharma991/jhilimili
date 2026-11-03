@@ -188,6 +188,84 @@ namespace UtsavNights.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator BackupAndSharingEvents_ReachAnalytics_WithoutCodes()
+        {
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            Assert.IsTrue(Game.Services.TryGet(out AnalyticsService analytics));
+            Assert.IsTrue(Game.Services.TryGet(out SettingsService settings));
+            Assert.IsTrue(Game.Services.TryGet(out ConsentService consent));
+            var log = (DevAnalyticsBackend)analytics.Backend;
+            var dev = (DevConsentBackend)consent.Backend;
+            bool wasEea = dev.InEea;
+            bool wasSharing = settings.Current.shareUsageStats;
+            try
+            {
+                dev.InEea = false;
+                dev.Reset();
+                consent.Gather();
+                settings.Change(s => s.shareUsageStats = true);
+                int rejected = analytics.Rejected;
+
+                Game.Events.Publish(new CloudAccountEvent(true));
+                Assert.AreEqual("account_changed", log.LastEvent);
+                Game.Events.Publish(new CloudBackupEvent(false, true, string.Empty));
+                Assert.AreEqual("backup_made", log.LastEvent);
+                StringAssert.Contains("\"where\":\"cloud\"", Last());
+                Game.Events.Publish(new CloudBackupEvent(true, false, "password", file: true));
+                Assert.AreEqual("backup_restored", log.LastEvent);
+                StringAssert.Contains("\"where\":\"file\"", Last());
+                Game.Events.Publish(new HomeVisitEvent("shared", true, string.Empty));
+                Assert.AreEqual("home_shared", log.LastEvent);
+                Game.Events.Publish(new HomeVisitEvent("visited", true, string.Empty, offline: true));
+                Assert.AreEqual("home_visited", log.LastEvent);
+                StringAssert.Contains("\"offline\":1", Last());
+                Game.Events.Publish(new HomeVisitEvent("reported", true, "spam"));
+                Assert.AreEqual("home_reported", log.LastEvent);
+                Game.Events.Publish(new HomeVisitEvent("withdrawn", true, string.Empty));
+                Assert.AreEqual("home_withdrawn", log.LastEvent);
+                Game.Events.Publish(new ShowShareEvent("shared", true, string.Empty, 6));
+                Assert.AreEqual("show_shared", log.LastEvent);
+                Game.Events.Publish(new ShowShareEvent("opened", false, "hidden"));
+                Assert.AreEqual("show_opened", log.LastEvent);
+                Assert.AreEqual(rejected, analytics.Rejected, "every event passed the schema");
+
+                // A real share through the memory cloud: the code never reaches analytics.
+                Assert.IsTrue(Game.Services.TryGet(out CloudService cloud));
+                Assert.IsTrue(Game.Services.TryGet(out HomeVisits visits));
+                var signIn = cloud.SignIn();
+                while (!signIn.IsCompleted)
+                {
+                    yield return null;
+                }
+
+                var shared = visits.ShareMyHome(false);
+                while (!shared.IsCompleted)
+                {
+                    yield return null;
+                }
+
+                Assert.IsNotNull(shared.Result.code, shared.Result.error);
+                string all = System.IO.File.ReadAllText(DevAnalyticsBackend.FilePath);
+                StringAssert.DoesNotContain(shared.Result.code.ToLowerInvariant(), all.ToLowerInvariant(), "no share codes in analytics");
+                StringAssert.DoesNotContain(cloud.Cloud.Uid, all, "no account ids in analytics");
+                var withdrawn = visits.Withdraw(shared.Result.code);
+                while (!withdrawn.IsCompleted)
+                {
+                    yield return null;
+                }
+            }
+            finally
+            {
+                dev.InEea = wasEea;
+                settings.Change(s => s.shareUsageStats = wasSharing);
+            }
+
+            static string Last() => System.IO.File.ReadAllLines(DevAnalyticsBackend.FilePath)[^1];
+        }
+
+        [UnityTest]
         public IEnumerator AvatarEvents_ReachAnalytics_WithoutTheName()
         {
             new ProfileStore().Delete();

@@ -47,10 +47,12 @@ The APK declares `com.google.android.gms.permission.AD_ID` (added by the Google 
 - **Violence:** No. Fireworks are celebratory, with no people or creatures harmed and no weapons.
 - **Fear, sexuality, language, controlled substances, crude humour:** No.
 - **Gambling:** No. No real-money or simulated gambling, and no loot boxes.
-- **Users can interact or exchange content:** No in-app interaction. Since Phase 9 the player can record a
-  clip of the game's own screen and send it to another app (WhatsApp, Instagram or the share sheet). Nothing
-  is posted or received inside the game. If the questionnaire asks about sharing content outside the app,
-  answer Yes for that. [Verify]
+- **Users can interact or exchange content:** Yes, since Phase 10, in a limited way:
+  - a player can share their home's look or a fireworks show as a code, and anyone with the code can view it
+    (no chat, no messages, no free text, no photos);
+  - Phase 9 clips of the game's own screen can be sent to other apps.
+  Answer the questions about user-generated content: shared content is view only, and it is reportable (three
+  reports hide a code until reviewed). [Verify]
 - **Shares location:** No.
 - **Digital purchases:** Yes (Remove ads and unlock all).
 - **Ads:** Yes.
@@ -66,7 +68,8 @@ Expected result: PEGI 3 / ESRB Everyone, with "In-app purchases" shown. [Verify]
 | Does your app collect or share any of the required user data types? | **Yes** | AdMob, and Firebase once connected |
 | Is all user data encrypted in transit? | **Yes** | The Google SDKs use HTTPS |
 | Do you provide a way for users to request that their data is deleted? | **Yes** | By email (privacy policy, "Deleting your data"); local data goes with "Clear data" or uninstall |
-| Account creation | **No accounts** | |
+| Account creation | **Optional:** Google sign-in for cloud backup and sharing (Phase 10) | Firebase Authentication |
+| Account deletion | **In the app:** Settings → Backup and restore → Delete my cloud data. **On the web:** the privacy policy's "Deleting your data" (email) | Play requires both an in-app path and a web link for apps with accounts |
 
 ### Data types
 
@@ -84,7 +87,11 @@ is sent with them. [Verify both against the current Play help.]
 | Crash logs | Yes | No | Yes (Settings switch) | App functionality; Analytics | Crashlytics |
 | Diagnostics (performance samples) | Yes | No | Yes (Settings switch) | Analytics | Firebase |
 | Purchase history | Yes | No | Yes (only if bought) | App functionality | Google Play Billing |
-| Personal info, financial info, messages, photos, audio, contacts, calendar, files, web browsing, health, precise location | No | | | | |
+| Email address, name (Google account) | Yes | No | Yes (only if signed in) | Account management | Firebase Authentication (Phase 10) |
+| User IDs (Firebase account ID) | Yes | No | Yes (only if signed in or visiting) | Account management; App functionality | Firebase Authentication |
+| Other user-generated content (shared homes and shows; reports) | Yes | No | Yes (only when shared) | App functionality | Firestore (Phase 10) |
+| Files and docs (cloud backups, encrypted on the phone) | Yes | No | Yes (only if backed up) | App functionality | Cloud Storage (Phase 10) |
+| Financial info, messages, photos, audio, contacts, calendar, web browsing, health, precise location | No | | | | |
 
 **Shared versus collected:** per Google's guidance, data sent to a service provider that processes it
 for you (Firebase) counts as collected, not shared. AdMob uses data for its own advertising, so mark
@@ -122,3 +129,5 @@ declare them, so the form stays correct.
 - [ ] AdMob live IDs in `AdsConfig.asset`, test devices registered (SDK_SETUP.md), GDPR message published
 - [ ] `remove_ads` product active in Play Console, licence tester added
 - [ ] Ads, Advertising ID, Target audience, Content rating and Data safety sections completed
+- [ ] Phase 10 online features: Data safety rows for sign-in, backups and shared content; the delete-account web link
+      (the privacy policy's "Deleting your data") entered in Data safety; content rating answers for shared content

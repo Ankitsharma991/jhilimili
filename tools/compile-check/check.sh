@@ -106,6 +106,11 @@ if [ -n "${FIREBASE_SDK:-}" ]; then
   step "UtsavNights.Firebase against the Firebase SDK in $FIREBASE_SDK"
   FB=$(find "$FIREBASE_SDK" -path "*Firebase/Plugins/*.dll" -not -path "*/iOS/*" -not -path "*/x86_64/*" -not -path "*Editor*" | sed 's/^/-r:/')
   "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.Firebase.dll @engine.rsp -r:"$D/NetStandard/compat/2.1.0/shims/netfx/mscorlib.dll" $FB -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Gameplay.dll -define:"$RUNTIME;UTSAV_FIREBASE" "$A"/Scripts/Sdk/Firebase/*.cs
+  # Phase 10: the cloud backend, when the folder also has com.google.firebase.{auth,firestore,storage}.
+  if ls "$FIREBASE_SDK"/*firestore* >/dev/null 2>&1; then
+    step "UtsavNights.FirebaseCloud against the Firebase SDK (player defines, Android)"
+    "${CSC[@]}" -warnaserror+ -target:library -out:UtsavNights.FirebaseCloud.dll @engine.rsp -r:"$D/NetStandard/compat/2.1.0/shims/netfx/mscorlib.dll" -r:"$D/NetStandard/compat/2.1.0/shims/netfx/System.dll" $FB -r:UtsavNights.Core.dll -r:UtsavNights.Core.Runtime.dll -r:UtsavNights.Content.dll -r:UtsavNights.Gameplay.dll -define:"$RUNTIME;UTSAV_FIREBASE_AUTH;UTSAV_FIREBASE_FIRESTORE;UTSAV_FIREBASE_STORAGE" "$A"/Scripts/Sdk/FirebaseCloud/*.cs
+  fi
 fi
 step "Tool self-tests"
 python3 "$HERE/../metrics_report.py" --self-test

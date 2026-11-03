@@ -24,7 +24,11 @@ namespace UtsavNights.Tests
                 "spot_chosen", "environment_chosen",
             };
             string[] r3 = { "pack_installed", "pack_failed", "pack_deleted", "show_saved", "show_played", "clip_recorded", "clip_failed" };
-            CollectionAssert.AreEquivalent(prd.Concat(r1).Concat(r3), AnalyticsSchema.EventNames.ToArray());
+            string[] r4 =
+            {
+                "account_changed", "backup_made", "backup_restored", "home_shared", "home_visited", "home_reported", "home_withdrawn", "show_shared", "show_opened",
+            };
+            CollectionAssert.AreEquivalent(prd.Concat(r1).Concat(r3).Concat(r4), AnalyticsSchema.EventNames.ToArray());
         }
 
         [Test]
@@ -104,6 +108,27 @@ namespace UtsavNights.Tests
             foreach (string type in new[] { Core.Packs.PackTypes.Environment, Core.Packs.PackTypes.Wardrobe, Core.Packs.PackTypes.Shows })
             {
                 Assert.IsTrue(AnalyticsSchema.IsSafeId(type), type);
+            }
+        }
+
+        [Test]
+        public void BackupAndSharingEvents_CarryOutcomesOnly()
+        {
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("backup_made", new EventParams().Add("where", "cloud").Add("ok", true).Add("reason", "none")));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("backup_restored", new EventParams().Add("where", "file").Add("ok", false).Add("reason", "password")));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("home_visited", new EventParams().Add("ok", true).Add("reason", "none").Add("offline", true)));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("show_opened", new EventParams().Add("ok", false).Add("reason", "notconfigured").Add("cues", 0L)));
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("home_shared", new EventParams().Add("code", "bcdf2345")), "never a share code");
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("account_changed", new EventParams().Add("uid", "user0001")), "never an account id");
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("home_reported", new EventParams().Add("ok", true).Add("reason", "Their rangoli is rude")), "never free text");
+            foreach (Core.Cloud.CloudError e in System.Enum.GetValues(typeof(Core.Cloud.CloudError)))
+            {
+                Assert.IsTrue(AnalyticsSchema.IsSafeId(e.ToString().ToLowerInvariant()), e.ToString());
+            }
+
+            foreach (Core.Cloud.ReportReason r in System.Enum.GetValues(typeof(Core.Cloud.ReportReason)))
+            {
+                Assert.IsTrue(AnalyticsSchema.IsSafeId(Core.Cloud.CloudRules.ReasonId(r)), r.ToString());
             }
         }
 

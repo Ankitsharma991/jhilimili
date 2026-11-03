@@ -225,6 +225,11 @@ namespace UtsavNights.UI
                 var saved = new TaskCompletionSource<string>();
                 BackupFiles.Save(data, BackupRules.FileName(DateTime.Now), r => saved.TrySetResult(r));
                 string error = await saved.Task;
+                if (error != null)
+                {
+                    Game.Events.Publish(new CloudBackupEvent(false, error.Length == 0, error.Length == 0 ? string.Empty : "write", file: true));
+                }
+
                 SetStatus(error == null ? "Not saved." : error.Length == 0 ? "Backup saved. Keep the password: without it the file can't be opened." : error);
             });
         }
@@ -269,6 +274,7 @@ namespace UtsavNights.UI
                 });
                 if (opened != BackupError.None)
                 {
+                    Game.Events.Publish(new CloudBackupEvent(true, false, opened == BackupError.WrongKeyOrDamaged ? "password" : opened.ToString().ToLowerInvariant(), file: true));
                     SetStatus(BackupRules.Explain(opened));
                     return;
                 }
@@ -279,7 +285,12 @@ namespace UtsavNights.UI
                     return;
                 }
 
-                AskToRestore(summary, () => Finish(Service.Apply(archive, out string e) ? string.Empty : e));
+                AskToRestore(summary, () =>
+                {
+                    bool ok = Service.Apply(archive, out string e);
+                    Game.Events.Publish(new CloudBackupEvent(true, ok, ok ? string.Empty : "write", file: true));
+                    Finish(ok ? string.Empty : e);
+                });
             });
         }
 

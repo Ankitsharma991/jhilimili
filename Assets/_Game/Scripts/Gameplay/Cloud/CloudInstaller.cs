@@ -37,6 +37,7 @@ namespace UtsavNights.Gameplay
             var service = new CloudService(_shared, new BackupService());
             Game.Services.Register(service);
             Game.Services.Register(new HomeVisits(service));
+            Game.Services.Register(new SharedShows(service));
             Debug.Log($"[Cloud] backend={_shared.Name}");
         }
 
@@ -50,6 +51,7 @@ namespace UtsavNights.Gameplay
                 }
 
                 Game.Services.Unregister<HomeVisits>();
+                Game.Services.Unregister<SharedShows>();
                 Game.Services.Unregister<CloudService>();
             }
         }

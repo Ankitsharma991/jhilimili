@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UtsavNights.Content;
+using UtsavNights.Core.Cloud;
 using UtsavNights.Core.Neighbourhood;
 using UtsavNights.Core.Runtime;
 using UtsavNights.Core.Shows;
@@ -38,6 +39,9 @@ namespace UtsavNights.UI
         private TextMeshProUGUI _cueLabel;
         private TextMeshProUGUI _playLabel;
         private TMP_InputField _name;
+        private TMP_InputField _friendCode;
+        private TextMeshProUGUI _listStatus;
+        private int _busy;
         private ShowPlayer _player;
         private TrayView _tray;
         private float _nextRefresh;
@@ -61,6 +65,15 @@ namespace UtsavNights.UI
         public List<string> Palette { get; } = new List<string>();
 
         public RectTransform Launcher => _launcher;
+
+        /// <summary>Phase 10: a share or an open by code is under way.</summary>
+        public bool Busy => _busy > 0;
+
+        /// <summary>The line under the shows list (sharing and opening codes).</summary>
+        public string ListStatus => _listStatus != null ? _listStatus.text : string.Empty;
+
+        /// <summary>The code made by the last Share.</summary>
+        public string LastSharedCode { get; private set; }
 
         public RectTransform PadView(int pad) => pad >= 0 && pad < _padViews.Count ? _padViews[pad] : null;
 
@@ -361,6 +374,8 @@ namespace UtsavNights.UI
                 Destroy(child.gameObject);
             }
 
+            SetListStatus(string.Empty);
+            BuildFriendCodeRow();
             ListRow("New show", UiTheme.Saffron, UiTheme.Indigo, () =>
             {
                 New();
@@ -377,11 +392,116 @@ namespace UtsavNights.UI
                 {
                     _player.Delete(captured.id);
                     OpenList();
-                } : (Action)null);
+                } : (Action)null, saved ? () => ShareShow(captured) : (Action)null);
+            }
+
+            // Phase 10: shows friends sent, kept for offline.
+            if (Game.Services.TryGet(out SharedShows shared))
+            {
+                foreach (VisitRecord r in shared.Received.visits)
+                {
+                    string code = r.code;
+                    ListRow($"From {ShareCodes.Display(code)} (received)", UiTheme.Indigo, UiTheme.OffWhite, () => OpenFriendShow(code), null);
+                }
             }
 
             _list.gameObject.SetActive(true);
             _list.SetAsLastSibling();
+        }
+
+        /// <summary>Same as tapping Share beside a saved show: a code for it, sent through the share sheet (and copied).</summary>
+        public void ShareShow(ShowDef show)
+        {
+            if (Busy || !Game.Services.TryGet(out SharedShows shared))
+            {
+                return;
+            }
+
+            SetListStatus("Sharing…");
+            _ = Run(async () =>
+            {
+                (string code, string error) = await shared.Share(show);
+                if (code == null)
+                {
+                    SetListStatus(error);
+                    return;
+                }
+
+                LastSharedCode = code;
+                TextShare.Share($"Watch my fireworks show in Utsav Nights! Open Shows and type {ShareCodes.Display(code)}");
+                SetListStatus($"Code {ShareCodes.Display(code)} is copied. Choose where to send it.");
+            });
+        }
+
+        /// <summary>Same as typing a friend's code and tapping Open: the show opens as a new draft, checked for this phone.</summary>
+        public void OpenFriendShow(string typed)
+        {
+            if (Busy || !Game.Services.TryGet(out SharedShows shared))
+            {
+                return;
+            }
+
+            SetListStatus("Opening…");
+            _ = Run(async () =>
+            {
+                (ShowDef show, string error) = await shared.Open(typed);
+                if (show == null)
+                {
+                    SetListStatus(error);
+                    return;
+                }
+
+                Load(show, asCopy: true);
+                CloseList();
+                List<string> problems = Problems();
+                SetMessage(problems.Count == 0 ? "A friend's show. Play it, and Save to keep a copy." : "A friend's show, but here: " + problems[0]);
+            });
+        }
+
+        private async System.Threading.Tasks.Task Run(Func<System.Threading.Tasks.Task> work)
+        {
+            _busy++;
+            try
+            {
+                await work();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[Shows] " + e);
+                SetListStatus("Something went wrong: " + e.Message);
+            }
+            finally
+            {
+                _busy--;
+            }
+        }
+
+        private void SetListStatus(string text)
+        {
+            if (_listStatus != null)
+            {
+                _listStatus.text = text;
+            }
+        }
+
+        private void BuildFriendCodeRow()
+        {
+            RectTransform row = UiKit.Rect("FriendCode", _listRows);
+            row.sizeDelta = new Vector2(0f, UiTheme.MinTouch);
+            RectTransform box = Area(row, "Code", 0f, 0f, 0.74f, 1f, new Vector2(4f, 4f), new Vector2(-4f, -4f));
+            Image bg = UiKit.Panel(box, new Color(1f, 1f, 1f, 0.08f));
+            RectTransform area = Area(box, "TextArea", 0f, 0f, 1f, 1f, new Vector2(16f, 0f), new Vector2(-16f, 0f));
+            area.gameObject.AddComponent<RectMask2D>();
+            TextMeshProUGUI placeholder = UiKit.Text(area, "A friend's show code", UiTheme.SmallText, TextAlignmentOptions.Left, UiTheme.Muted);
+            TextMeshProUGUI text = UiKit.Text(area, string.Empty, UiTheme.BodyText, TextAlignmentOptions.Left, UiTheme.OffWhite);
+            _friendCode = box.gameObject.AddComponent<TMP_InputField>();
+            _friendCode.targetGraphic = bg;
+            _friendCode.textViewport = area;
+            _friendCode.textComponent = text;
+            _friendCode.placeholder = placeholder;
+            _friendCode.characterLimit = 12;
+            _friendCode.lineType = TMP_InputField.LineType.SingleLine;
+            HeaderButton(row, "Open", 0.76f, 1f, UiTheme.Saffron, UiTheme.Indigo, () => OpenFriendShow(_friendCode.text));
         }
 
         public void CloseList()
@@ -723,7 +843,10 @@ namespace UtsavNights.UI
             RectTransform listTitle = Area(listHeader, "Title", 0f, 0f, 0.7f, 1f, Vector2.zero, Vector2.zero);
             UiKit.Text(listTitle, "Shows", UiTheme.TitleText, TextAlignmentOptions.Left, UiTheme.Marigold);
             HeaderButton(listHeader, "Back", 0.72f, 1f, UiTheme.IndigoLight, UiTheme.OffWhite, CloseList);
-            RectTransform listView = Area(_list, "Rows", 0f, 0f, 1f, 1f, new Vector2(16f, 16f), new Vector2(-16f, -UiTheme.MinTouch - 24f));
+            RectTransform listStatus = Area(_list, "ListStatus", 0f, 0f, 1f, 0f, new Vector2(16f, 8f), new Vector2(-16f, 64f));
+            _listStatus = UiKit.Text(listStatus, string.Empty, UiTheme.SmallText, TextAlignmentOptions.Center, UiTheme.OffWhite);
+            _listStatus.textWrappingMode = TextWrappingModes.Normal;
+            RectTransform listView = Area(_list, "Rows", 0f, 0f, 1f, 1f, new Vector2(16f, 72f), new Vector2(-16f, -UiTheme.MinTouch - 24f));
             listView.gameObject.AddComponent<RectMask2D>();
             _listRows = UiKit.Rect("Content", listView);
             _listRows.anchorMin = new Vector2(0f, 1f);
@@ -762,11 +885,17 @@ namespace UtsavNights.UI
             _name.onEndEdit.AddListener(Rename);
         }
 
-        private void ListRow(string label, Color background, Color text, Action choose, Action delete)
+        private void ListRow(string label, Color background, Color text, Action choose, Action delete, Action share = null)
         {
             RectTransform row = UiKit.Rect(label, _listRows);
             row.sizeDelta = new Vector2(0f, UiTheme.MinTouch);
-            HeaderButton(row, label, 0f, delete != null ? 0.76f : 1f, background, text, choose);
+            float end = delete != null ? (share != null ? 0.56f : 0.76f) : 1f;
+            HeaderButton(row, label, 0f, end, background, text, choose);
+            if (share != null)
+            {
+                HeaderButton(row, "Share", 0.58f, 0.76f, UiTheme.Saffron, UiTheme.Indigo, share);
+            }
+
             if (delete != null)
             {
                 HeaderButton(row, "Delete", 0.78f, 1f, UiTheme.Magenta, UiTheme.OffWhite, delete);

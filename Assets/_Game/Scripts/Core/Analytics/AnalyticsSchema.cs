@@ -60,6 +60,18 @@ namespace UtsavNights.Core.Analytics
             { "show_played", new[] { "cues", "seconds", "replay" } },
             { "clip_recorded", new[] { "seconds", "source", "frames" } },
             { "clip_failed", new[] { "reason", "source" } },
+
+            // R4, Phase 10 (exit gate: do players share and visit homes?). Outcomes and short reason ids only: never a share
+            // code, an account id, a name or anything in a backup, home or show.
+            { "account_changed", new[] { "signed_in" } },
+            { "backup_made", new[] { "where", "ok", "reason" } },
+            { "backup_restored", new[] { "where", "ok", "reason" } },
+            { "home_shared", new[] { "ok", "reason" } },
+            { "home_visited", new[] { "ok", "reason", "offline" } },
+            { "home_reported", new[] { "ok", "reason" } },
+            { "home_withdrawn", new[] { "ok" } },
+            { "show_shared", new[] { "ok", "reason", "cues" } },
+            { "show_opened", new[] { "ok", "reason", "cues" } },
         };
 
         public static IEnumerable<string> EventNames => Events.Keys;
