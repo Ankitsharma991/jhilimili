@@ -198,6 +198,49 @@ namespace UtsavNights.Core.District
             return true; // allocation-free: the crowd asks this for every step
         }
 
+        /// <summary>
+        /// Phase 12 step 6: walkable at a height. On the ground as <see cref="IsWalkable"/>; up on a flat roof (within its
+        /// parapet), where a job takes the player.
+        /// </summary>
+        public bool IsWalkableAt(float x, float y, float z, float radius = 0.3f)
+        {
+            if (y < 1f)
+            {
+                return IsWalkable(x, z, radius);
+            }
+
+            DistrictBuilding b = RoofAt(x, z, y);
+            return b != null && b.Footprint.Contains(x, z, -(0.2f + radius));
+        }
+
+        /// <summary>The building whose roof is at about height <paramref name="y"/> under a point, or null.</summary>
+        public DistrictBuilding RoofAt(float x, float z, float y)
+        {
+            (int tx, int tz) = TileOf(x, z);
+            Index();
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dz = -1; dz <= 1; dz++)
+                {
+                    if (!_byTile.TryGetValue(Key(tx + dx, tz + dz), out List<int> list))
+                    {
+                        continue;
+                    }
+
+                    for (int k = 0; k < list.Count; k++)
+                    {
+                        DistrictBuilding b = Buildings[list[k]];
+                        if (b.Footprint.Contains(x, z) && y - b.Height > -0.6f && y - b.Height < 1.2f) // room for a jump
+                        {
+                            return b;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
         public bool OnRoad(float x, float z)
         {
             foreach (DistrictRoad r in Roads)

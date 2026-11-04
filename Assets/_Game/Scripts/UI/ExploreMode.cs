@@ -27,6 +27,20 @@ namespace UtsavNights.UI
         private TextMeshProUGUI _speed;
         private TextMeshProUGUI _jumpLabel;
 
+        // Phase 12 step 6: the phone, the minimap, what the job wants now, and short notes (pay, a photo saved).
+        private PhoneScreen _phone;
+        private Minimap _minimap;
+        private TextMeshProUGUI _objective;
+        private TextMeshProUGUI _badge;
+        private RectTransform _toast;
+        private TextMeshProUGUI _toastText;
+        private RectTransform _toastShare;
+        private float _toastUntil;
+        private string _objectiveShown = string.Empty;
+        private int _secondsShown = -2;
+        private int _unreadShown = -1;
+        private JobService _jobs;
+
         /// <summary>Phase 12 step 5: the speedometer's readings, made once so riding allocates nothing.</summary>
         private static readonly string[] Kmh = BuildKmh();
         private ExploreController _controller;
@@ -63,6 +77,25 @@ namespace UtsavNights.UI
         /// <summary>What the Jump button says: "Horn" on the scooter.</summary>
         public string JumpText => _jumpLabel != null ? _jumpLabel.text : string.Empty;
 
+        public PhoneScreen Phone => _phone;
+
+        public Minimap Minimap => _minimap;
+
+        /// <summary>The job's objective line on the HUD, or empty.</summary>
+        public string ObjectiveText => _objective != null ? _objective.text : string.Empty;
+
+        /// <summary>The note showing now (pay, a photo), or empty.</summary>
+        public string ToastText => _toast != null && _toast.gameObject.activeSelf ? _toastText.text : string.Empty;
+
+        /// <summary>Same as tapping Phone.</summary>
+        public void OpenPhone()
+        {
+            if (IsOpen && !Paused)
+            {
+                _phone.Open();
+            }
+        }
+
         public string InteractLabel => _interact != null && _interact.gameObject.activeSelf ? _interactLabel.text : string.Empty;
 
         private void Awake() => Build();
@@ -81,6 +114,8 @@ namespace UtsavNights.UI
             }
 
             Game.Events.Unsubscribe<Core.Settings.SettingsChangedEvent>(OnSettings);
+            Game.Events.Unsubscribe<PlayerRewardEvent>(OnReward);
+            Game.Events.Unsubscribe<JobEvent>(OnJob);
             if (Paused)
             {
                 Time.timeScale = 1f;
@@ -178,6 +213,18 @@ namespace UtsavNights.UI
                 return;
             }
 
+            TickJobsHud();
+            if (_phone.IsOpen)
+            {
+                _controller.Stick = Vector2.zero;
+                if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+                {
+                    _phone.Close();
+                }
+
+                return;
+            }
+
             Vector2 move = _stick.Value;
             bool run = _sprint;
             Keyboard k = Keyboard.current;
@@ -204,6 +251,11 @@ namespace UtsavNights.UI
                 {
                     Pause();
                     return;
+                }
+
+                if (k.pKey.wasPressedThisFrame)
+                {
+                    OpenPhone();
                 }
             }
 
@@ -272,6 +324,9 @@ namespace UtsavNights.UI
             }
 
             Game.Events.Subscribe<Core.Settings.SettingsChangedEvent>(OnSettings);
+            Game.Events.Subscribe<PlayerRewardEvent>(OnReward);
+            Game.Events.Subscribe<JobEvent>(OnJob);
+            _phone.PhotoTaken += OnPhoto;
 
             _controller = FindFirstObjectByType<ExploreController>();
             if (_controller != null)
@@ -424,6 +479,37 @@ namespace UtsavNights.UI
             pauseButton.anchoredPosition = new Vector2(-28f, -24f);
             Button(pauseButton, "Pause", UiTheme.IndigoLight, UiTheme.OffWhite, Pause).sprite = UiKit.Rounded;
             BuildPause();
+            _phone = PhoneScreen.Create(_overlay, this);
+
+            // Phase 12 step 6: Phone (with a count of new messages), the minimap, the objective line and notes.
+            RectTransform phoneButton = UiKit.Rect("PhoneButton", _overlay);
+            phoneButton.anchorMin = phoneButton.anchorMax = phoneButton.pivot = new Vector2(1f, 1f);
+            phoneButton.sizeDelta = new Vector2(200f, UiTheme.MinTouch);
+            phoneButton.anchoredPosition = new Vector2(-28f - 200f - 20f, -24f);
+            Button(phoneButton, "Phone", UiTheme.Saffron, UiTheme.Indigo, OpenPhone).sprite = UiKit.Rounded;
+            RectTransform badge = UiKit.Rect("Badge", phoneButton);
+            badge.anchorMin = badge.anchorMax = new Vector2(1f, 1f);
+            badge.pivot = new Vector2(0.5f, 0.5f);
+            badge.sizeDelta = new Vector2(52f, 52f);
+            badge.anchoredPosition = new Vector2(-8f, -8f);
+            UiKit.Panel(badge, UiTheme.Magenta, raycast: false).sprite = UiKit.Circle;
+            _badge = UiKit.Text(badge, string.Empty, UiTheme.SmallText, TextAlignmentOptions.Center, UiTheme.OffWhite);
+            _badge.raycastTarget = false;
+            badge.gameObject.SetActive(false);
+            _minimap = Minimap.Create(_overlay);
+
+            RectTransform objective = Area(_overlay, "Objective", 0.28f, 1f, 0.72f, 1f, new Vector2(0f, -UiTheme.MinTouch * 2f - 30f), new Vector2(0f, -UiTheme.MinTouch - 30f));
+            _objective = UiKit.Text(objective, string.Empty, UiTheme.BodyText, TextAlignmentOptions.Center, UiTheme.Marigold);
+            _objective.raycastTarget = false;
+
+            _toast = Area(_overlay, "Toast", 0.3f, 0.62f, 0.7f, 0.74f, Vector2.zero, Vector2.zero);
+            UiKit.Panel(_toast, new Color(0.07f, 0.05f, 0.18f, 0.9f), raycast: false).sprite = UiKit.Rounded;
+            RectTransform toastText = Area(_toast, "Text", 0.04f, 0f, 0.7f, 1f, Vector2.zero, Vector2.zero);
+            _toastText = UiKit.Text(toastText, string.Empty, UiTheme.BodyText, TextAlignmentOptions.Left, UiTheme.OffWhite);
+            _toastText.raycastTarget = false;
+            _toastShare = Area(_toast, "Share", 0.72f, 0.15f, 0.97f, 0.85f, Vector2.zero, Vector2.zero);
+            Button(_toastShare, "Share", UiTheme.Saffron, UiTheme.Indigo, () => Toast(ClipSharer.SharePhoto(_phone.LastPhoto) is string err && err.Length > 0 ? err : "Sharing your photo", false)).sprite = UiKit.Rounded;
+            _toast.gameObject.SetActive(false);
 
             RectTransform speed = Area(_overlay, "Gait", 0.35f, 1f, 0.65f, 1f, new Vector2(0f, -UiTheme.MinTouch - 24f), new Vector2(0f, -24f));
             _speed = UiKit.Text(speed, string.Empty, UiTheme.SmallText, TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.5f));
@@ -517,6 +603,85 @@ namespace UtsavNights.UI
             rect.anchoredPosition = position;
             return rect;
         }
+
+        /// <summary>The objective line, the unread count and the note's timer; text changes only when what it says does.</summary>
+        private void TickJobsHud()
+        {
+            if (_jobs == null)
+            {
+                Game.Services.TryGet(out _jobs);
+            }
+
+            _minimap.Tick(_controller, _jobs, Time.deltaTime);
+            JobRun run = _jobs?.Active;
+            string objective = run != null ? run.Objective : _jobs != null && _jobs.ShowPlaying ? "Enjoy the show!" : string.Empty;
+            int seconds = run != null && run.TimeLeft >= 0f ? Mathf.CeilToInt(run.TimeLeft) : -1;
+            if (!ReferenceEquals(objective, _objectiveShown) || seconds != _secondsShown)
+            {
+                _objectiveShown = objective;
+                _secondsShown = seconds;
+                _objective.text = seconds >= 0 ? $"{objective}  ·  {seconds / 60}:{seconds % 60:00}" : objective;
+            }
+
+            int unread = _jobs != null ? _jobs.Unread : 0;
+            if (unread != _unreadShown)
+            {
+                _unreadShown = unread;
+                _badge.transform.parent.gameObject.SetActive(unread > 0);
+                _badge.text = unread.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            if (_toast.gameObject.activeSelf && Time.unscaledTime > _toastUntil)
+            {
+                _toast.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>A short note over the view for a few seconds; with Share for a photo.</summary>
+        public void Toast(string text, bool share)
+        {
+            _toastText.text = text;
+            _toastShare.gameObject.SetActive(share);
+            _toast.gameObject.SetActive(true);
+            _toast.SetAsLastSibling();
+            _toastUntil = Time.unscaledTime + (share ? 6f : 3.5f);
+        }
+
+        private void OnReward(PlayerRewardEvent e)
+        {
+            if (!IsOpen)
+            {
+                return;
+            }
+
+            string text = $"+{e.Coins:N0} coins  ·  +{e.Reputation} reputation";
+            if (e.LevelUp > 0)
+            {
+                text += $"\nYou're now a {Reputation.Titles[Mathf.Clamp(e.LevelUp - 1, 0, Reputation.Titles.Length - 1)]}!";
+            }
+
+            Toast(text, false);
+        }
+
+        private void OnJob(JobEvent e)
+        {
+            if (!IsOpen || _jobs == null)
+            {
+                return;
+            }
+
+            JobDef job = _jobs.Find(e.JobId);
+            if (e.Status == JobStatus.Active)
+            {
+                Toast("Job taken: " + job?.Title, false);
+            }
+            else if (e.Status == JobStatus.Failed)
+            {
+                Toast("Out of time. Try again from Jobs on your phone.", false);
+            }
+        }
+
+        private void OnPhoto(string path) => Toast("Photo saved", true);
 
         private static string[] BuildKmh()
         {

@@ -280,6 +280,12 @@ namespace UtsavNights.Gameplay
             }
         }
 
+        /// <summary>Phase 12 step 6: one burst in the sky at a point (a show in the town), in one of the palette's colours.</summary>
+        public void Burst(Vector3 at, float size, int colour)
+        {
+            Emit(new DistantBurst(new V3(at.x, at.y, at.z), size, colour));
+        }
+
         private void Emit(DistantBurst b)
         {
             if (_particles == null)

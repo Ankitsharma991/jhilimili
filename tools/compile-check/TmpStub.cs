@@ -22,6 +22,7 @@ namespace TMPro
     public abstract class TMP_Text : MaskableGraphic
     {
         public virtual string text { get; set; }
+        public void ForceMeshUpdate(bool ignoreActiveState = false, bool forceTextReparsing = false) { }
         public TMP_FontAsset font { get; set; }
         public float fontSize { get; set; }
         public bool enableAutoSizing { get; set; }

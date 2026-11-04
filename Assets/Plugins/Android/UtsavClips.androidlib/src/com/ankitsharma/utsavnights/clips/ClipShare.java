@@ -40,6 +40,33 @@ public final class ClipShare {
         }
     }
 
+    /** Phase 12 step 6: shares a photo from the clips folder through the system share sheet. "ok" or an error. */
+    public static String sharePhoto(Activity activity, String path, String text) {
+        try {
+            File file = new File(path);
+            if (!file.exists()) {
+                return "the photo is missing";
+            }
+
+            Uri uri = FileProvider.getUriForFile(activity, activity.getPackageName() + ".clips", file);
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("image/png");
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            if (text != null && !text.isEmpty()) {
+                send.putExtra(Intent.EXTRA_TEXT, text);
+            }
+
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            Intent chooser = Intent.createChooser(send, "Share your photo");
+            chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            activity.startActivity(chooser);
+            return "ok";
+        } catch (Exception e) {
+            Log.w(TAG, "photo share failed: " + e);
+            return "share failed: " + e.getMessage();
+        }
+    }
+
     /** Returns "ok", "fallback" (the app wasn't there, the share sheet opened instead) or an error. */
     public static String share(Activity activity, String path, String packageName, String text) {
         try {

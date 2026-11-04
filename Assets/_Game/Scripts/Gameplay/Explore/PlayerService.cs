@@ -84,6 +84,13 @@ namespace UtsavNights.Gameplay
             Game.Events.Publish(new PlayerRewardEvent(added, reputation, reason, after > before ? after : 0));
         }
 
+        /// <summary>Phase 12 step 6: notes a finished job (how many times each, and the jobs count).</summary>
+        public void FinishJob(string jobId)
+        {
+            Current.FinishJob(jobId);
+            MarkDirty();
+        }
+
         public bool Spend(long coins)
         {
             if (!Current.Spend(coins))

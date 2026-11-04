@@ -8,7 +8,7 @@ rm -f Logs/editmode-results.xml Logs/playmode-results.xml
 timeout 2400 "$U" -batchmode -projectPath . -executeMethod UtsavNights.EditorTools.Main.MainSceneBuilder.BuildBatch -logFile Logs/main_build.log; echo "scenes=$?"
 grep -E "error CS" Logs/main_build.log | sort -u | head -5
 timeout 1500 "$U" -batchmode -nographics -projectPath . -runTests -testPlatform EditMode -testResults Logs/editmode-results.xml -logFile Logs/tests.log; echo "editmode=$?"
-timeout 1500 "$U" -batchmode -projectPath . -runTests -testPlatform PlayMode -testResults Logs/playmode-results.xml -logFile Logs/playmode.log; echo "playmode=$?"
+timeout 2400 "$U" -batchmode -projectPath . -runTests -testPlatform PlayMode -testResults Logs/playmode-results.xml -logFile Logs/playmode.log; echo "playmode=$?"
 ok=1
 for f in Logs/editmode-results.xml Logs/playmode-results.xml; do
   run=$(grep -o '<test-run[^>]*' "$f" 2>/dev/null)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace UtsavNights.Core.Explore
 {
@@ -9,7 +10,10 @@ namespace UtsavNights.Core.Explore
     [Serializable]
     public sealed class PlayerRecord
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
+
+        /// <summary>Phase 12 step 6: how many finished jobs the record keeps (the oldest go first).</summary>
+        public const int MaxJobsKept = 200;
 
         /// <summary>Caps so a damaged or edited file can't hold absurd numbers.</summary>
         public const long MaxCoins = 9_999_999;
@@ -31,7 +35,43 @@ namespace UtsavNights.Core.Explore
         public int homesVisited;
         public int jobsDone;
 
-        public PlayerRecord Clone() => (PlayerRecord)MemberwiseClone();
+        /// <summary>Phase 12 step 6: the id of each job finished, once per time (version 2).</summary>
+        public List<string> jobsFinished = new List<string>();
+
+        public PlayerRecord Clone()
+        {
+            var c = (PlayerRecord)MemberwiseClone();
+            c.jobsFinished = new List<string>(jobsFinished ?? new List<string>());
+            return c;
+        }
+
+        /// <summary>How many times a job has been finished.</summary>
+        public int TimesDone(string jobId)
+        {
+            int n = 0;
+            if (jobsFinished != null)
+            {
+                foreach (string id in jobsFinished)
+                {
+                    n += id == jobId ? 1 : 0;
+                }
+            }
+
+            return n;
+        }
+
+        /// <summary>Notes a finished job (and counts it).</summary>
+        public void FinishJob(string jobId)
+        {
+            jobsFinished ??= new List<string>();
+            jobsFinished.Add(jobId ?? string.Empty);
+            if (jobsFinished.Count > MaxJobsKept)
+            {
+                jobsFinished.RemoveAt(0);
+            }
+
+            jobsDone = Math.Min(int.MaxValue - 1, jobsDone + 1);
+        }
 
         public bool Migrate()
         {
@@ -40,6 +80,8 @@ namespace UtsavNights.Core.Explore
                 return false;
             }
 
+            // Version 2 adds the list of finished jobs; older records start it empty.
+            jobsFinished ??= new List<string>();
             version = CurrentVersion;
             return true;
         }
@@ -60,9 +102,18 @@ namespace UtsavNights.Core.Explore
             homesVisited = Math.Max(0, homesVisited);
             jobsDone = Math.Max(0, jobsDone);
             firstPlayedUnix = Math.Max(0, firstPlayedUnix);
+            bool jobsChanged = jobsFinished == null || jobsFinished.Count > MaxJobsKept || jobsFinished.Contains(null);
+            jobsFinished ??= new List<string>();
+            jobsFinished.RemoveAll(id => id == null);
+            if (jobsFinished.Count > MaxJobsKept)
+            {
+                jobsFinished.RemoveRange(0, jobsFinished.Count - MaxJobsKept);
+            }
+
             return coins != before.coins || reputation != before.reputation || sessions != before.sessions || metresExplored != before.metresExplored
                 || secondsExplored != before.secondsExplored || jumps != before.jumps || crackersLit != before.crackersLit || showsPlayed != before.showsPlayed
-                || midnights != before.midnights || homesVisited != before.homesVisited || jobsDone != before.jobsDone || firstPlayedUnix != before.firstPlayedUnix;
+                || midnights != before.midnights || homesVisited != before.homesVisited || jobsDone != before.jobsDone || firstPlayedUnix != before.firstPlayedUnix
+                || jobsChanged;
         }
 
         /// <summary>Earns coins (never past the cap). Returns what was actually added.</summary>

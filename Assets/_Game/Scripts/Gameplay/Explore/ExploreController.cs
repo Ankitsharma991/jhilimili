@@ -59,6 +59,9 @@ namespace UtsavNights.Gameplay
 
         public const float RideCameraDistance = 4.6f;
 
+        private const string JobPrefix = "job:";
+        private const string RoofDown = "roof_down";
+
         private readonly OrbitCamera _orbit = new OrbitCamera();
         private readonly List<(string id, string label, Vector3 at)> _targets = new List<(string, string, Vector3)>();
         private readonly AudioClip[] _steps = new AudioClip[Footsteps.Variations];
@@ -93,6 +96,9 @@ namespace UtsavNights.Gameplay
         private float _parkedHeading = ParkingHeading;
         private ScooterState _ride;
         private float _walkCameraDistance;
+        private JobService _jobs;
+        private string _jobPromptStep;
+        private string _jobPromptId;
         private VoiceHandle _engine;
         private AudioClip _engineClip;
         private AudioClip _hornClip;
@@ -319,6 +325,17 @@ namespace UtsavNights.Gameplay
                 return true;
             }
 
+            // Phase 12 step 6: a job's step here, or down off a roof.
+            if (target == RoofDown)
+            {
+                return GoDown();
+            }
+
+            if (target.StartsWith(JobPrefix, StringComparison.Ordinal))
+            {
+                return Game.Services.TryGet(out JobService jobs) && jobs.Interact(_avatar.transform.position);
+            }
+
             if (target == "door")
             {
                 Close();
@@ -506,6 +523,28 @@ namespace UtsavNights.Gameplay
                     label = "Ride the scooter";
                     id = "scooter";
                 }
+
+                // A job's step comes first; up on a roof, the way down is always there.
+                if (_jobs != null || Game.Services.TryGet(out _jobs))
+                {
+                    if (_jobs.PromptAt(at, out string jobLabel, out string jobStep))
+                    {
+                        if (!ReferenceEquals(jobStep, _jobPromptStep))
+                        {
+                            _jobPromptStep = jobStep;
+                            _jobPromptId = JobPrefix + jobStep; // made once per step, not every frame
+                        }
+
+                        label = jobLabel;
+                        id = _jobPromptId;
+                    }
+                }
+
+                if (id.Length == 0 && at.y > 1.5f)
+                {
+                    label = "Go down to the street";
+                    id = RoofDown;
+                }
             }
 
             if (id != PromptTarget)
@@ -681,6 +720,21 @@ namespace UtsavNights.Gameplay
 
             _engine = VoiceHandle.None;
             StateChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>Down from a roof to the street at the house's front door.</summary>
+        private bool GoDown()
+        {
+            Vector3 at = _avatar.transform.position;
+            DistrictBuilding b = _district != null ? _district.Plan.RoofAt(at.x, at.z, at.y) : null;
+            if (b == null)
+            {
+                return false;
+            }
+
+            (float x, float z) = JobCatalog.DoorOf(b, JobCatalog.DoorStep);
+            Teleport(new Vector3(x, 0f, z), JobCatalog.FacingYaw(b.Front));
             return true;
         }
 

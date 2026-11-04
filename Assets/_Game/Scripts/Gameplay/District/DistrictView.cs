@@ -52,7 +52,7 @@ namespace UtsavNights.Gameplay
 
         public TileDetail DetailOf(int tx, int tz) => _tiles != null ? _tiles[tx, tz].Detail : TileDetail.Hidden;
 
-        public bool IsWalkable(Vector3 world) => Active && Plan.IsWalkable(world.x, world.z);
+        public bool IsWalkable(Vector3 world) => Active && Plan.IsWalkableAt(world.x, world.y, world.z);
 
         private void Awake()
         {
@@ -225,7 +225,7 @@ namespace UtsavNights.Gameplay
             {
                 if (Plan.TileOf(b.Footprint) == (tx, tz))
                 {
-                    Box(parent, b.Footprint, b.Height + 0.5f);
+                    Box(parent, b.Footprint, b.Height); // the top is the flat roof, to stand on (Phase 12 step 6)
                 }
             }
 

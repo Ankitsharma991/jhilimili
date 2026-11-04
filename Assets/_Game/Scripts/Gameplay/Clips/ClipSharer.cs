@@ -55,6 +55,57 @@ namespace UtsavNights.Gameplay
 #endif
         }
 
+        /// <summary>Phase 12 step 6: the folder photos from the phone's camera are saved in (the one clips share from).</summary>
+        public static string PhotosFolder()
+        {
+            string dir;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            try
+            {
+                using var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+                using AndroidJavaObject activity = player.GetStatic<AndroidJavaObject>("currentActivity");
+                using var share = new AndroidJavaClass("com.ankitsharma.utsavnights.clips.ClipShare");
+                dir = share.CallStatic<string>("clipsDir", activity);
+            }
+            catch (Exception)
+            {
+                dir = System.IO.Path.Combine(Application.temporaryCachePath, "clips");
+            }
+#else
+            dir = System.IO.Path.Combine(Application.temporaryCachePath, "clips");
+#endif
+            System.IO.Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        /// <summary>Phase 12 step 6: shares a photo through the share sheet. Empty on success, else what went wrong.</summary>
+        public static string SharePhoto(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
+            {
+                return "The photo isn't on the phone any more.";
+            }
+
+            string result;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            try
+            {
+                using var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+                using AndroidJavaObject activity = player.GetStatic<AndroidJavaObject>("currentActivity");
+                using var share = new AndroidJavaClass("com.ankitsharma.utsavnights.clips.ClipShare");
+                result = share.CallStatic<string>("sharePhoto", activity, path, ClipRules.ShareText);
+            }
+            catch (Exception e)
+            {
+                result = e.Message;
+            }
+#else
+            Debug.Log($"[Photos] share: {path}");
+            result = "ok";
+#endif
+            return result == "ok" ? string.Empty : "Couldn't open sharing: " + result;
+        }
+
         /// <summary>Shares the clip. Returns empty on success, else what went wrong in plain words.</summary>
         public static string Share(ClipResult clip, ShareTarget target)
         {
