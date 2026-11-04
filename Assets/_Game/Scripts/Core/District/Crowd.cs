@@ -312,6 +312,8 @@ namespace UtsavNights.Core.District
         public const float EarsRange = 9f;
         public const float PersonalSpace = 1.1f;
         public const float WaveRange = 3.2f;
+        public const float VehicleSpace = 2.2f;
+        public const float HornRange = 8f;
 
         private readonly DistrictPlan _plan;
         private readonly Random _random;
@@ -388,6 +390,12 @@ namespace UtsavNights.Core.District
 
         public Person[] People { get; }
 
+        /// <summary>Phase 12 step 5: how much room people give the player (more on the scooter).</summary>
+        public float PlayerSpace { get; set; } = PersonalSpace;
+
+        /// <summary>Phase 12 step 5: the traffic, whom walkers also step aside for; may be null.</summary>
+        public Vehicle[] Vehicles { get; set; }
+
         public void Tick(float dt, float playerX, float playerZ, bool playerMoving)
         {
             _playerStill = playerMoving ? 0f : _playerStill + dt;
@@ -443,11 +451,27 @@ namespace UtsavNights.Core.District
                 float mx = dx / d * step, mz = dz / d * step;
 
                 // A step aside for the player.
-                if (playerD < PersonalSpace * 1.6f && playerD > 1e-3f)
+                float room = PlayerSpace * 1.6f;
+                if (playerD < room && playerD > 1e-3f)
                 {
-                    float away = (PersonalSpace * 1.6f - playerD) / (PersonalSpace * 1.6f);
+                    float away = (room - playerD) / room;
                     mx -= pdx / playerD * away * p.Speed * dt * 1.5f;
                     mz -= pdz / playerD * away * p.Speed * dt * 1.5f;
+                }
+
+                // And for vehicles going by.
+                if (Vehicles != null)
+                {
+                    for (int k = 0; k < Vehicles.Length; k++)
+                    {
+                        float vx = Vehicles[k].X - p.X, vz = Vehicles[k].Z - p.Z, vd2 = vx * vx + vz * vz;
+                        if (vd2 < VehicleSpace * VehicleSpace && vd2 > 1e-6f)
+                        {
+                            float vd = (float)Math.Sqrt(vd2), away = (VehicleSpace - vd) / VehicleSpace;
+                            mx -= vx / vd * away * p.Speed * dt * 1.5f;
+                            mz -= vz / vd * away * p.Speed * dt * 1.5f;
+                        }
+                    }
                 }
 
                 if (!TryStep(ref p, mx, mz))
@@ -513,6 +537,37 @@ namespace UtsavNights.Core.District
             }
 
             return coming;
+        }
+
+        /// <summary>
+        /// Phase 12 step 5: the player's horn, heading <paramref name="heading"/>: people ahead in the way step to the side
+        /// they're already on, and look round. Returns how many moved.
+        /// </summary>
+        public int Horn(float x, float z, float heading)
+        {
+            float fx = (float)Math.Sin(heading * Math.PI / 180.0), fz = (float)Math.Cos(heading * Math.PI / 180.0);
+            int moved = 0;
+            for (int i = 0; i < People.Length; i++)
+            {
+                ref Person p = ref People[i];
+                float rx = p.X - x, rz = p.Z - z;
+                float a = rx * fx + rz * fz, l = rx * fz - rz * fx;
+                if (p.Shopkeeper || a <= 0f || a > HornRange || Math.Abs(l) > 2.2f)
+                {
+                    continue;
+                }
+
+                // Sideways, away from the scooter's line: right of it is (fz, -fx).
+                float push = Math.Min(1.4f, 2.4f - Math.Abs(l)), side = l >= 0f ? 1f : -1f;
+                if (TryStep(ref p, fz * side * push, -fx * side * push) || TryStep(ref p, fz * side * push * 0.5f, -fx * side * push * 0.5f))
+                {
+                    moved++;
+                }
+
+                p.Facing = Angle(-rx, -rz);
+            }
+
+            return moved;
         }
 
         private bool TryStep(ref Person p, float mx, float mz)

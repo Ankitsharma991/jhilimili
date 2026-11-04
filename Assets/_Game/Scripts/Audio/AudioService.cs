@@ -165,12 +165,26 @@ namespace UtsavNights.Audio
             source.Stop();
             source.clip = clip;
             source.loop = loop;
+            source.pitch = 1f;
             source.volume = VolumeFor(index);
             source.Play();
             return new VoiceHandle(index, version);
         }
 
         public bool IsPlaying(VoiceHandle handle) => Resolve(handle) >= 0;
+
+        /// <summary>Phase 12 step 5: retunes a playing sound (the scooter's engine follows its speed). False when it has ended.</summary>
+        public bool SetPitch(VoiceHandle handle, float pitch)
+        {
+            int index = Resolve(handle);
+            if (index < 0 || _sources[index] == null)
+            {
+                return false;
+            }
+
+            _sources[index].pitch = Mathf.Clamp(pitch, 0.25f, 3f);
+            return true;
+        }
 
         /// <summary>Stops a sound, optionally fading out (for fuse loops ending into the payoff).</summary>
         public bool Stop(VoiceHandle handle, float fadeSeconds = 0f)

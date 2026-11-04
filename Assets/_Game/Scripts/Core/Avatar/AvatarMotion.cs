@@ -24,6 +24,9 @@ namespace UtsavNights.Core.Avatar
 
         /// <summary>Phase 12: a friendly wave with the right hand, to the player (one-shot).</summary>
         Wave,
+
+        /// <summary>Phase 12 step 5: seated on the scooter, hands on the handlebar, feet on the floorboard (loops).</summary>
+        Ride,
     }
 
     /// <summary>
@@ -81,6 +84,10 @@ namespace UtsavNights.Core.Avatar
         public const float IdleCycle = 8f;
         public const float CoverEarsLength = 1.6f;
         public const float WaveLength = 1.5f;
+        public const float RideCycle = 4f;
+
+        /// <summary>How far the hips sit below standing height on the scooter's seat (metres).</summary>
+        public const float RideDrop = 0.2f;
 
         /// <summary>Phase 12: one stride pair of the run, at <see cref="RunCycleSpeed"/>.</summary>
         public const float RunCycle = 0.68f;
@@ -91,7 +98,7 @@ namespace UtsavNights.Core.Avatar
 
         private const float ThighLength = 0.41f, ShinLength = 0.41f;
 
-        public static bool Loops(AvatarClip clip) => clip == AvatarClip.Idle || clip == AvatarClip.Walk || clip == AvatarClip.Run || clip == AvatarClip.Fall;
+        public static bool Loops(AvatarClip clip) => clip == AvatarClip.Idle || clip == AvatarClip.Walk || clip == AvatarClip.Run || clip == AvatarClip.Fall || clip == AvatarClip.Ride;
 
         public static float Length(AvatarClip clip) => clip switch
         {
@@ -102,6 +109,7 @@ namespace UtsavNights.Core.Avatar
             AvatarClip.Celebrate => CelebrateLength,
             AvatarClip.CoverEars => CoverEarsLength,
             AvatarClip.Wave => WaveLength,
+            AvatarClip.Ride => RideCycle,
             _ => IdleCycle,
         };
 
@@ -149,6 +157,9 @@ namespace UtsavNights.Core.Avatar
                     break;
                 case AvatarClip.Wave:
                     Wave(time, energy, pose);
+                    break;
+                case AvatarClip.Ride:
+                    Ride(time, pose, longHem);
                     break;
                 default:
                     Idle(time, energy, pose);
@@ -275,6 +286,34 @@ namespace UtsavNights.Core.Avatar
             p.X[AvatarSkeleton.LeftFoot] = -bend * 0.8f;
             p.X[AvatarSkeleton.RightFoot] = -bend * 0.8f;
             p.HipsOffset = new V3(0f, -CrouchDrop(-bend, bend * 1.8f), -0.03f * flinch);
+        }
+
+        /// <summary>
+        /// Phase 12 step 5: seated, thighs forward, shins down to the floorboard, arms reaching to the handlebar, a small
+        /// lean forward and a slow look about. A long hem rides with the knees together and lower.
+        /// </summary>
+        private static void Ride(float t, AvatarPose p, bool longHem)
+        {
+            float look = Sin(t, 1f / RideCycle);
+            float hip = longHem ? -70f : -78f;
+            p.X[AvatarSkeleton.LeftUpperLeg] = hip;
+            p.X[AvatarSkeleton.RightUpperLeg] = hip;
+            p.Z[AvatarSkeleton.LeftUpperLeg] = longHem ? 0f : -6f;
+            p.Z[AvatarSkeleton.RightUpperLeg] = longHem ? 0f : 6f;
+            p.X[AvatarSkeleton.LeftLowerLeg] = 82f;
+            p.X[AvatarSkeleton.RightLowerLeg] = 82f;
+            p.X[AvatarSkeleton.LeftFoot] = -4f;
+            p.X[AvatarSkeleton.RightFoot] = -4f;
+            p.X[AvatarSkeleton.LeftUpperArm] = -52f;
+            p.X[AvatarSkeleton.RightUpperArm] = -52f;
+            p.Z[AvatarSkeleton.LeftUpperArm] = -12f;
+            p.Z[AvatarSkeleton.RightUpperArm] = 12f;
+            p.X[AvatarSkeleton.LeftLowerArm] = -28f;
+            p.X[AvatarSkeleton.RightLowerArm] = -28f;
+            p.X[AvatarSkeleton.Spine] = 9f;
+            p.X[AvatarSkeleton.Head] = -6f;
+            p.Y[AvatarSkeleton.Head] = 12f * look;
+            p.HipsOffset = new V3(0f, -RideDrop, -0.05f);
         }
 
         /// <summary>Phase 12: the right arm up, swaying side to side with the forearm opening and closing; a small head tilt.</summary>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UtsavNights.Audio;
 using UtsavNights.Core.Avatar;
+using UtsavNights.Core.District;
 using UtsavNights.Core.Explore;
 using UtsavNights.Core.Home;
 using UtsavNights.Core.Neighbourhood;
@@ -44,6 +45,20 @@ namespace UtsavNights.Gameplay
         private const float BodyHeight = 1.7f;
         private const float BodyRadius = 0.3f;
 
+        /// <summary>Phase 12 step 5: the scooter waits where the lane meets the bazaar road, at the south edge out of the way, short of the traffic, facing into the bazaar.</summary>
+        public static readonly Vector3 ParkingSpot = new Vector3(33f, 0f, 4.7f);
+        public const float ParkingHeading = 90f;
+
+        /// <summary>How far the scooter's middle is ahead of the rider's hips, and its nose and tail from the rider.</summary>
+        public const float SeatBack = 0.38f;
+        public const float NoseAhead = 1.25f;
+        public const float TailBehind = 0.45f;
+
+        /// <summary>Slow enough to step off (m/s).</summary>
+        public const float DismountSpeed = 2.5f;
+
+        public const float RideCameraDistance = 4.6f;
+
         private readonly OrbitCamera _orbit = new OrbitCamera();
         private readonly List<(string id, string label, Vector3 at)> _targets = new List<(string, string, Vector3)>();
         private readonly AudioClip[] _steps = new AudioClip[Footsteps.Variations];
@@ -71,6 +86,16 @@ namespace UtsavNights.Gameplay
         private bool _invertLook;
         private bool _autoRecentre = true;
         private (bool p, bool pu, bool l, bool r) _rotation;
+        private GameObject _scooter;
+        private Mesh _scooterMesh;
+        private HomeMaterials _scooterMaterials;
+        private Vector3 _parked = ParkingSpot;
+        private float _parkedHeading = ParkingHeading;
+        private ScooterState _ride;
+        private float _walkCameraDistance;
+        private VoiceHandle _engine;
+        private AudioClip _engineClip;
+        private AudioClip _hornClip;
 
         public event Action StateChanged;
 
@@ -88,7 +113,20 @@ namespace UtsavNights.Gameplay
 
         public Gait Gait => Locomotion.GaitOf(_state);
 
-        public float Speed => _state.GroundSpeed;
+        public float Speed => Riding ? Mathf.Abs(_ride.Speed) : _state.GroundSpeed;
+
+        /// <summary>Phase 12 step 5: on the scooter.</summary>
+        public bool Riding { get; private set; }
+
+        public ScooterState RideState => _ride;
+
+        /// <summary>The player's scooter while it's out (the district is open), or null.</summary>
+        public Transform Scooter => _scooter != null ? _scooter.transform : null;
+
+        /// <summary>Where the scooter is parked and which way it faces (kept between visits to the bazaar this session).</summary>
+        public (Vector3 at, float heading) Parked => (_parked, _parkedHeading);
+
+        public int Horns { get; private set; }
 
         public OrbitCamera Orbit => _orbit;
 
@@ -157,7 +195,9 @@ namespace UtsavNights.Gameplay
                 _home.House.SetGateOpen(true);
             }
 
-            _settlement.Focus = () => Player != null ? Player.position : Vector3.zero;
+            // In the bazaar, the lane behind keeps the detail it has at its east end: no rebuilding lots as the player rides off.
+            float laneEnd = DistrictGenerator.Bazaar.Join.X0;
+            _settlement.Focus = () => Player != null ? new Vector3(Mathf.Min(Player.position.x, laneEnd), Player.position.y, Player.position.z) : Vector3.zero;
             Haze(true);
             if (Game.Services.TryGet(out SettingsService settings))
             {
@@ -186,6 +226,12 @@ namespace UtsavNights.Gameplay
                 return;
             }
 
+            if (Riding)
+            {
+                Dismount();
+            }
+
+            DestroyScooter();
             IsOpen = false;
             Game.Events.Unsubscribe<Core.Settings.SettingsChangedEvent>(OnSettings);
             Game.Events.Publish(new ExploreEvent(false, (int)(Time.unscaledTime - _startedAt), (int)_metres, _jumps));
@@ -229,7 +275,16 @@ namespace UtsavNights.Gameplay
         }
 
         /// <summary>Same as tapping Jump.</summary>
-        public void Jump() => _jumpPressed = true;
+        public void Jump()
+        {
+            if (Riding)
+            {
+                Horn();
+                return;
+            }
+
+            _jumpPressed = true;
+        }
 
         /// <summary>Turns the camera by a drag on the screen (pixels), with the player's sensitivity and invert settings.</summary>
         public void Look(Vector2 pixels) =>
@@ -252,6 +307,18 @@ namespace UtsavNights.Gameplay
             }
 
             string target = PromptTarget;
+            if (target == "scooter")
+            {
+                Mount();
+                return true;
+            }
+
+            if (target == "scooter_off")
+            {
+                Dismount();
+                return true;
+            }
+
             if (target == "door")
             {
                 Close();
@@ -283,6 +350,8 @@ namespace UtsavNights.Gameplay
             }
 
             _state = new LocomotionState { Facing = facing, Grounded = true };
+            _ride.Heading = facing;
+            _ride.Speed = 0f;
             _orbit.Yaw = facing;
         }
 
@@ -294,6 +363,13 @@ namespace UtsavNights.Gameplay
             }
 
             float dt = Mathf.Min(Time.deltaTime, 0.05f);
+            SyncScooter();
+            if (Riding)
+            {
+                RideStep(dt);
+                UpdatePrompt();
+                return;
+            }
 
             // The stick, turned from the camera's view into the world.
             float yaw = _orbit.Yaw * Mathf.Deg2Rad;
@@ -404,14 +480,31 @@ namespace UtsavNights.Gameplay
             Vector3 at = _avatar.transform.position;
             string label = string.Empty, id = string.Empty;
             float best = InteractRange;
-            foreach ((string tid, string tlabel, Vector3 point) in _targets)
+            if (Riding)
             {
-                float d = new Vector2(point.x - at.x, point.z - at.z).magnitude;
-                if (d < best)
+                if (Mathf.Abs(_ride.Speed) < DismountSpeed)
                 {
-                    best = d;
-                    label = tlabel;
-                    id = tid;
+                    label = "Get off";
+                    id = "scooter_off";
+                }
+            }
+            else
+            {
+                foreach ((string tid, string tlabel, Vector3 point) in _targets)
+                {
+                    float d = new Vector2(point.x - at.x, point.z - at.z).magnitude;
+                    if (d < best)
+                    {
+                        best = d;
+                        label = tlabel;
+                        id = tid;
+                    }
+                }
+
+                if (_scooter != null && new Vector2(_parked.x - at.x, _parked.z - at.z).magnitude < best)
+                {
+                    label = "Ride the scooter";
+                    id = "scooter";
                 }
             }
 
@@ -468,6 +561,220 @@ namespace UtsavNights.Gameplay
                 box.center = new Vector3((minX + maxX) / 2f, (minY + maxY) / 2f, (minZ + maxZ) / 2f);
                 box.size = new Vector3(maxX - minX, maxY - minY, maxZ - minZ);
             }
+        }
+
+        /// <summary>The scooter is out while the bazaar is (it's parked on the bazaar road), and always while riding.</summary>
+        private void SyncScooter()
+        {
+            bool want = Riding || (_district != null && _district.Active);
+            if (want && _scooter == null)
+            {
+                _scooterMaterials ??= new HomeMaterials();
+                _scooterMesh = HouseMeshes.ToMesh(VehicleKit.Build(VehicleKind.Scooter, 2, rider: false), "PlayerScooter", out HousePaint[] paints);
+                _scooter = new GameObject("PlayerScooter");
+                _scooter.transform.SetParent(transform, false);
+                _scooter.AddComponent<MeshFilter>().sharedMesh = _scooterMesh;
+                var renderer = _scooter.AddComponent<MeshRenderer>();
+                var materials = new Material[paints.Length];
+                for (int i = 0; i < paints.Length; i++)
+                {
+                    materials[i] = _scooterMaterials.Get(paints[i], DistrictPalette.Colour(paints[i]));
+                }
+
+                renderer.sharedMaterials = materials;
+                var box = _scooter.AddComponent<BoxCollider>();
+                box.center = new Vector3(0f, 0.55f, 0f);
+                box.size = new Vector3(0.7f, 1.1f, 1.8f);
+                _scooter.transform.SetPositionAndRotation(_parked, Quaternion.Euler(0f, _parkedHeading, 0f));
+            }
+            else if (!want && _scooter != null)
+            {
+                DestroyScooter();
+            }
+        }
+
+        private void DestroyScooter()
+        {
+            if (_scooter != null)
+            {
+                Destroy(_scooter);
+            }
+
+            HouseMeshes.Destroy(_scooterMesh);
+            _scooterMaterials?.Clear();
+            _scooterMaterials = null;
+            _scooter = null;
+            _scooterMesh = null;
+        }
+
+        /// <summary>Onto the scooter: seated, the camera a little farther back, the engine running.</summary>
+        public bool Mount()
+        {
+            if (!IsOpen || Riding || _scooter == null)
+            {
+                return false;
+            }
+
+            Riding = true;
+            _ride = new ScooterState { Heading = _parkedHeading };
+            _state = new LocomotionState { Facing = _parkedHeading, Grounded = true };
+            _scooter.GetComponent<BoxCollider>().enabled = false;
+            Quaternion facing = Quaternion.Euler(0f, _parkedHeading, 0f);
+            Move(_parked - facing * Vector3.forward * SeatBack);
+            _avatar.transform.rotation = facing;
+            _animator.Riding = true;
+            _animator.SetLocomotion(0f, true);
+            _walkCameraDistance = _orbit.Distance;
+            _orbit.Distance = Mathf.Max(_orbit.Distance, RideCameraDistance);
+            _orbit.Yaw = _parkedHeading;
+            if (Game.Services.TryGet(out AudioService audio))
+            {
+                if (_engineClip == null)
+                {
+                    const int rate = 44100;
+                    float[] data = VehicleSounds.Engine(rate);
+                    _engineClip = AudioClip.Create("scooter_engine", data.Length, 1, rate, false);
+                    _engineClip.SetData(data, 0);
+                }
+
+                _engine = audio.Play(_engineClip, 0.22f, SoundPriority.Effect, loop: true);
+            }
+
+            PlaceScooter();
+            StateChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>Off the scooter: parked where it stands, upright, and the rider steps off to the side that's clear.</summary>
+        public bool Dismount()
+        {
+            if (!Riding)
+            {
+                return false;
+            }
+
+            Riding = false;
+            float h = _ride.Heading;
+            Quaternion facing = Quaternion.Euler(0f, h, 0f);
+            Vector3 seat = _avatar.transform.position;
+            _parked = new Vector3(seat.x, 0f, seat.z) + facing * Vector3.forward * SeatBack;
+            _parkedHeading = h;
+            if (_scooter != null)
+            {
+                _scooter.transform.SetPositionAndRotation(_parked, facing);
+                _scooter.GetComponent<BoxCollider>().enabled = true;
+            }
+
+            Vector3 left = facing * Vector3.left * 0.8f;
+            Vector3 off = Walkable(seat + left) ? seat + left : Walkable(seat - left) ? seat - left : seat - facing * Vector3.forward * 0.8f;
+            Move(off);
+            _avatar.transform.rotation = facing;
+            _state = new LocomotionState { Facing = h, Grounded = true };
+            _animator.Riding = false;
+            _animator.SetLocomotion(0f, true);
+            _orbit.Distance = _walkCameraDistance > 0f ? _walkCameraDistance : OrbitCamera.DefaultDistance;
+            _ride.Speed = 0f;
+            if (Game.Services.TryGet(out AudioService audio))
+            {
+                audio.Stop(_engine, 0.2f);
+            }
+
+            _engine = VoiceHandle.None;
+            StateChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>The horn: a beep, and people ahead in the way step aside.</summary>
+        private void Horn()
+        {
+            Horns++;
+            Vector3 at = _avatar.transform.position;
+            if (Game.Services.TryGet(out CrowdView crowd) && crowd.Sim != null)
+            {
+                crowd.Sim.Horn(at.x, at.z, _ride.Heading);
+            }
+
+            if (Game.Services.TryGet(out AudioService audio))
+            {
+                if (_hornClip == null)
+                {
+                    const int rate = 44100;
+                    float[] data = VehicleSounds.Horn(rate);
+                    _hornClip = AudioClip.Create("scooter_horn", data.Length, 1, rate, false);
+                    _hornClip.SetData(data, 0);
+                }
+
+                audio.Play(_hornClip, 0.4f, SoundPriority.Effect);
+            }
+        }
+
+        private void RideStep(float dt)
+        {
+            float yaw = _orbit.Yaw * Mathf.Deg2Rad;
+            Vector2 stick = Vector2.ClampMagnitude(Stick, 1f);
+            float wx = stick.x * Mathf.Cos(yaw) + stick.y * Mathf.Sin(yaw);
+            float wz = -stick.x * Mathf.Sin(yaw) + stick.y * Mathf.Cos(yaw);
+            _ride = ScooterModel.Step(_ride, new ScooterInput(wx, wz), dt);
+
+            float h = _ride.Heading * Mathf.Deg2Rad;
+            var forward = new Vector3(Mathf.Sin(h), 0f, Mathf.Cos(h));
+            Vector3 before = _avatar.transform.position;
+            Vector3 want = forward * (_ride.Speed * dt);
+            float sign = _ride.Speed >= 0f ? 1f : -1f, reach = sign > 0f ? NoseAhead : TailBehind;
+
+            // The nose (or the tail, rolling back) must stay on open ground and clear of anything solid.
+            Vector3 end = before + forward * (sign * reach) + want;
+            bool blocked = !Walkable(end);
+            if (!blocked && want.sqrMagnitude > 1e-8f
+                && Physics.SphereCast(before + Vector3.up * 0.6f, 0.25f, forward * sign, out RaycastHit hit, reach - 0.25f + want.magnitude,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                && hit.collider != _body)
+            {
+                blocked = true;
+            }
+
+            if (blocked)
+            {
+                _ride = ScooterModel.Bump(_ride, 0f);
+                want = Vector3.zero;
+            }
+
+            _body.Move(want + Vector3.down * (2f * dt));
+            Vector3 after = _avatar.transform.position;
+            if (!Walkable(after))
+            {
+                Move(new Vector3(before.x, after.y, before.z));
+                after = before;
+            }
+
+            float wanted = want.magnitude;
+            if (wanted > 1e-4f)
+            {
+                float moved = new Vector2(after.x - before.x, after.z - before.z).magnitude;
+                _ride = ScooterModel.Bump(_ride, moved / wanted);
+            }
+
+            _metres += new Vector2(after.x - before.x, after.z - before.z).magnitude;
+            _avatar.transform.rotation = Quaternion.Euler(0f, _ride.Heading, -_ride.Lean);
+            PlaceScooter();
+            _animator.SetLocomotion(Speed, true);
+            _orbit.Follow(_ride.Heading, Speed > 0.5f, dt, _autoRecentre);
+            if (_engine.IsValid && Game.Services.TryGet(out AudioService audio))
+            {
+                audio.SetPitch(_engine, 0.75f + 1.1f * Mathf.Abs(_ride.Speed) / ScooterModel.MaxSpeed);
+            }
+        }
+
+        private void PlaceScooter()
+        {
+            if (_scooter == null)
+            {
+                return;
+            }
+
+            Transform t = _avatar.transform;
+            Quaternion r = t.rotation;
+            _scooter.transform.SetPositionAndRotation(t.position + r * (Vector3.forward * SeatBack), r);
         }
 
         private void OnFootDown()

@@ -25,6 +25,10 @@ namespace UtsavNights.UI
         private RectTransform _interact;
         private TextMeshProUGUI _interactLabel;
         private TextMeshProUGUI _speed;
+        private TextMeshProUGUI _jumpLabel;
+
+        /// <summary>Phase 12 step 5: the speedometer's readings, made once so riding allocates nothing.</summary>
+        private static readonly string[] Kmh = BuildKmh();
         private ExploreController _controller;
         private bool _sprint;
         private bool _holdToSprint;
@@ -55,6 +59,9 @@ namespace UtsavNights.UI
         public VirtualStick Stick => _stick;
 
         public bool Sprinting => _sprint;
+
+        /// <summary>What the Jump button says: "Horn" on the scooter.</summary>
+        public string JumpText => _jumpLabel != null ? _jumpLabel.text : string.Empty;
 
         public string InteractLabel => _interact != null && _interact.gameObject.activeSelf ? _interactLabel.text : string.Empty;
 
@@ -202,6 +209,12 @@ namespace UtsavNights.UI
 
             _controller.Stick = move;
             _controller.Sprint = run;
+            if (_controller.Riding)
+            {
+                _speed.text = Kmh[Mathf.Clamp(ScooterModel.Kmh(_controller.RideState.Speed), 0, Kmh.Length - 1)];
+                return;
+            }
+
             Gait g = _controller.Gait;
             _speed.text = g == Gait.Idle ? string.Empty : g.ToString();
         }
@@ -296,6 +309,9 @@ namespace UtsavNights.UI
 
             if (open)
             {
+                // On the scooter: Jump is the horn and there's no sprint.
+                _jumpLabel.text = _controller.Riding ? "Horn" : "Jump";
+                _sprintButton.gameObject.SetActive(!_controller.Riding);
                 bool any = !string.IsNullOrEmpty(_controller.Prompt);
                 _interact.gameObject.SetActive(any);
                 _interactLabel.text = _controller.Prompt;
@@ -372,6 +388,7 @@ namespace UtsavNights.UI
             // Right thumb: Jump, Sprint, Interact.
             RectTransform jump = _jump = Round(_overlay, "Jump", new Vector2(-60f, 60f), 180f, UiTheme.IndigoLight);
             Button(jump, "Jump", UiTheme.IndigoLight, UiTheme.OffWhite, () => _controller?.Jump()).sprite = UiKit.Circle;
+            _jumpLabel = jump.GetComponentInChildren<TextMeshProUGUI>();
 
             // Sprint: tap on and off, or hold (the player's choice in the pause menu and Settings).
             RectTransform sprint = _sprintButton = Round(_overlay, "Sprint", new Vector2(-270f, 40f), 150f, UiTheme.IndigoLight);
@@ -411,6 +428,11 @@ namespace UtsavNights.UI
             RectTransform speed = Area(_overlay, "Gait", 0.35f, 1f, 0.65f, 1f, new Vector2(0f, -UiTheme.MinTouch - 24f), new Vector2(0f, -24f));
             _speed = UiKit.Text(speed, string.Empty, UiTheme.SmallText, TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.5f));
             _speed.raycastTarget = false;
+
+            // The speedometer's characters, drawn once now so the font doesn't add them mid-ride.
+            _speed.text = "0123456789 km/h";
+            _speed.ForceMeshUpdate(true, true);
+            _speed.text = string.Empty;
             _overlay.gameObject.SetActive(false);
         }
 
@@ -494,6 +516,17 @@ namespace UtsavNights.UI
             rect.sizeDelta = new Vector2(size, size);
             rect.anchoredPosition = position;
             return rect;
+        }
+
+        private static string[] BuildKmh()
+        {
+            var kmh = new string[ScooterModel.Kmh(ScooterModel.MaxSpeed) + 1];
+            for (int i = 0; i < kmh.Length; i++)
+            {
+                kmh[i] = i + " km/h";
+            }
+
+            return kmh;
         }
 
         private static Image Button(RectTransform rect, string label, Color background, Color text, System.Action action)

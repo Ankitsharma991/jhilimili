@@ -32,6 +32,9 @@ namespace UtsavNights.Gameplay
 
         public float ClipTime => _time;
 
+        /// <summary>Phase 12 step 5: seated on the scooter; locomotion then holds the riding pose.</summary>
+        public bool Riding { get; set; }
+
         /// <summary>Plays a clip from its start, fading from the current pose.</summary>
         public void Play(AvatarClip clip)
         {
@@ -47,8 +50,8 @@ namespace UtsavNights.Gameplay
         /// </summary>
         public void SetLocomotion(float speed, bool grounded)
         {
-            AvatarClip loop = !grounded ? AvatarClip.Fall : speed < 0.15f ? AvatarClip.Idle : speed < 2.6f ? AvatarClip.Walk : AvatarClip.Run;
-            _walking = loop != AvatarClip.Idle;
+            AvatarClip loop = Riding ? AvatarClip.Ride : !grounded ? AvatarClip.Fall : speed < 0.15f ? AvatarClip.Idle : speed < 2.6f ? AvatarClip.Walk : AvatarClip.Run;
+            _walking = loop != AvatarClip.Idle && loop != AvatarClip.Ride;
             _rate = loop == AvatarClip.Walk ? Mathf.Clamp(speed / AvatarMotion.WalkCycleSpeed, 0.55f, 1.7f)
                 : loop == AvatarClip.Run ? Mathf.Clamp(speed / AvatarMotion.RunCycleSpeed, 0.75f, 1.55f) : 1f;
             if (AvatarMotion.Loops(Clip) && Clip != loop)

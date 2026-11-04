@@ -25,7 +25,7 @@ namespace UtsavNights.Tests
             (AvatarSkeleton.RightFoot, -50f, 50f, 10f, 10f),
         };
 
-        private static readonly AvatarClip[] Clips = { AvatarClip.Idle, AvatarClip.Walk, AvatarClip.Ignite, AvatarClip.Celebrate, AvatarClip.Run, AvatarClip.Fall, AvatarClip.CoverEars, AvatarClip.Wave };
+        private static readonly AvatarClip[] Clips = { AvatarClip.Idle, AvatarClip.Walk, AvatarClip.Ignite, AvatarClip.Celebrate, AvatarClip.Run, AvatarClip.Fall, AvatarClip.CoverEars, AvatarClip.Wave, AvatarClip.Ride };
         private static readonly AnimationStyle[] Styles = { AnimationStyle.Calm, AnimationStyle.Lively };
 
         [Test]

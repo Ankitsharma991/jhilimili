@@ -20,6 +20,9 @@ namespace UtsavNights.Gameplay
         public const int MidPool = 14;
         public const float DrawRange = 30f;
         public const float AssignInterval = 0.25f;
+
+        /// <summary>Phase 12 step 5: the room people give the player on the scooter.</summary>
+        public const float RidingSpace = 2.4f;
         public const int Seed = 1207;
         private const int BuildPerFrame = 3;
 
@@ -100,6 +103,7 @@ namespace UtsavNights.Gameplay
 
             BuildSome();
             Vector3 player = _explore.Player.position;
+            Sim.PlayerSpace = _explore.Riding ? RidingSpace : CrowdSim.PersonalSpace;
             Sim.Tick(Time.deltaTime, player.x, player.z, _explore.Speed > 0.2f);
             _clock -= Time.deltaTime;
             if (_clock <= 0f)
