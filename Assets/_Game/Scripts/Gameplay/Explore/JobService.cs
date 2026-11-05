@@ -23,6 +23,14 @@ namespace UtsavNights.Gameplay
         public bool Unread = true;
     }
 
+    /// <summary>An app opened on the explore phone: map, messages, jobs, camera, home or settings.</summary>
+    public readonly struct PhoneAppEvent
+    {
+        public PhoneAppEvent(string app) => App = app;
+
+        public string App { get; }
+    }
+
     /// <summary>A job was taken, finished, failed or given up (counts and ids only).</summary>
     public readonly struct JobEvent
     {
@@ -315,7 +323,7 @@ namespace UtsavNights.Gameplay
                 if (Game.Services.TryGet(out PlayerService player))
                 {
                     player.FinishJob(run.Def.Id);
-                    player.Reward(coins, rep, run.Def.Title);
+                    player.Reward(coins, rep, "job");
                 }
 
                 _messages.Insert(0, new PhoneMessage { From = run.Def.Giver, Text = run.Def.Thanks, JobId = run.Def.Id });

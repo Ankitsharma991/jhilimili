@@ -133,10 +133,13 @@ def compute(events, crashes=None, ecpm=None):
     m["quiet_mode_users"] = len(quiet)
 
     fps = defaultdict(list)
+    explore_fps = defaultdict(list)
     for e in events:
         if e["event"] == "perf_sample" and num(e, "avg_fps") is not None:
-            fps[e.get("tier") or "?"].append(num(e, "avg_fps"))
+            # Phase 12 samples say the mode; earlier ones are all the courtyard.
+            (explore_fps if e.get("mode") == "explore" else fps)[e.get("tier") or "?"].append(num(e, "avg_fps"))
     m["fps_by_tier"] = {t: (statistics.median(v), len(v)) for t, v in sorted(fps.items())}
+    m["explore_fps_by_tier"] = {t: (statistics.median(v), len(v)) for t, v in sorted(explore_fps.items())}
     m["downgrade_samples"] = sum(1 for e in events if e["event"] == "perf_sample" and (num(e, "downgrades") or 0) > 0)
 
     # R1 (Phase 6) exit gate: do players keep an avatar? Share of sessions that end with one.
@@ -281,6 +284,39 @@ def compute(events, crashes=None, ecpm=None):
             back = sum(1 for u in cohort if first_day[u] + timedelta(days=n) in active[u])
             m[f"d{n}_retention_{group}"] = back / len(cohort) if cohort else None
 
+    # Phase 12 (the open-world slice): does exploring hold players, and which parts do they use?
+    explores = [e for e in events if e["event"] == "explore_ended"]
+    explorers = {e["user"] for e in events if e["event"] == "explore_started"}
+    m["explorers"] = len(explorers)
+    m["explorer_share"] = len(explorers) / len(by_user) if by_user else None
+    secs = [num(e, "seconds") for e in explores if num(e, "seconds") is not None]
+    m["median_explore_s"] = statistics.median(secs) if secs else None
+    total = sum(secs)
+    m["district_time_share"] = sum(num(e, "district_s") or 0 for e in explores) / total if total else None
+    m["ride_time_share"] = sum(num(e, "ride_s") or 0 for e in explores) / total if total else None
+    jobs = defaultdict(lambda: [0, 0])
+    for e in events:
+        if e["event"] == "job_started":
+            jobs[e.get("job") or "?"][0] += 1
+        elif e["event"] == "job_ended" and e.get("outcome") == "completed":
+            jobs[e.get("job") or "?"][1] += 1
+    m["jobs"] = {j: (started, done, done / started if started else None) for j, (started, done) in sorted(jobs.items())}
+    placed = [e for e in events if e["event"] == "town_cracker_placed"]
+    m["town_place_tries"] = len(placed)
+    m["town_refusal_rate"] = sum(1 for e in placed if e.get("verdict") != "ok") / len(placed) if placed else None
+    m["town_refusals"] = Counter(e.get("verdict") for e in placed if e.get("verdict") not in (None, "ok")).most_common(4)
+    m["town_lit"] = sum(1 for e in events if e["event"] == "town_cracker_lit")
+    shows = [e for e in events if e["event"] == "town_show"]
+    m["town_shows"] = len(shows)
+    m["town_show_near_rate"] = sum(1 for e in shows if num(e, "near") == 1) / len(shows) if shows else None
+    m["phone_apps"] = Counter(e.get("app") for e in events if e["event"] == "phone_app" and e.get("app")).most_common(6)
+    m["level_ups"] = sum(1 for e in events if e["event"] == "level_up")
+    for group, users in (("explorers", explorers), ("nonexplorers", set(by_user) - explorers)):
+        for n in (1, 7):
+            cohort = [u for u in users if last_day and first_day[u] + timedelta(days=n) <= last_day]
+            back = sum(1 for u in cohort if first_day[u] + timedelta(days=n) in active[u])
+            m[f"d{n}_retention_{group}"] = back / len(cohort) if cohort else None
+
     # PRD 15.3: sessions per user x impressions per session x eCPM / 1000.
     if ecpm is not None and m["sessions_per_user"] is not None and m["ads_per_session"] is not None:
         m["ad_revenue_per_user_usd"] = m["sessions_per_user"] * m["ads_per_session"] * ecpm / 1000
@@ -419,6 +455,23 @@ def report(m, since, days, installs=None):
     lines.append(f"| D1 / D7 return, expansion users vs others | {fmt(m['d1_retention_expansion'], 'pct')} vs {fmt(m['d1_retention_nonexpansion'], 'pct')} / "
                  f"{fmt(m['d7_retention_expansion'], 'pct')} vs {fmt(m['d7_retention_nonexpansion'], 'pct')} |")
     lines.append("| Worth the content cost? | Compare these users' return and the revenue section with the art and review cost of each feature (PRD 19) |")
+    lines += ["", "## Open world (Phase 12 slice)", "", "| Metric | Value |", "|---|---|"]
+    lines.append(f"| Users who explored / median time exploring | {m['explorers']} ({fmt(m['explorer_share'], 'pct')}) / {fmt(m['median_explore_s'], 'n')} s |")
+    lines.append(f"| Of the time exploring: in the bazaar / on the scooter | {fmt(m['district_time_share'], 'pct')} / {fmt(m['ride_time_share'], 'pct')} |")
+    for job, (started, done, rate) in m["jobs"].items():
+        lines.append(f"| Job {job}: taken / finished | {started} / {done} ({fmt(rate, 'pct')}) |")
+    lines.append(f"| Crackers set down in the town: tries / refused / lit | {m['town_place_tries']} / {fmt(m['town_refusal_rate'], 'pct')} / {m['town_lit']} |")
+    if m["town_refusals"]:
+        lines.append(f"| Why refused | {', '.join(f'{k} ({n})' for k, n in m['town_refusals'])} |")
+    lines.append(f"| District shows / with the player near | {m['town_shows']} / {fmt(m['town_show_near_rate'], 'pct')} |")
+    if m["phone_apps"]:
+        lines.append(f"| Phone apps opened | {', '.join(f'{k} ({n})' for k, n in m['phone_apps'])} |")
+    lines.append(f"| Level ups | {m['level_ups']} |")
+    if m["explore_fps_by_tier"]:
+        lines.append(f"| Median fps exploring, by tier (target 30) | {', '.join(f'{t} {v:.1f} ({n})' for t, (v, n) in m['explore_fps_by_tier'].items())} |")
+    lines.append(f"| D1 / D7 return, explorers vs others | {fmt(m['d1_retention_explorers'], 'pct')} vs {fmt(m['d1_retention_nonexplorers'], 'pct')} / "
+                 f"{fmt(m['d7_retention_explorers'], 'pct')} vs {fmt(m['d7_retention_nonexplorers'], 'pct')} |")
+    lines.append("| Build the whole town? | Only if explorers return more and the slice holds 30 fps on mid phones (open-world plan) |")
     lines += ["", "Small tests (20 to 50 users) can judge feel, time to ignition, completion and crashes. "
               "Retention, conversion and ad revenue need hundreds to thousands of users (PRD 17)."]
     return "\n".join(lines)
@@ -509,6 +562,25 @@ def self_test():
     add("u3", t0 + timedelta(minutes=16), "photo_suggestion", outcome="noface", camera=1)
     add("u3", t0 + timedelta(minutes=17), "photo_suggestion", outcome="suggested", camera=0)
 
+    # u1 explores twice (half the time in the bazaar, a quarter riding), takes the lane job and finishes it, tries three
+    # crackers in the town (refused on the road once), lights two, and watches one of two district shows.
+    add("u1", t0 + timedelta(minutes=18), "explore_started", tier="mid")
+    add("u1", t0 + timedelta(minutes=18, seconds=5), "perf_sample", avg_fps=33.0, tier="mid", downgrades=0, mode="explore")
+    add("u1", t0 + timedelta(minutes=18, seconds=10), "phone_app", app="jobs")
+    add("u1", t0 + timedelta(minutes=18, seconds=20), "job_started", job="light_the_lane")
+    add("u1", t0 + timedelta(minutes=20), "job_ended", job="light_the_lane", outcome="completed", seconds=100)
+    add("u1", t0 + timedelta(minutes=20, seconds=5), "level_up", level=2, reason="job")
+    add("u1", t0 + timedelta(minutes=21), "town_cracker_placed", id="flowerpot_gold", verdict="on_the_road")
+    add("u1", t0 + timedelta(minutes=21, seconds=10), "town_cracker_placed", id="flowerpot_gold", verdict="ok")
+    add("u1", t0 + timedelta(minutes=21, seconds=20), "town_cracker_placed", id="rocket_basic", verdict="ok")
+    add("u1", t0 + timedelta(minutes=21, seconds=30), "town_cracker_lit", id="flowerpot_gold")
+    add("u1", t0 + timedelta(minutes=21, seconds=40), "town_cracker_lit", id="rocket_basic")
+    add("u1", t0 + timedelta(minutes=22), "town_show", place="ghat", near=1)
+    add("u1", t0 + timedelta(minutes=23), "explore_ended", seconds=300, metres=900, jumps=3, ride_s=60, district_s=150)
+    add("u1", t0 + timedelta(minutes=24), "explore_started", tier="mid")
+    add("u1", t0 + timedelta(minutes=27), "town_show", place="chowk", near=0)
+    add("u1", t0 + timedelta(minutes=28), "explore_ended", seconds=100, metres=300, jumps=0, ride_s=40, district_s=50)
+
     events = load_events(rows, t0.date(), 8)
     m = compute(events, crashes=1, ecpm=2.0)
     checks = {
@@ -561,6 +633,17 @@ def self_test():
         "interior_users": (m["interior_users"], 1),
         "median_room_decorations": (m["median_room_decorations"], 3.0),
         "photo_success_rate": (m["photo_success_rate"], 0.5),
+        "explorers": (m["explorers"], 1),
+        "median_explore_s": (m["median_explore_s"], 200.0),
+        "district_time_share": (m["district_time_share"], 0.5),
+        "ride_time_share": (m["ride_time_share"], 0.25),
+        "lane_job": (m["jobs"].get("light_the_lane"), (1, 1, 1.0)),
+        "town_refusal_rate": (round(m["town_refusal_rate"], 4), round(1 / 3, 4)),
+        "top_town_refusal": (m["town_refusals"][0][0] if m["town_refusals"] else None, "on_the_road"),
+        "town_lit": (m["town_lit"], 2),
+        "town_show_near_rate": (m["town_show_near_rate"], 0.5),
+        "explore_fps_mid": (m["explore_fps_by_tier"].get("mid"), (33.0, 1)),
+        "courtyard_fps_mid": (m["fps_by_tier"].get("mid"), (58.5, 4)),
         # 7 sessions / 4 users x 2 ads / 7 sessions x $2 / 1000.
         "ad_revenue_per_user_usd": (round(m["ad_revenue_per_user_usd"], 6), round(7 / 4 * 2 / 7 * 2 / 1000, 6)),
     }

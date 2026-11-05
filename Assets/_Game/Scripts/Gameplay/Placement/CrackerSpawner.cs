@@ -50,7 +50,7 @@ namespace UtsavNights.Gameplay
         }
 
         /// <summary>Places a cracker at a world point. Returns null when the limit is reached or the definition is invalid.</summary>
-        public CrackerRuntime Spawn(CrackerDefinition definition, Vector3 position, Quaternion rotation)
+        public CrackerRuntime Spawn(CrackerDefinition definition, Vector3 position, Quaternion rotation, bool byPlayer = true)
         {
             if (definition == null || _active.Count >= ItemLimit)
             {
@@ -65,7 +65,7 @@ namespace UtsavNights.Gameplay
 
             runtime.transform.SetPositionAndRotation(position, rotation);
             runtime.gameObject.SetActive(true);
-            if (!runtime.Place())
+            if (!runtime.Place(byPlayer))
             {
                 Release(runtime);
                 return null;

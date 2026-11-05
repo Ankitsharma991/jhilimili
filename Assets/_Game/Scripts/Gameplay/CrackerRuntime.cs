@@ -217,7 +217,8 @@ namespace UtsavNights.Gameplay
             _audio?.Stop(_loopVoice);
         }
 
-        public bool Place()
+        /// <summary>Sets it on the ground. <paramref name="byPlayer"/> false (a town show's cracker) says nothing to analytics.</summary>
+        public bool Place(bool byPlayer = true)
         {
             Register();
             if (_machine == null || !_machine.Place())
@@ -231,13 +232,29 @@ namespace UtsavNights.Gameplay
                 _model.SetActive(true);
             }
 
-            Game.Events.Publish(new CrackerPlacedEvent(definition.Id));
+            if (byPlayer)
+            {
+                Game.Events.Publish(new CrackerPlacedEvent(definition.Id));
+            }
+
             return true;
         }
 
-        public void Ignite()
+        /// <summary>
+        /// Lights the fuse. <paramref name="byPlayer"/> false is a cracker the town lights itself (the district's shows, the
+        /// rooftop job's racks): it isn't the player's, so it doesn't count as their ignition (stats, analytics, ads, the first
+        /// ignition) though it plays and goes off the same.
+        /// </summary>
+        public void Ignite() => Ignite(true);
+
+        public void Ignite(bool byPlayer)
         {
             if (!CanIgnite || !_machine.Ignite())
+            {
+                return;
+            }
+
+            if (!byPlayer)
             {
                 return;
             }

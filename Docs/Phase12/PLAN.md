@@ -58,6 +58,8 @@ everything", at that level of product. This phase builds one district that plays
 
 | 7. Fireworks in the town | Done (to be tried on the tablet). `Core/District/TownFireworks`: `TownSafety` (where a cracker may go: open ground or a flat roof; never on a main road's carriageway, which the traffic uses; 3 m from doors, the lane's gates and stalls with their awnings, 2.5 m from the lamp posts' wires, 1.5 m from walls; people kept back 3, 5 or 8 m by how loud it is, 6 m at least for anything that flies; rockets, sky shots and cakes need open sky, away from walls, the clock tower and the narrow lanes; three set down at a time; each refusal explained in plain words), `TownShows` (the district's own shows, at the ghat over the river and on the chowk in turn: the first two and a half minutes into exploring, then every six, announced 45 seconds before; a 26-second program building to a finale of big ones from every pad, the same every time). `CrowdSim.GatherAround` (people come to watch and stand in a ring, keeping back from the fireworks). `Gameplay/District/TownFireworks` (the player's crackers in the town: the tray's unlocked ones, sparklers aside; set down in front of the player if the spot is safe, Light the fuse when there, the crowd gathers round; the district's shows run on their pads with the game's own crackers, with a phone message and a note on screen before; a show stops and crackers set down are picked up when the player leaves the bazaar). The rooftop job's finale now lights real rockets and sky shots on its racks (the sky bursts stay as a stand-in when the scene is full). Explore: a Crackers button and a strip of crackers to set down, Pick up; the phone's map shows where and when the next show is. `ShowPlayer.Catalog`. Measured in the editor: a show on the chowk with the crowd watching, 1.02 KB of garbage a frame. Tests: `TownFireworksTests` (Mono: the square, the ghat and the show pads are fine for anything; not on the roads, by doors, stalls or wires, or the lane's gates; people kept back by loudness; aerials need open sky; roofs are fine; every refusal explained; the crowd's ring keeps back; the timetable, turns and the program), `TownFireworksSmokeTests` (Play Mode: refused on the bazaar road, then lit in the square and it goes off; the district's show at the ghat with people coming, stopped on leaving; the cracker strip), `JobSmokeTests` (the rooftop show lights real rockets), `PerformanceGuardTests` (a show on the chowk) |
 
+| 8. Measure | Done in the editor; the phone runs are the owner's (see [MEASURE.md](MEASURE.md)). `Core/Diagnostics/ExploreBench`: `BenchLeg` (one leg's frame figures, garbage, memory, crackers on the scene and refused, people and vehicles) and `ExploreBudget` (30 fps or more, under 5% of frames over 66.7 ms, 4 KB of garbage a frame, 700 / 900 / 1200 MB by tier; every miss in plain words; a JSON line a leg). `UI/ExploreBench` (a scripted tour, the same every time: the courtyard as a baseline, sprinting down the bazaar road, standing by the stalls turning the camera, the scooter through the traffic, the district's show on the chowk; results to explore_bench.jsonl and logcat `[UTSAV_BENCH]`; from the developer overlay or launched with `utsav_bench=explore`; not in store builds). `tools/explore_bench.sh` (runs it over USB, with peak memory and the battery temperature, and prints a line a leg). Analytics for the open world: `explore_started`, `explore_ended` (seconds, metres, jumps, time on the scooter and in the bazaar), `job_started`, `job_ended`, `level_up`, `phone_app`, `town_cracker_placed` (the safety verdict), `town_cracker_lit`, `town_show` (the place, whether the player was near); `perf_sample` says the mode; never a position or a route. `TownSafety.Id`, `TownShowPlace.Id`. `tools/metrics_report.py` gains an open-world section (who explores and for how long, the time in the bazaar and riding, each job taken and finished, refusals by rule, shows watched, fps exploring by tier, explorers' return against others) and `Docs/Phase5/metrics_query.sql` the new columns. **Fixed:** the town's own crackers (the district's shows and the rooftop job's racks) counted as the player's: in the profile's crackers lit, the ad policy's ignitions, analytics and the first-ignition flag; they now go off without counting (`CrackerRuntime.Ignite(byPlayer)`, `CrackerSpawner.Spawn(byPlayer)`). The rooftop job paid with its title as the reward's reason id; now `job`. Tests: `ExploreBenchTests` (Mono: percentiles and spikes, the budgets by tier, the results line), `AnalyticsSchemaTests` (the open-world events carry no position, route or name; every verdict, place, job and phone app is a safe id), `ExploreBenchSmokeTests` (Play Mode: the bench tours every leg and writes its results; the open-world events reach analytics, through the schema) |
+
 ### Step 1 notes
 
 - **It needs feeling on the tablet.** The numbers above are a first tuning, from what makes mobile third-person games
@@ -137,3 +139,28 @@ everything", at that level of product. This phase builds one district that plays
   fires fewer crackers. Step 8 measures it on the phone.
 - **Review list:** the distances; quiet hours in the town; whether the player can join a district show (light from its
   pads); a show the player designs, played on the chowk.
+
+### Step 8 notes
+
+- **The phone runs are next, and they're the owner's call:** the bench is on the phone with the next install, and
+  `tools/explore_bench.sh` runs it over USB, but it launches the app, so it waits for the owner's go-ahead. The results
+  table is in [MEASURE.md](MEASURE.md).
+- **The editor's numbers aren't the phone's.** In the editor every leg runs well over 30 fps; what matters is the
+  tablet and a 4 GB mid-range phone. The levers if a budget is missed are listed in MEASURE.md, cheapest first.
+- **Garbage needs the development APK** (the release player can't count it); the GC guards in the editor cover every
+  open-world leg (exploring, riding, the town show).
+
+## Phase 12: what's built, and what's next
+
+The slice is built: the character and camera, the profile and settings, the bazaar district, its people, traffic and
+the scooter, the map, phone and three jobs, fireworks in the town, and the bench to measure it. The definition of done
+waits on two things only the owner can do: **feeling it on the tablet** (the review lists in each step's notes) and
+**the phone runs** (MEASURE.md).
+
+The open-world plan's next phase (the whole town) should start only after:
+
+1. The tablet review of the slice: controls, camera, scooter, jobs, the safety rules' distances, how busy the streets
+   are.
+2. The phone runs: 30 fps on a mid-range phone, or a decision from MEASURE.md's levers.
+3. The open questions in [Docs/OpenWorld/PLAN.md](../OpenWorld/PLAN.md): the art budget and direction, the minimum
+   phone, and the PRD update.

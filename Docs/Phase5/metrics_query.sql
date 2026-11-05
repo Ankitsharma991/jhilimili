@@ -67,7 +67,18 @@ SELECT
   (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'show_played') AS show_played,
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'room') AS room,
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'outcome') AS outcome,
-  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'camera') AS camera
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'camera') AS camera,
+  -- Phase 12 open world
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'mode') AS mode,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'jumps') AS jumps,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'ride_s') AS ride_s,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'district_s') AS district_s,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'job') AS job,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'level') AS level,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'app') AS app,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'verdict') AS verdict,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'place') AS place,
+  (SELECT COALESCE(value.int_value, CAST(value.double_value AS INT64)) FROM UNNEST(event_params) WHERE key = 'near') AS near
 FROM `PROJECT.analytics_000000000.events_*`
 WHERE _TABLE_SUFFIX BETWEEN '20261101' AND '20261131'
   AND event_name IN ('app_first_open', 'scene_ready', 'cracker_placed', 'cracker_ignited', 'payoff_complete',
@@ -81,5 +92,7 @@ WHERE _TABLE_SUFFIX BETWEEN '20261101' AND '20261131'
                      'clip_recorded', 'clip_failed',
                      'account_changed', 'backup_made', 'backup_restored', 'home_shared', 'home_visited',
                      'home_reported', 'home_withdrawn', 'show_shared', 'show_opened',
-                     'midnight', 'interior_entered', 'interior_left', 'photo_suggestion')
+                     'midnight', 'interior_entered', 'interior_left', 'photo_suggestion',
+                     'explore_started', 'explore_ended', 'job_started', 'job_ended', 'level_up', 'phone_app',
+                     'town_cracker_placed', 'town_cracker_lit', 'town_show')
 ORDER BY user, ts

@@ -39,6 +39,21 @@ namespace UtsavNights.Core.District
         public static float PeopleClear(int intensity, bool aerial) =>
             Math.Max(aerial ? 6f : 0f, intensity <= 0 ? 3f : intensity == 1 ? 5f : 8f);
 
+        /// <summary>A verdict as a short id for analytics: ok, on_the_road, near_people and so on.</summary>
+        public static string Id(TownVerdict v) => v switch
+        {
+            TownVerdict.Ok => "ok",
+            TownVerdict.NotOpenGround => "not_open_ground",
+            TownVerdict.OnTheRoad => "on_the_road",
+            TownVerdict.NearDoor => "near_door",
+            TownVerdict.NearStall => "near_stall",
+            TownVerdict.NearWires => "near_wires",
+            TownVerdict.NearPeople => "near_people",
+            TownVerdict.NoOpenSky => "no_open_sky",
+            TownVerdict.TooMany => "too_many",
+            _ => "other",
+        };
+
         public static string Explain(TownVerdict v) => v switch
         {
             TownVerdict.NotOpenGround => "Find open ground to set it down.",
@@ -245,6 +260,9 @@ namespace UtsavNights.Core.District
     public sealed class TownShowPlace
     {
         public string Name;
+
+        /// <summary>A short id for analytics: ghat, chowk.</summary>
+        public string Id;
         public float WatchX;
         public float WatchZ;
         public readonly List<(float x, float z)> Pads = new List<(float, float)>();
@@ -264,13 +282,13 @@ namespace UtsavNights.Core.District
 
         public static List<TownShowPlace> Places(DistrictPlan plan)
         {
-            var ghat = new TownShowPlace { Name = "the ghat", WatchX = plan.Square.CentreX + 40f, WatchZ = plan.Ghat.Z0 - 4f };
+            var ghat = new TownShowPlace { Name = "the ghat", Id = "ghat", WatchX = plan.Square.CentreX + 40f, WatchZ = plan.Ghat.Z0 - 4f };
             for (int i = 0; i < 5; i++)
             {
                 ghat.Pads.Add((ghat.WatchX - 16f + i * 8f, plan.Ghat.CentreZ));
             }
 
-            var chowk = new TownShowPlace { Name = "the chowk", WatchX = plan.Square.CentreX, WatchZ = plan.Square.CentreZ };
+            var chowk = new TownShowPlace { Name = "the chowk", Id = "chowk", WatchX = plan.Square.CentreX, WatchZ = plan.Square.CentreZ };
             foreach ((float dx, float dz) in new[] { (-14f, -14f), (14f, -14f), (-14f, 14f), (14f, 14f) })
             {
                 chowk.Pads.Add((plan.Square.CentreX + dx, plan.Square.CentreZ + dz));

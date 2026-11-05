@@ -14,12 +14,14 @@ namespace UtsavNights.Gameplay
     /// <summary>Explore mode began or ended (analytics later; distances in whole metres).</summary>
     public readonly struct ExploreEvent
     {
-        public ExploreEvent(bool started, int seconds, int metres, int jumps)
+        public ExploreEvent(bool started, int seconds, int metres, int jumps, int rideSeconds = 0, int districtSeconds = 0)
         {
             Started = started;
             Seconds = seconds;
             Metres = metres;
             Jumps = jumps;
+            RideSeconds = rideSeconds;
+            DistrictSeconds = districtSeconds;
         }
 
         public bool Started { get; }
@@ -29,6 +31,11 @@ namespace UtsavNights.Gameplay
         public int Metres { get; }
 
         public int Jumps { get; }
+
+        /// <summary>Of the time explored: on the scooter, and in the bazaar (past the lane).</summary>
+        public int RideSeconds { get; }
+
+        public int DistrictSeconds { get; }
     }
 
     /// <summary>
@@ -82,6 +89,8 @@ namespace UtsavNights.Gameplay
         private float _cameraDistance;
         private float _startedAt;
         private float _metres;
+        private float _rideSeconds;
+        private float _districtSeconds;
         private int _jumps;
         private int _step;
         private bool _jumpPressed;
@@ -217,6 +226,8 @@ namespace UtsavNights.Gameplay
             Landscape(true);
             _startedAt = Time.unscaledTime;
             _metres = 0f;
+            _rideSeconds = 0f;
+            _districtSeconds = 0f;
             _jumps = 0;
             IsOpen = true;
             _cameraDistance = _orbit.Distance;
@@ -242,7 +253,7 @@ namespace UtsavNights.Gameplay
             DestroyScooter();
             IsOpen = false;
             Game.Events.Unsubscribe<Core.Settings.SettingsChangedEvent>(OnSettings);
-            Game.Events.Publish(new ExploreEvent(false, (int)(Time.unscaledTime - _startedAt), (int)_metres, _jumps));
+            Game.Events.Publish(new ExploreEvent(false, (int)(Time.unscaledTime - _startedAt), (int)_metres, _jumps, (int)_rideSeconds, (int)_districtSeconds));
             if (_avatar != null)
             {
                 Destroy(_avatar.gameObject);
@@ -388,8 +399,14 @@ namespace UtsavNights.Gameplay
 
             float dt = Mathf.Min(Time.deltaTime, 0.05f);
             SyncScooter();
+            if (_district != null && _district.Active && _avatar.transform.position.x >= DistrictGenerator.Bazaar.Join.X0)
+            {
+                _districtSeconds += Time.deltaTime;
+            }
+
             if (Riding)
             {
+                _rideSeconds += Time.deltaTime;
                 RideStep(dt);
                 UpdatePrompt();
                 return;

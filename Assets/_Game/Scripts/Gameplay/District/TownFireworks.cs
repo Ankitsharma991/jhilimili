@@ -15,19 +15,37 @@ namespace UtsavNights.Gameplay
         public string Text { get; }
     }
 
-    /// <summary>The player lit a cracker in the town (its id), or a district show began (the place).</summary>
+    /// <summary>The player lit a cracker in the town (its id), or a district show began (the place's id: ghat, chowk).</summary>
     public readonly struct TownFireworkEvent
     {
-        public TownFireworkEvent(string crackerId, string showPlace)
+        public TownFireworkEvent(string crackerId, string showPlace, bool near = false)
         {
             CrackerId = crackerId;
             ShowPlace = showPlace;
+            Near = near;
         }
 
         public string CrackerId { get; }
 
         /// <summary>Empty for the player's own cracker.</summary>
         public string ShowPlace { get; }
+
+        /// <summary>For a show: whether the player was close enough to watch it when it began.</summary>
+        public bool Near { get; }
+    }
+
+    /// <summary>The player tried to set a cracker down in the town: Ok, or why not.</summary>
+    public readonly struct TownPlacedEvent
+    {
+        public TownPlacedEvent(string crackerId, TownVerdict verdict)
+        {
+            CrackerId = crackerId;
+            Verdict = verdict;
+        }
+
+        public string CrackerId { get; }
+
+        public TownVerdict Verdict { get; }
     }
 
     /// <summary>
@@ -43,6 +61,9 @@ namespace UtsavNights.Gameplay
         public const float PlaceAhead = 1.8f;
         public const float LightReach = 1.7f;
         public const float GatherReach = 60f;
+
+        /// <summary>A show began with the player this close to its watch point: they could see it.</summary>
+        public const float NearShow = 90f;
 
         public static readonly string[] ShowCrackers = { "skyshot_green", "rocket_basic", "skyshot_gold_crown" };
 
@@ -70,6 +91,9 @@ namespace UtsavNights.Gameplay
         public int ShowsHeld { get; private set; }
 
         public int CuesFired { get; private set; }
+
+        /// <summary>Show crackers the scene's limit turned away (Phase 12 step 8 measures this on phones).</summary>
+        public int Refused { get; private set; }
 
         /// <summary>When the next district show starts, on <see cref="Clock"/>, and where.</summary>
         public (float at, string place) NextShow => (_nextShowAt, _places != null && _places.Count > 0 ? _places[TownShows.PlaceOf(_nextShow, _places.Count)].Name : string.Empty);
@@ -140,11 +164,13 @@ namespace UtsavNights.Gameplay
                 {
                     _placed.Add(c);
                     _ours.Add(c);
+                    Game.Events.Publish(new TownPlacedEvent(d.Id, v));
                     Game.Events.Publish(new TownNoticeEvent("Set down. Walk up to it and light the fuse."));
                     return v;
                 }
             }
 
+            Game.Events.Publish(new TownPlacedEvent(d.Id, v));
             Game.Events.Publish(new TownNoticeEvent(TownSafety.Explain(v)));
             return v;
         }
@@ -221,14 +247,15 @@ namespace UtsavNights.Gameplay
                 return false;
             }
 
-            CrackerRuntime c = spawner.Spawn(d, at, Quaternion.Euler(0f, yaw, 0f));
+            CrackerRuntime c = spawner.Spawn(d, at, Quaternion.Euler(0f, yaw, 0f), byPlayer: false);
             if (c == null)
             {
+                Refused++;
                 return false;
             }
 
             _ours.Add(c);
-            c.Ignite();
+            c.Ignite(byPlayer: false);
             CuesFired++;
             return true;
         }
@@ -322,7 +349,9 @@ namespace UtsavNights.Gameplay
                 crowd.Sim.GatherAround(place.WatchX, place.WatchZ, 140f, TownShows.Length + 20f, 14f);
             }
 
-            Game.Events.Publish(new TownFireworkEvent(string.Empty, place.Name));
+            bool near = _explore != null && _explore.Player != null
+                        && new Vector2(_explore.Player.position.x - place.WatchX, _explore.Player.position.z - place.WatchZ).magnitude < NearShow;
+            Game.Events.Publish(new TownFireworkEvent(string.Empty, place.Id, near));
             List<TownCue> program = TownShows.Program(place.Pads.Count, 31 + number);
             float start = Time.time;
             foreach (TownCue cue in program)

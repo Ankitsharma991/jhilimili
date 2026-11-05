@@ -78,9 +78,16 @@ namespace UtsavNights.Gameplay
             Game.Events.Subscribe<MidnightEvent>(OnMidnight);
             Game.Events.Subscribe<InteriorEvent>(OnInterior);
             Game.Events.Subscribe<PhotoAvatarEvent>(OnPhoto);
+            Game.Events.Subscribe<ExploreEvent>(OnExplore);
+            Game.Events.Subscribe<JobEvent>(OnJob);
+            Game.Events.Subscribe<PlayerRewardEvent>(OnReward);
+            Game.Events.Subscribe<PhoneAppEvent>(OnPhoneApp);
+            Game.Events.Subscribe<TownPlacedEvent>(OnTownPlaced);
+            Game.Events.Subscribe<TownFireworkEvent>(OnTownFirework);
         }
 
         private bool _reportedRestore;
+        private bool _exploring;
         private int _walkSeconds;
 
         public IAnalyticsBackend Backend { get; }
@@ -134,6 +141,12 @@ namespace UtsavNights.Gameplay
             Game.Events.Unsubscribe<MidnightEvent>(OnMidnight);
             Game.Events.Unsubscribe<InteriorEvent>(OnInterior);
             Game.Events.Unsubscribe<PhotoAvatarEvent>(OnPhoto);
+            Game.Events.Unsubscribe<ExploreEvent>(OnExplore);
+            Game.Events.Unsubscribe<JobEvent>(OnJob);
+            Game.Events.Unsubscribe<PlayerRewardEvent>(OnReward);
+            Game.Events.Unsubscribe<PhoneAppEvent>(OnPhoneApp);
+            Game.Events.Unsubscribe<TownPlacedEvent>(OnTownPlaced);
+            Game.Events.Unsubscribe<TownFireworkEvent>(OnTownFirework);
         }
 
         /// <summary>app_first_open once per install (PRD 17: install quality).</summary>
@@ -215,7 +228,8 @@ namespace UtsavNights.Gameplay
                 Send("perf_sample", new EventParams()
                     .Add("avg_fps", System.Math.Round(SpikeMath.FpsFromFrameMs(_frames.Average), 1))
                     .Add("tier", TierName(tier))
-                    .Add("downgrades", (long)downgrades));
+                    .Add("downgrades", (long)downgrades)
+                    .Add("mode", _exploring ? "explore" : "courtyard"));
                 _frames.Clear();
             }
         }
@@ -377,6 +391,56 @@ namespace UtsavNights.Gameplay
             Send(e.Entered ? "interior_entered" : "interior_left", new EventParams().Add("room", e.Room).Add("decorations", (long)e.Decorations));
 
         private void OnPhoto(PhotoAvatarEvent e) => Send("photo_suggestion", new EventParams().Add("outcome", e.Outcome).Add("camera", e.Camera));
+
+        private void OnExplore(ExploreEvent e)
+        {
+            _exploring = e.Started;
+            if (e.Started)
+            {
+                int tier = Game.Services.TryGet(out QualityManager quality) ? quality.Tier : 0;
+                Send("explore_started", new EventParams().Add("tier", TierName(tier)));
+                return;
+            }
+
+            Send("explore_ended", new EventParams().Add("seconds", (long)e.Seconds).Add("metres", (long)e.Metres).Add("jumps", (long)e.Jumps)
+                .Add("ride_s", (long)e.RideSeconds).Add("district_s", (long)e.DistrictSeconds));
+        }
+
+        private void OnJob(JobEvent e)
+        {
+            if (e.Status == Core.Explore.JobStatus.Active)
+            {
+                Send("job_started", new EventParams().Add("job", e.JobId));
+                return;
+            }
+
+            Send("job_ended", new EventParams().Add("job", e.JobId).Add("outcome", e.Status.ToString().ToLowerInvariant()).Add("seconds", (long)e.Seconds));
+        }
+
+        private void OnReward(PlayerRewardEvent e)
+        {
+            if (e.LevelUp > 0)
+            {
+                Send("level_up", new EventParams().Add("level", (long)e.LevelUp).Add("reason", AnalyticsSchema.IsSafeId(e.Reason) ? ReasonId(e.Reason) : "other"));
+            }
+        }
+
+        private void OnPhoneApp(PhoneAppEvent e) => Send("phone_app", new EventParams().Add("app", ReasonId(e.App)));
+
+        private void OnTownPlaced(TownPlacedEvent e) =>
+            Send("town_cracker_placed", new EventParams().Add("id", e.CrackerId).Add("verdict", Core.District.TownSafety.Id(e.Verdict)));
+
+        private void OnTownFirework(TownFireworkEvent e)
+        {
+            if (string.IsNullOrEmpty(e.ShowPlace))
+            {
+                Send("town_cracker_lit", new EventParams().Add("id", e.CrackerId));
+            }
+            else
+            {
+                Send("town_show", new EventParams().Add("place", e.ShowPlace).Add("near", e.Near));
+            }
+        }
 
         /// <summary>A reason id as sent: "none" when empty (the schema allows only short ids).</summary>
         private static string ReasonId(string reason) => string.IsNullOrEmpty(reason) ? "none" : reason;

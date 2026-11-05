@@ -29,7 +29,11 @@ namespace UtsavNights.Tests
                 "account_changed", "backup_made", "backup_restored", "home_shared", "home_visited", "home_reported", "home_withdrawn", "show_shared", "show_opened",
             };
             string[] r5 = { "midnight", "interior_entered", "interior_left", "photo_suggestion" };
-            CollectionAssert.AreEquivalent(prd.Concat(r1).Concat(r3).Concat(r4).Concat(r5), AnalyticsSchema.EventNames.ToArray());
+            string[] openWorld =
+            {
+                "explore_started", "explore_ended", "job_started", "job_ended", "level_up", "phone_app", "town_cracker_placed", "town_cracker_lit", "town_show",
+            };
+            CollectionAssert.AreEquivalent(prd.Concat(r1).Concat(r3).Concat(r4).Concat(r5).Concat(openWorld), AnalyticsSchema.EventNames.ToArray());
         }
 
         [Test]
@@ -149,6 +153,43 @@ namespace UtsavNights.Tests
             {
                 Assert.IsTrue(AnalyticsSchema.IsSafeId(room.Id), room.Id);
             }
+        }
+
+        [Test]
+        public void OpenWorldEvents_CarryNoPositionOrRoute()
+        {
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("explore_ended", new EventParams().Add("seconds", 300L).Add("metres", 1200L).Add("jumps", 4L)
+                .Add("ride_s", 90L).Add("district_s", 240L)));
+            CollectionAssert.IsEmpty(AnalyticsSchema.Validate("perf_sample", new EventParams().Add("avg_fps", 31.5).Add("tier", "mid").Add("downgrades", 0L).Add("mode", "explore")));
+            foreach (string job in new[] { Core.Explore.JobCatalog.Lane, Core.Explore.JobCatalog.Diyas, Core.Explore.JobCatalog.Rooftop })
+            {
+                CollectionAssert.IsEmpty(AnalyticsSchema.Validate("job_ended", new EventParams().Add("job", job).Add("outcome", "completed").Add("seconds", 120L)), job);
+            }
+
+            foreach (Core.District.TownVerdict v in System.Enum.GetValues(typeof(Core.District.TownVerdict)))
+            {
+                CollectionAssert.IsEmpty(AnalyticsSchema.Validate("town_cracker_placed", new EventParams().Add("id", "flowerpot_gold").Add("verdict", Core.District.TownSafety.Id(v))), v.ToString());
+            }
+
+            foreach (Core.District.TownShowPlace place in Core.District.TownShows.Places(Core.District.DistrictGenerator.Bazaar))
+            {
+                CollectionAssert.IsEmpty(AnalyticsSchema.Validate("town_show", new EventParams().Add("place", place.Id).Add("near", true)), place.Name);
+            }
+
+            foreach (string app in new[] { "map", "messages", "jobs", "camera", "home", "settings" })
+            {
+                CollectionAssert.IsEmpty(AnalyticsSchema.Validate("phone_app", new EventParams().Add("app", app)));
+            }
+
+            foreach (string banned in new[] { "x", "z", "position", "route", "waypoint", "name" })
+            {
+                foreach (string e in new[] { "explore_ended", "job_ended", "town_cracker_placed", "town_show", "phone_app" })
+                {
+                    Assert.IsNotEmpty(AnalyticsSchema.Validate(e, new EventParams().Add(banned, 1L)), $"{e}: {banned} never leaves the phone");
+                }
+            }
+
+            Assert.IsNotEmpty(AnalyticsSchema.Validate("level_up", new EventParams().Add("level", 2L).Add("reason", "Light up the lane")), "a job's title is free text");
         }
 
         [Test]

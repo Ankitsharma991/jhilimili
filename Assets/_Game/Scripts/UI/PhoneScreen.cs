@@ -72,6 +72,7 @@ namespace UtsavNights.UI
         /// <summary>Opens an app by name, as tapping its tile does: map, messages, jobs, camera, home or settings.</summary>
         public void OpenApp(string app)
         {
+            Game.Events.Publish(new PhoneAppEvent(app));
             switch (app)
             {
                 case "map":

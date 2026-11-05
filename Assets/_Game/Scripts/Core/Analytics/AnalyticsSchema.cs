@@ -26,7 +26,7 @@ namespace UtsavNights.Core.Analytics
             { "purchase_started", new[] { "sku" } },
             { "purchase_done", new[] { "sku" } },
             { "clip_shared", new[] { "target", "seconds", "source", "fell_back" } },
-            { "perf_sample", new[] { "avg_fps", "tier", "downgrades" } },
+            { "perf_sample", new[] { "avg_fps", "tier", "downgrades", "mode" } },
 
             // R1, Phase 6 (avatar exit gate: do players keep an avatar?). Never the name, body shape or skin tone.
             { "avatar_creator_opened", new[] { "first" } },
@@ -79,6 +79,18 @@ namespace UtsavNights.Core.Analytics
             { "interior_entered", new[] { "room", "decorations" } },
             { "interior_left", new[] { "room", "decorations" } },
             { "photo_suggestion", new[] { "outcome", "camera" } },
+
+            // Phase 12 (the open-world slice: does exploring hold players, and which parts?). Seconds, counts, catalogue ids
+            // and short reason ids only: never a position, a route, a waypoint or anything typed. perf_sample says the mode.
+            { "explore_started", new[] { "tier" } },
+            { "explore_ended", new[] { "seconds", "metres", "jumps", "ride_s", "district_s" } },
+            { "job_started", new[] { "job" } },
+            { "job_ended", new[] { "job", "outcome", "seconds" } },
+            { "level_up", new[] { "level", "reason" } },
+            { "phone_app", new[] { "app" } },
+            { "town_cracker_placed", new[] { "id", "verdict" } },
+            { "town_cracker_lit", new[] { "id" } },
+            { "town_show", new[] { "place", "near" } },
         };
 
         public static IEnumerable<string> EventNames => Events.Keys;

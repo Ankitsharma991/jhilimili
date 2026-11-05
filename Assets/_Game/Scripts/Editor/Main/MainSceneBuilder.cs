@@ -574,6 +574,7 @@ namespace UtsavNights.EditorTools.Main
             finaleGo.transform.SetSiblingIndex(settingsGo.transform.GetSiblingIndex());
             canvasGo.AddComponent<UI.ScreenReaderSupport>();
             canvasGo.AddComponent<UI.MeasureTools>();
+            canvasGo.AddComponent<UI.ExploreBench>();
             canvasGo.AddComponent<UI.UnlockSheet>();
         }
 
