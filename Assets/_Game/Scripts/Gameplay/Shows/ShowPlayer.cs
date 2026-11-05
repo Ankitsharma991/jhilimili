@@ -94,6 +94,9 @@ namespace UtsavNights.Gameplay
 
         public void Configure(CrackerCatalog crackerCatalog) => catalog = crackerCatalog;
 
+        /// <summary>The game's crackers (Phase 12 step 7: the town's fireworks use them too).</summary>
+        public CrackerCatalog Catalog => catalog;
+
         /// <summary>Points the saved shows at another file (tests).</summary>
         public void UseStore(ShowStore store)
         {

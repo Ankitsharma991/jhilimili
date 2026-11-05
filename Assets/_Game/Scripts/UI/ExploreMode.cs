@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UtsavNights.Core.District;
 using UtsavNights.Core.Explore;
 using UtsavNights.Core.Runtime;
 using UtsavNights.Gameplay;
@@ -40,6 +41,12 @@ namespace UtsavNights.UI
         private int _secondsShown = -2;
         private int _unreadShown = -1;
         private JobService _jobs;
+
+        // Phase 12 step 7: the crackers to set down in the town.
+        private RectTransform _crackersButton;
+        private RectTransform _picker;
+        private RectTransform _pickerList;
+        private TownFireworks _town;
 
         /// <summary>Phase 12 step 5: the speedometer's readings, made once so riding allocates nothing.</summary>
         private static readonly string[] Kmh = BuildKmh();
@@ -79,6 +86,51 @@ namespace UtsavNights.UI
 
         public PhoneScreen Phone => _phone;
 
+        public bool PickerOpen => _picker != null && _picker.gameObject.activeSelf;
+
+        /// <summary>Same as tapping Crackers: the strip of crackers to set down.</summary>
+        public void OpenCrackers()
+        {
+            if (!IsOpen || Paused || _controller.Riding)
+            {
+                return;
+            }
+
+            if (_town == null)
+            {
+                Game.Services.TryGet(out _town);
+            }
+
+            for (int i = _pickerList.childCount - 1; i >= 0; i--)
+            {
+                Destroy(_pickerList.GetChild(i).gameObject);
+            }
+
+            if (_town != null)
+            {
+                foreach (Content.CrackerDefinition d in _town.Available)
+                {
+                    RectTransform item = UiKit.Rect("Cracker_" + d.Id, _pickerList);
+                    LayoutElement e = item.gameObject.AddComponent<LayoutElement>();
+                    e.minWidth = e.preferredWidth = 230f;
+                    string name = string.IsNullOrEmpty(d.DisplayName.en) ? d.Id : d.DisplayName.en;
+                    Content.CrackerDefinition chosen = d;
+                    Button(item, name, UiTheme.IndigoLight, UiTheme.OffWhite, () =>
+                    {
+                        if (_town.Place(chosen) == TownVerdict.Ok)
+                        {
+                            CloseCrackers();
+                        }
+                    }).sprite = UiKit.Rounded;
+                }
+            }
+
+            _picker.gameObject.SetActive(true);
+            _picker.SetAsLastSibling();
+        }
+
+        public void CloseCrackers() => _picker.gameObject.SetActive(false);
+
         public Minimap Minimap => _minimap;
 
         /// <summary>The job's objective line on the HUD, or empty.</summary>
@@ -116,6 +168,7 @@ namespace UtsavNights.UI
             Game.Events.Unsubscribe<Core.Settings.SettingsChangedEvent>(OnSettings);
             Game.Events.Unsubscribe<PlayerRewardEvent>(OnReward);
             Game.Events.Unsubscribe<JobEvent>(OnJob);
+            Game.Events.Unsubscribe<TownNoticeEvent>(OnNotice);
             if (Paused)
             {
                 Time.timeScale = 1f;
@@ -180,6 +233,7 @@ namespace UtsavNights.UI
             Place(_jump, corner, new Vector2(side * 60f, 60f), scale);
             Place(_sprintButton, corner, new Vector2(side * 270f, 40f), scale);
             Place(_interact, corner, new Vector2(side * 60f, 280f), scale);
+            Place(_crackersButton, corner, new Vector2(side * 460f, 40f), scale);
             _stickBase.localScale = Vector3.one * scale;
         }
 
@@ -326,6 +380,7 @@ namespace UtsavNights.UI
             Game.Events.Subscribe<Core.Settings.SettingsChangedEvent>(OnSettings);
             Game.Events.Subscribe<PlayerRewardEvent>(OnReward);
             Game.Events.Subscribe<JobEvent>(OnJob);
+            Game.Events.Subscribe<TownNoticeEvent>(OnNotice);
             _phone.PhotoTaken += OnPhoto;
 
             _controller = FindFirstObjectByType<ExploreController>();
@@ -367,6 +422,11 @@ namespace UtsavNights.UI
                 // On the scooter: Jump is the horn and there's no sprint.
                 _jumpLabel.text = _controller.Riding ? "Horn" : "Jump";
                 _sprintButton.gameObject.SetActive(!_controller.Riding);
+                _crackersButton.gameObject.SetActive(!_controller.Riding);
+                if (_controller.Riding)
+                {
+                    CloseCrackers();
+                }
                 bool any = !string.IsNullOrEmpty(_controller.Prompt);
                 _interact.gameObject.SetActive(any);
                 _interactLabel.text = _controller.Prompt;
@@ -497,6 +557,53 @@ namespace UtsavNights.UI
             _badge.raycastTarget = false;
             badge.gameObject.SetActive(false);
             _minimap = Minimap.Create(_overlay);
+
+            // Phase 12 step 7: Crackers, and the strip it opens.
+            RectTransform crackers = _crackersButton = Round(_overlay, "Crackers", new Vector2(-460f, 40f), 150f, UiTheme.Saffron);
+            Button(crackers, "Crackers", UiTheme.Saffron, UiTheme.Indigo, () =>
+            {
+                if (PickerOpen)
+                {
+                    CloseCrackers();
+                }
+                else
+                {
+                    OpenCrackers();
+                }
+            }).sprite = UiKit.Circle;
+            _picker = Area(_overlay, "CrackerPicker", 0.2f, 0.3f, 0.98f, 0.44f, Vector2.zero, Vector2.zero);
+            UiKit.Panel(_picker, new Color(0.07f, 0.05f, 0.18f, 0.92f)).sprite = UiKit.Rounded;
+            RectTransform tools = Area(_picker, "Tools", 0f, 0f, 0.2f, 1f, new Vector2(12f, 12f), new Vector2(-6f, -12f));
+            VerticalLayoutGroup toolList = tools.gameObject.AddComponent<VerticalLayoutGroup>();
+            toolList.spacing = 8f;
+            toolList.childControlWidth = toolList.childControlHeight = true;
+            toolList.childForceExpandWidth = toolList.childForceExpandHeight = true;
+            Button(UiKit.Rect("PickUp", tools), "Pick up", UiTheme.IndigoLight, UiTheme.OffWhite, () =>
+            {
+                _town?.PickUp();
+                CloseCrackers();
+            }).sprite = UiKit.Rounded;
+            Button(UiKit.Rect("Close", tools), "Close", UiTheme.IndigoLight, UiTheme.OffWhite, CloseCrackers).sprite = UiKit.Rounded;
+            RectTransform view = Area(_picker, "View", 0.2f, 0f, 1f, 1f, new Vector2(6f, 12f), new Vector2(-12f, -12f));
+            view.gameObject.AddComponent<RectMask2D>();
+            UiKit.Panel(view, new Color(0f, 0f, 0f, 0.001f));
+            ScrollRect scroll = view.gameObject.AddComponent<ScrollRect>();
+            scroll.vertical = false;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            _pickerList = UiKit.Rect("List", view);
+            _pickerList.anchorMin = new Vector2(0f, 0f);
+            _pickerList.anchorMax = new Vector2(0f, 1f);
+            _pickerList.pivot = new Vector2(0f, 0.5f);
+            _pickerList.sizeDelta = Vector2.zero;
+            HorizontalLayoutGroup row = _pickerList.gameObject.AddComponent<HorizontalLayoutGroup>();
+            row.spacing = 12f;
+            row.childControlWidth = row.childControlHeight = true;
+            row.childForceExpandWidth = false;
+            row.childForceExpandHeight = true;
+            _pickerList.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            scroll.content = _pickerList;
+            scroll.viewport = view;
+            _picker.gameObject.SetActive(false);
 
             RectTransform objective = Area(_overlay, "Objective", 0.28f, 1f, 0.72f, 1f, new Vector2(0f, -UiTheme.MinTouch * 2f - 30f), new Vector2(0f, -UiTheme.MinTouch - 30f));
             _objective = UiKit.Text(objective, string.Empty, UiTheme.BodyText, TextAlignmentOptions.Center, UiTheme.Marigold);
@@ -682,6 +789,14 @@ namespace UtsavNights.UI
         }
 
         private void OnPhoto(string path) => Toast("Photo saved", true);
+
+        private void OnNotice(TownNoticeEvent e)
+        {
+            if (IsOpen && !string.IsNullOrEmpty(e.Text))
+            {
+                Toast(e.Text, false);
+            }
+        }
 
         private static string[] BuildKmh()
         {

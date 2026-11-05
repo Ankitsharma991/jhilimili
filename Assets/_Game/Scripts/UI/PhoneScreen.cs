@@ -317,6 +317,19 @@ namespace UtsavNights.UI
                 }
             }
 
+            // Phase 12 step 7: where the district's next show is.
+            if (Game.Services.TryGet(out TownFireworks town))
+            {
+                foreach (TownShowPlace place in TownShows.Places(DistrictGenerator.Bazaar))
+                {
+                    if (place.Name == town.NextShow.place)
+                    {
+                        int minutes = Mathf.Max(0, Mathf.CeilToInt((town.NextShow.at - town.Clock) / 60f));
+                        Pin("NextShow", place.WatchX, place.WatchZ, 26f, UiTheme.Saffron, town.ShowOn ? "Show on now" : $"Show in {minutes} min");
+                    }
+                }
+            }
+
             if (jobs?.Waypoint is Vector3 w)
             {
                 Pin("Waypoint", w.x, w.z, 30f, UiTheme.Magenta, "Waypoint");

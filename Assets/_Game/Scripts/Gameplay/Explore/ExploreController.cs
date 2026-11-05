@@ -61,6 +61,7 @@ namespace UtsavNights.Gameplay
 
         private const string JobPrefix = "job:";
         private const string RoofDown = "roof_down";
+        private const string LightFuse = "light_fuse";
 
         private readonly OrbitCamera _orbit = new OrbitCamera();
         private readonly List<(string id, string label, Vector3 at)> _targets = new List<(string, string, Vector3)>();
@@ -97,6 +98,7 @@ namespace UtsavNights.Gameplay
         private ScooterState _ride;
         private float _walkCameraDistance;
         private JobService _jobs;
+        private TownFireworks _town;
         private string _jobPromptStep;
         private string _jobPromptId;
         private VoiceHandle _engine;
@@ -331,6 +333,11 @@ namespace UtsavNights.Gameplay
                 return GoDown();
             }
 
+            if (target == LightFuse)
+            {
+                return Game.Services.TryGet(out TownFireworks town) && town.LightAt(_avatar.transform.position);
+            }
+
             if (target.StartsWith(JobPrefix, StringComparison.Ordinal))
             {
                 return Game.Services.TryGet(out JobService jobs) && jobs.Interact(_avatar.transform.position);
@@ -538,6 +545,13 @@ namespace UtsavNights.Gameplay
                         label = jobLabel;
                         id = _jobPromptId;
                     }
+                }
+
+                // Phase 12 step 7: a cracker the player set down, ready to light.
+                if (id.Length == 0 && (_town != null || Game.Services.TryGet(out _town)) && _town.LightableAt(at) != null)
+                {
+                    label = "Light the fuse";
+                    id = LightFuse;
                 }
 
                 if (id.Length == 0 && at.y > 1.5f)

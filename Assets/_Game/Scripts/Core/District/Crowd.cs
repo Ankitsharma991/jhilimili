@@ -570,6 +570,53 @@ namespace UtsavNights.Core.District
             return moved;
         }
 
+        /// <summary>
+        /// Phase 12 step 7: people within <paramref name="reach"/> come to watch fireworks at a point but keep back: each
+        /// goes to the nearest place on the paths at least <paramref name="keepAway"/> from it (and not much more), so they
+        /// stand in a ring round it. Returns how many come.
+        /// </summary>
+        public int GatherAround(float x, float z, float reach, float seconds, float keepAway)
+        {
+            int coming = 0;
+            float far = keepAway + 18f;
+            for (int i = 0; i < People.Length; i++)
+            {
+                ref Person p = ref People[i];
+                float dx = x - p.X, dz = z - p.Z;
+                if (p.Shopkeeper || dx * dx + dz * dz > reach * reach)
+                {
+                    continue;
+                }
+
+                int best = -1;
+                float bestD = float.MaxValue;
+                for (int n = 0; n < Graph.Count; n++)
+                {
+                    (float nx, float nz) = Graph.Nodes[n];
+                    float fromShow = (float)Math.Sqrt((nx - x) * (nx - x) + (nz - z) * (nz - z));
+                    if (fromShow < keepAway || fromShow > far)
+                    {
+                        continue;
+                    }
+
+                    float d = (nx - p.X) * (nx - p.X) + (nz - p.Z) * (nz - p.Z);
+                    if (d < bestD)
+                    {
+                        bestD = d;
+                        best = n;
+                    }
+                }
+
+                if (best >= 0 && Route(i, ref p, best))
+                {
+                    p.Dwell = seconds;
+                    coming++;
+                }
+            }
+
+            return coming;
+        }
+
         private bool TryStep(ref Person p, float mx, float mz)
         {
             float nx = p.X + mx, nz = p.Z + mz;

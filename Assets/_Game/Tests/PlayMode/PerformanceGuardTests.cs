@@ -288,6 +288,40 @@ namespace UtsavNights.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator TheDistrictsShow_AllocationsStaySmall()
+        {
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            Gameplay.QualityManager quality = Object.FindFirstObjectByType<Gameplay.QualityManager>();
+            quality.SetTierManually(2);
+            var mode = Object.FindFirstObjectByType<ExploreMode>();
+            try
+            {
+                Assert.IsTrue(mode.Open());
+                yield return null;
+                Core.District.TownShowPlace chowk = Core.District.TownShows.Places(Core.District.DistrictGenerator.Bazaar)[1];
+                mode.Controller.Teleport(new Vector3(chowk.WatchX - 22f, 0f, chowk.WatchZ - 20f), 45f);
+                Object.FindFirstObjectByType<Gameplay.DistrictView>().Refresh();
+                yield return WaitSeconds(0.5f);
+                Assert.IsTrue(Core.Runtime.Game.Services.TryGet(out Gameplay.TownFireworks town));
+                Assert.IsTrue(town.StartShow(1));
+
+                // Past the opening, once each kind of cracker has been made: the show's middle and its finale.
+                yield return WaitSeconds(9f);
+                var result = new float[2];
+                yield return Measure(240, result);
+                Debug.Log($"[UTSAV_PERF] town show gc_kb_per_frame avg={result[0]:0.00} max={result[1]:0.00} cues={town.CuesFired}");
+                Assert.Less(result[0], ShowLimitKb, "a show on the chowk, with the crowd watching, stays within the show limit");
+            }
+            finally
+            {
+                mode.Exit();
+                quality.UseAutomaticTier();
+            }
+        }
+
         /// <summary>Takes frames and throws them away, so only the recorder's own garbage is measured.</summary>
         private sealed class NullClipEncoder : Gameplay.IClipEncoder
         {

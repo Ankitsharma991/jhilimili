@@ -290,6 +290,7 @@ namespace UtsavNights.EditorTools.Main
             new GameObject("BazaarCrowd").AddComponent<CrowdView>(); // Phase 12 step 4: its people
             new GameObject("BazaarTraffic").AddComponent<TrafficView>(); // Phase 12 step 5: and its traffic
             new GameObject("Jobs").AddComponent<JobService>(); // Phase 12 step 6: the town's jobs
+            new GameObject("TownFireworks").AddComponent<TownFireworks>(); // Phase 12 step 7: fireworks in the town
             new GameObject("Neighbourhood").AddComponent<NeighbourhoodInstaller>().Configure(walls, art.Stone,
                 AssetDatabase.LoadAssetAtPath<Material>("Assets/_Game/Materials/Crackers/Rocket_Spark_Additive.mat"));
 

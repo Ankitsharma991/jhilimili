@@ -164,6 +164,13 @@ namespace UtsavNights.Gameplay
             Changed?.Invoke();
         }
 
+        /// <summary>A message from someone in the town (news, a show coming up).</summary>
+        public void AddMessage(string from, string text)
+        {
+            _messages.Insert(0, new PhoneMessage { From = from, Text = text });
+            Changed?.Invoke();
+        }
+
         public void MarkRead(PhoneMessage m)
         {
             if (m.Unread)
@@ -502,9 +509,10 @@ namespace UtsavNights.Gameplay
         }
 
         /// <summary>
-        /// The rooftop show: rockets go up from the roof's racks and burst over the chowk for about twenty seconds; the
-        /// square fills with people who cheer at each burst. (The district's own fireworks come in step 7; this uses the
-        /// neighbourhood's sky bursts and the game's synthesised sounds.)
+        /// The rooftop show: for about twenty seconds, rockets and sky shots go up from the roof's three racks and burst
+        /// over the chowk, building to a finale; the square fills with people who cheer at each burst. They're the game's
+        /// own crackers (<see cref="TownFireworks.Fire"/>); if one can't be set down (the scene is full), a sky burst
+        /// with a synthesised bang stands in for it.
         /// </summary>
         private IEnumerator RooftopShow(JobDef job)
         {
@@ -518,28 +526,32 @@ namespace UtsavNights.Gameplay
                 crowd.Sim.Gather(over.x, over.z, 90f, ShowSeconds + 20f);
             }
 
+            Game.Services.TryGet(out TownFireworks town);
             AmbientLife sky = FindFirstObjectByType<AmbientLife>();
             Game.Services.TryGet(out AudioService audio);
-            AudioClip whoosh = Clip(ProceduralSounds.Kind.Whoosh, 11), bang = Clip(ProceduralSounds.Kind.Bang, 12), crackle = Clip(ProceduralSounds.Kind.Crackle, 13);
+            AudioClip bang = null;
             var random = new System.Random(job.Id.GetHashCode());
             float end = Time.time + ShowSeconds;
             int shots = 0;
             while (Time.time < end)
             {
-                // From one of the racks, up and over the square.
                 JobStep rack = job.Steps[2 + random.Next(3)];
-                var from = new Vector3(rack.X, house.Height + 0.3f, rack.Z);
-                var burst = Vector3.Lerp(from, over, 0.55f + (float)random.NextDouble() * 0.3f)
-                            + new Vector3((float)random.NextDouble() * 10f - 5f, 26f + (float)random.NextDouble() * 14f, (float)random.NextDouble() * 10f - 5f);
-                audio?.Play(whoosh, 0.35f, SoundPriority.Effect);
-                yield return new WaitForSeconds(0.9f);
-                bool big = shots % 5 == 4 || Time.time > end - 3f;
-                sky?.Burst(burst, big ? 2.2f : 1.4f, shots);
+                var from = new Vector3(rack.X, house.Height, rack.Z);
+                bool finale = Time.time > end - 4f;
+                string cracker = TownFireworks.ShowCrackers[finale ? 2 : shots % 3 == 2 ? 1 : 0];
+                if (town == null || !town.Fire(cracker, from))
+                {
+                    // The stand-in: a burst in the sky over the square.
+                    var burst = Vector3.Lerp(from, over, 0.6f) + new Vector3((float)random.NextDouble() * 10f - 5f, 28f + (float)random.NextDouble() * 12f, (float)random.NextDouble() * 10f - 5f);
+                    sky?.Burst(burst, finale ? 2.2f : 1.4f, shots);
+                    bang ??= Clip(ProceduralSounds.Kind.Bang, 12);
+                    audio?.Play(bang, 0.5f, SoundPriority.Payoff);
+                    Game.Events.Publish(new PayoffStartedEvent("rooftop_show", burst, loud: false));
+                }
+
                 ShowBursts++;
-                audio?.Play(big ? bang : crackle, big ? 0.6f : 0.45f, SoundPriority.Payoff);
-                Game.Events.Publish(new PayoffStartedEvent("rooftop_show", burst, loud: false));
                 shots++;
-                yield return new WaitForSeconds(Time.time > end - 4f ? 0.25f : 0.5f + (float)random.NextDouble() * 0.6f);
+                yield return new WaitForSeconds(finale ? 0.35f : 0.9f + (float)random.NextDouble() * 0.7f);
             }
 
             ShowPlaying = false;

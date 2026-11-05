@@ -129,6 +129,8 @@ namespace UtsavNights.Tests.PlayMode
                 }
 
                 int bursts = jobs.ShowBursts;
+                Assert.IsTrue(Game.Services.TryGet(out TownFireworks town));
+                int cues = town.CuesFired;
                 yield return At(c, district, job.Steps[5], roof);
                 Assert.AreEqual("Light the show", c.Prompt);
                 Assert.IsTrue(c.Interact());
@@ -136,6 +138,7 @@ namespace UtsavNights.Tests.PlayMode
                 Assert.IsNull(jobs.Active, "and the job's done");
                 yield return new WaitForSeconds(2.5f);
                 Assert.Greater(jobs.ShowBursts, bursts, "bursts over the chowk");
+                Assert.Greater(town.CuesFired, cues, "real rockets from the racks");
 
                 Assert.AreEqual("Go down to the street", c.Prompt);
                 Assert.IsTrue(c.Interact());
