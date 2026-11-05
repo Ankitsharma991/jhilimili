@@ -216,10 +216,14 @@ namespace UtsavNights.Gameplay
                 HouseMeshes.Destroy(_colliders.GetChild(i).gameObject);
             }
 
+            Box3 leaves = HouseGeometry.GateLeaves, spot = HouseGeometry.AvatarSpot;
             foreach (Box3 b in DecorPlacement.For(Shown, Tier).Solids)
             {
-                Collider("Solid", b, Content.PlacementSurface.None);
+                string name = Same(b, leaves) ? GateLeavesName : Same(b, spot) ? AvatarSpotName : "Solid";
+                Collider(name, b, Content.PlacementSurface.None);
             }
+
+            ApplyGateCollider();
 
             // Phase 8: the roof deck and the balcony floor are celebration spots, ground for crackers (2 cm proud of the
             // solids below, so a placement ray finds the marked surface first).
@@ -236,6 +240,36 @@ namespace UtsavNights.Gameplay
                 Collider("BalconyFloor", new Box3(-0.95f, HouseGeometry.UpperFloor, 0f, 0.95f, HouseGeometry.UpperFloor + 0.02f, 0.75f), Content.PlacementSurface.Ground);
             }
         }
+
+        public const string GateLeavesName = "GateLeaves";
+        public const string AvatarSpotName = "AvatarSpot";
+
+        /// <summary>
+        /// Opens or shuts the gate as the player goes out (Walk, Explore) and comes back. While it's open the leaves'
+        /// collider goes, and so does the courtyard avatar's spot (the avatar is out walking, hidden), so a character can
+        /// walk through both (Explore's body is physical). Shut, both stay solid for placement and the camera.
+        /// </summary>
+        public void SetGateOpen(bool open)
+        {
+            House?.SetGateOpen(open);
+            ApplyGateCollider();
+        }
+
+        public bool GateOpen => House != null && House.GateOpen;
+
+        private void ApplyGateCollider()
+        {
+            foreach (string name in new[] { GateLeavesName, AvatarSpotName })
+            {
+                Transform t = _colliders != null ? _colliders.Find(name) : null;
+                if (t != null)
+                {
+                    t.gameObject.SetActive(!GateOpen);
+                }
+            }
+        }
+
+        private static bool Same(Box3 a, Box3 b) => a.Min.X == b.Min.X && a.Max.X == b.Max.X && a.Min.Z == b.Min.Z && a.Max.Z == b.Max.Z;
 
         private void Collider(string name, Box3 b, Content.PlacementSurface surface)
         {

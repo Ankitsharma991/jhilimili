@@ -112,6 +112,70 @@ namespace UtsavNights.Tests.PlayMode
             Game.Services.Get<CelebrationService>().Choose(CelebrationService.Courtyard);
         }
 
+        [UnityTest]
+        public IEnumerator OutOfTheGate_AndBackIn_EvenNotLinedUp()
+        {
+            SceneManager.LoadScene("Main");
+            yield return null;
+            yield return null;
+            var mode = Object.FindFirstObjectByType<ExploreMode>();
+            Assert.IsTrue(mode.Open());
+            yield return null;
+            ExploreController c = mode.Controller;
+            var nav = new WalkNavigator(Game.Services.Get<SettlementView>().Layout, Game.Services.Get<HomeService>().Design);
+            float wall = Core.Home.HouseGeometry.WorldFrontZ + Core.Home.HouseGeometry.BackWallZ;
+            try
+            {
+                // From where Explore starts, and from either side of the courtyard, pushing straight at the street.
+                Vector3 courtyard = c.Player.position;
+                foreach (float x in new[] { courtyard.x, -0.8f, 2.8f })
+                {
+                    c.Teleport(new Vector3(x, 0f, 1.5f), 0f);
+                    yield return null;
+                    mode.Stick.Set(new Vector2(0f, 1f));
+                    for (float end = Time.realtimeSinceStartup + 6f; Time.realtimeSinceStartup < end && c.Player.position.z < wall + 1.2f;)
+                    {
+                        yield return null;
+                        Vector3 p = c.Player.position;
+                        Assert.IsTrue(nav.IsWalkable(new Core.Avatar.V3(p.x, 0f, p.z)), $"on walkable ground at {p}");
+                    }
+
+                    mode.Stick.Set(Vector2.zero);
+                    Assert.Greater(c.Player.position.z, wall + 1.2f, $"out of the gate into the lane, starting at x {x}; at {c.Player.position}, touching {Touching(c.Player.position)}");
+                }
+
+                // And back in from the street, a metre to the side of the gate.
+                c.Teleport(new Vector3(0.4f, 0f, wall + 1.6f), 180f);
+                yield return null;
+                mode.Stick.Set(new Vector2(0f, 1f));
+                for (float end = Time.realtimeSinceStartup + 6f; Time.realtimeSinceStartup < end && c.Player.position.z > wall - 1f;)
+                {
+                    yield return null;
+                }
+
+                Assert.Less(c.Player.position.z, wall - 1f, "back into the courtyard");
+            }
+            finally
+            {
+                mode.Stick.Set(Vector2.zero);
+                mode.Exit();
+            }
+        }
+
+        private static string Touching(Vector3 at)
+        {
+            var names = new System.Collections.Generic.List<string>();
+            foreach (Collider col in Physics.OverlapSphere(at + Vector3.up * 0.9f, 0.8f))
+            {
+                if (col.gameObject.name != "ExplorePlayer")
+                {
+                    names.Add($"{col.transform.parent?.name}/{col.gameObject.name} {col.bounds.center:F2} {col.bounds.size:F2}");
+                }
+            }
+
+            return string.Join("; ", names);
+        }
+
         private static IEnumerator Seconds(float s)
         {
             float end = Time.realtimeSinceStartup + s;

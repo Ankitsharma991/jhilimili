@@ -209,7 +209,7 @@ namespace UtsavNights.Gameplay
 
             if (_home.House != null)
             {
-                _home.House.SetGateOpen(true);
+                _home.SetGateOpen(true);
             }
 
             // In the bazaar, the lane behind keeps the detail it has at its east end: no rebuilding lots as the player rides off.
@@ -275,7 +275,7 @@ namespace UtsavNights.Gameplay
 
             if (_home?.House != null)
             {
-                _home.House.SetGateOpen(false);
+                _home.SetGateOpen(false);
             }
 
             if (_settlement != null)
@@ -417,6 +417,16 @@ namespace UtsavNights.Gameplay
             Vector2 stick = Vector2.ClampMagnitude(Stick, 1f);
             float wx = stick.x * Mathf.Cos(yaw) + stick.y * Mathf.Sin(yaw);
             float wz = -stick.x * Mathf.Sin(yaw) + stick.y * Mathf.Cos(yaw);
+
+            // The home's gate is narrow: a walk at the wall beside it is turned through it.
+            Vector3 here = _avatar.transform.position;
+            if (here.y < 0.5f)
+            {
+                float gateWall = HouseGeometry.WorldFrontZ + HouseGeometry.BackWallZ;
+                bool inCourtyard = here.z < gateWall && Mathf.Abs(here.x) < HouseGeometry.BoundaryCentre;
+                (wx, wz) = GateAssist.Steer(here.x, here.z, wx, wz, HouseGeometry.GateX, gateWall, inCourtyard ? GateAssist.CourtyardReach : GateAssist.Reach);
+            }
+
             var input = new LocomotionInput(wx, wz, Sprint && stick.magnitude > Locomotion.Deadzone, _jumpPressed);
             _jumpPressed = false;
             bool wasGrounded = _state.Grounded;
@@ -434,19 +444,33 @@ namespace UtsavNights.Gameplay
             // Stay on the neighbourhood's walkable ground (its edges are open, not walled).
             if (!Walkable(after))
             {
-                // Back to where it was if that was fine (the river's edge, the end of the town); else onto the lane.
-                if (Walkable(before))
+                // Slide along the edge (a wall, the river's edge, the end of the town) if one way is open, keeping that part
+                // of the move; else back to where it was; else onto the lane.
+                var alongX = new Vector3(after.x, after.y, before.z);
+                var alongZ = new Vector3(before.x, after.y, after.z);
+                bool xFirst = Mathf.Abs(after.x - before.x) >= Mathf.Abs(after.z - before.z);
+                if (Walkable(before) && (Walkable(xFirst ? alongX : alongZ) || Walkable(xFirst ? alongZ : alongX)))
                 {
-                    Move(new Vector3(before.x, after.y, before.z));
+                    bool keepX = xFirst ? Walkable(alongX) : !Walkable(alongZ);
+                    Move(keepX ? alongX : alongZ);
+                    _state.Velocity = keepX ? new V3(_state.Velocity.X, _state.Velocity.Y, 0f) : new V3(0f, _state.Velocity.Y, _state.Velocity.Z);
                 }
                 else
                 {
-                    V3 near = _nav.Nearest(new V3(after.x, 0f, after.z));
-                    Move(new Vector3(near.X, after.y, near.Z));
+                    if (Walkable(before))
+                    {
+                        Move(new Vector3(before.x, after.y, before.z));
+                    }
+                    else
+                    {
+                        V3 near = _nav.Nearest(new V3(after.x, 0f, after.z));
+                        Move(new Vector3(near.X, after.y, near.Z));
+                    }
+
+                    _state.Velocity = new V3(0f, _state.Velocity.Y, 0f);
                 }
 
                 after = _avatar.transform.position;
-                _state.Velocity = new V3(0f, _state.Velocity.Y, 0f);
             }
 
             bool grounded = _body.isGrounded;

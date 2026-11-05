@@ -139,7 +139,7 @@ namespace UtsavNights.Gameplay
 
             if (_home.House != null)
             {
-                _home.House.SetGateOpen(true);
+                _home.SetGateOpen(true);
             }
 
             _settlement.Focus = () => ToVector(_agent.Position);
@@ -179,7 +179,7 @@ namespace UtsavNights.Gameplay
 
             if (_home != null && _home.House != null)
             {
-                _home.House.SetGateOpen(false);
+                _home.SetGateOpen(false);
             }
 
             if (_settlement != null)

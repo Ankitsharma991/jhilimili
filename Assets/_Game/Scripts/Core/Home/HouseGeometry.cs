@@ -100,9 +100,11 @@ namespace UtsavNights.Core.Home
             new Box3(2.27f, 0f, 5.67f, 2.33f, 2.35f, 5.73f),
             new Box3(3.32f, 0f, 5.67f, 3.38f, 2.45f, 5.73f),
 
-            // Where the player's avatar stands in the courtyard (CourtyardAvatar.Spot, world (-0.7, 0, 2.12)).
-            new Box3(-0.95f, 0f, 4.27f, -0.45f, 1.8f, 4.77f),
+            AvatarSpot,
         };
+
+        /// <summary>Where the player's avatar stands in the courtyard (CourtyardAvatar.Spot, world (-0.7, 0, 2.12)).</summary>
+        public static Box3 AvatarSpot => new Box3(-0.95f, 0f, 4.27f, -0.45f, 1.8f, 4.77f);
 
         public const float CourtyardStepTop = 0.08f;
 
